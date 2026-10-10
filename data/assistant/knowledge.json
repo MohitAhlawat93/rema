@@ -1,48 +1,374 @@
 [
   {
     "question": "Who is witness_lema_?",
-    "answer": "This is the personal portfolio preview for witness_lema_. Her verified biography and personal details will be added before launch. The current photography shows a reference model, not witness_lema_.",
-    "keywords": [
-      "about",
-      "profile",
-      "witness",
-      "lema",
-      "explore",
-      "who"
-    ],
+    "answer": "witness_lema_ is a beautiful and genuine Kenyan escort currently based in Gurgaon. She offers exclusive, high-quality companionship for classy gentlemen.",
+    "keywords": ["about", "profile", "witness", "lema", "who", "details", "bio"],
     "href": "/about/"
   },
   {
-    "question": "How can I get in touch?",
-    "answer": "Use the WhatsApp link on Contact to reach witness_lema_. You can also view the linked Instagram reel.",
-    "keywords": [
-      "contact",
-      "touch",
-      "enquiry",
-      "email",
-      "message"
-    ],
+    "question": "How can I get in touch with her?",
+    "answer": "The easiest way is to message her directly on WhatsApp. You can find all her contact links (WhatsApp, Instagram and others) on the Contact page: https://rema-ruby.vercel.app/contact/",
+    "keywords": ["contact", "touch", "message", "whatsapp", "reach", "chat", "enquiry"],
     "href": "/contact/"
   },
   {
-    "question": "Whose photographs are shown?",
-    "answer": "The photographs are reference images for the design, not photographs of witness_lema_. They will be replaced with her approved collection. The abstract works are design studies.",
-    "keywords": [
-      "photo",
-      "gallery",
-      "image",
-      "picture"
-    ],
+    "question": "Are the photos real?",
+    "answer": "Yes, all the photos on the gallery are real and belong to witness_lema_. Please do not use or share them without permission.",
+    "keywords": ["photo", "photos", "gallery", "image", "picture", "real", "genuine"],
     "href": "/gallery/"
   },
   {
-    "question": "Where can I find services?",
-    "answer": "Visit the Services page. Specific details have not been published yet; use Contact for general questions.",
-    "keywords": [
-      "services",
-      "details",
-      "discover"
-    ],
+    "question": "Where can I see her services?",
+    "answer": "Visit the Services page for full details. She provides a wide range of experiences and can customise the meeting according to your preferences.",
+    "keywords": ["services", "details", "what she offers", "menu"],
     "href": "/services/"
+  },
+  {
+    "question": "Where is Lema based?",
+    "answer": "She currently lives in Gurgaon (Gurugram), India. She is originally from Kenya.",
+    "keywords": ["location", "city", "gurgaon", "based", "where", "india", "live", "stays"],
+    "href": "/about/"
+  },
+  {
+    "question": "Does she live alone?",
+    "answer": "Yes, she lives alone in a private and secure place.",
+    "keywords": ["live alone", "alone", "privacy", "private", "room"],
+    "href": "/about/"
+  },
+  {
+    "question": "Is her place safe and clean?",
+    "answer": "Yes. Her room is clean, hygienic, private and completely safe for meetings.",
+    "keywords": ["safe", "clean", "hygiene", "room", "place", "secure"],
+    "href": "/about/"
+  },
+  {
+    "question": "Can we drink alcohol with her?",
+    "answer": "Yes, you can drink with her. Just let her know in advance so she can arrange it.",
+    "keywords": ["drink", "alcohol", "wine", "beer", "party", "drinks"],
+    "href": "/services/"
+  },
+  {
+    "question": "What languages does she speak?",
+    "answer": "She speaks English fluently at a good level.",
+    "keywords": ["language", "english", "speak", "languages"],
+    "href": "/about/"
+  },
+  {
+    "question": "What is her sexual orientation?",
+    "answer": "Heterosexual.",
+    "keywords": ["orientation", "sexual", "preference", "hetero", "straight"],
+    "href": "/about/"
+  },
+  {
+    "question": "How tall is she?",
+    "answer": "She is 165 cm (5′5″).",
+    "keywords": ["height", "tall", "cm", "feet"],
+    "href": "/about/"
+  },
+  {
+    "question": "What is her ethnicity?",
+    "answer": "Black / African (Kenyan).",
+    "keywords": ["ethnicity", "race", "black", "african", "kenya"],
+    "href": "/about/"
+  },
+  {
+    "question": "What is her bust size?",
+    "answer": "She has a large, natural bust. Many clients love the soft and full feel.",
+    "keywords": ["bust", "breast", "chest", "size", "boobs"],
+    "href": "/about/"
+  },
+  {
+    "question": "How old is she?",
+    "answer": "She is 26 years old.",
+    "keywords": ["age", "old", "years"],
+    "href": "/about/"
+  },
+  {
+    "question": "Is she shaved?",
+    "answer": "Yes, she keeps herself fully shaved and prioritises hygiene for every meeting.",
+    "keywords": ["shaved", "smooth", "grooming", "hygiene"],
+    "href": "/about/"
+  },
+  {
+    "question": "Does she smoke?",
+    "answer": "Yes, she smokes. You can discuss smoking preferences when you book.",
+    "keywords": ["smoke", "smokes", "cigarette", "smoking"],
+    "href": "/about/"
+  },
+  {
+    "question": "What is her hair colour?",
+    "answer": "Black.",
+    "keywords": ["hair", "color", "colour", "black"],
+    "href": "/about/"
+  },
+  {
+    "question": "What is her nationality?",
+    "answer": "Kenyan.",
+    "keywords": ["nationality", "kenya", "kenyan", "origin"],
+    "href": "/about/"
+  },
+  {
+    "question": "What is her gender?",
+    "answer": "Female.",
+    "keywords": ["gender", "female", "woman"],
+    "href": "/about/"
+  },
+  {
+    "question": "What kind of experience does she offer?",
+    "answer": "She offers both a loving girlfriend experience (GFE) and wild pornstar-style encounters. Every meeting is passionate, intimate and focused on your full satisfaction.",
+    "keywords": ["experience", "girlfriend", "gfe", "pornstar", "passion", "satisfy", "style"],
+    "href": "/services/"
+  },
+  {
+    "question": "What are her rates?",
+    "answer": "Incalls start from ₹15,000 (approx. US$155) per hour. Outcalls start from ₹30,000 (approx. US$310) per hour.",
+    "keywords": ["rate", "price", "cost", "fee", "hour", "charges"],
+    "href": "/services/"
+  },
+  {
+    "question": "How much for an incall?",
+    "answer": "Incalls start from ₹15,000 per hour.",
+    "keywords": ["incall", "in-call", "in call", "rate", "price"],
+    "href": "/services/"
+  },
+  {
+    "question": "How much for an outcall?",
+    "answer": "Outcalls start from ₹30,000 per hour.",
+    "keywords": ["outcall", "out-call", "out call", "rate", "price"],
+    "href": "/services/"
+  },
+  {
+    "question": "How do I book her?",
+    "answer": "Message her on WhatsApp to check availability and confirm the booking. A 20% advance payment in cash is required to secure the time slot.",
+    "keywords": ["book", "booking", "reserve", "appointment"],
+    "href": "/contact/"
+  },
+  {
+    "question": "Do I need to pay advance for booking?",
+    "answer": "Yes. A 20% advance payment in cash is required to confirm the booking. If you cancel at least 2 hours before the scheduled time, the advance will be fully refunded.",
+    "keywords": ["advance", "deposit", "payment", "booking", "refund", "cancel"],
+    "href": "/services/"
+  },
+  {
+    "question": "Is the advance refundable?",
+    "answer": "Yes. If you cancel at least 2 hours before the meeting time, the full 20% advance is refunded.",
+    "keywords": ["refund", "cancel", "advance", "deposit"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she provide threesome?",
+    "answer": "Yes, she can arrange a threesome. Extra charges apply and it needs to be discussed and confirmed in advance.",
+    "keywords": ["threesome", "3some", "three way", "group", "duo"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she have sex toys?",
+    "answer": "Yes, she keeps a good collection of clean sex toys in her room and is happy to use them if you like.",
+    "keywords": ["toys", "sex toys", "vibrator", "dildo", "play"],
+    "href": "/services/"
+  },
+  {
+    "question": "What sex positions does she do?",
+    "answer": "She is open to almost all common positions – missionary, doggy style, cowgirl, reverse cowgirl, spooning, standing, 69, and more. Just tell her what you enjoy and she will match your energy.",
+    "keywords": ["positions", "sex positions", "styles", "how", "ways"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she provide live video calls?",
+    "answer": "Yes. Live video calls are available at ₹2,000 for 10 minutes.",
+    "keywords": ["video", "video call", "live", "cam", "online"],
+    "href": "/services/"
+  },
+  {
+    "question": "What services does she offer on video call?",
+    "answer": "On video call she can do dirty talk, striptease, masturbation show, toy play, oil show, and custom requests. You can also ask her to follow your instructions live.",
+    "keywords": ["video services", "cam show", "what on video", "video call services"],
+    "href": "/services/"
+  },
+  {
+    "question": "How much is a video call?",
+    "answer": "₹2,000 for a 10-minute live video session. Longer sessions can be arranged.",
+    "keywords": ["video price", "video cost", "cam rate"],
+    "href": "/services/"
+  },
+  {
+    "question": "Is she available for girlfriend experience (GFE)?",
+    "answer": "Yes. She loves providing a warm, affectionate girlfriend experience with kissing, cuddling and real intimacy.",
+    "keywords": ["girlfriend", "gfe", "companionship", "romance"],
+    "href": "/services/"
+  },
+  {
+    "question": "Can she do wild pornstar-style sessions?",
+    "answer": "Yes. She is very comfortable with intense, wild and naughty pornstar-style encounters.",
+    "keywords": ["wild", "pornstar", "pse", "intense", "naughty"],
+    "href": "/services/"
+  },
+  {
+    "question": "Will I be fully satisfied?",
+    "answer": "Her main focus is your complete satisfaction. She stays until you are fully satisfied and happy.",
+    "keywords": ["satisfied", "satisfaction", "happy", "enjoy"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she do overnight or longer bookings?",
+    "answer": "Yes. Multi-hour and overnight bookings are possible. Rates and details can be discussed on WhatsApp.",
+    "keywords": ["overnight", "longer", "multi hour", "full night"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she do oral sex?",
+    "answer": "Yes, she provides both giving and receiving oral. Preferences can be discussed when booking.",
+    "keywords": ["oral", "blowjob", "bj", "cunnilingus", "licking"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she do kissing?",
+    "answer": "Yes, kissing is included, especially in girlfriend experience sessions.",
+    "keywords": ["kiss", "kissing", "french kiss"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she do anal?",
+    "answer": "Anal can be discussed. It is not standard and requires advance notice and extra charge if agreed.",
+    "keywords": ["anal", "ass", "backdoor"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she allow unprotected sex?",
+    "answer": "No. She always uses protection for safety. This is non-negotiable.",
+    "keywords": ["unprotected", "bare", "condom", "safe", "protection"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she shower before and after?",
+    "answer": "Yes. She maintains high hygiene standards and showers before every meeting. You are also welcome to shower at her place.",
+    "keywords": ["shower", "bath", "hygiene", "clean"],
+    "href": "/services/"
+  },
+  {
+    "question": "Can I take photos or videos during the meeting?",
+    "answer": "No. Photography and recording are strictly not allowed for privacy reasons.",
+    "keywords": ["photo", "video", "record", "camera", "picture"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she provide massage?",
+    "answer": "Yes, she can give a sensual full-body oil massage as part of the session if you request it.",
+    "keywords": ["massage", "oil", "body massage", "sensual"],
+    "href": "/services/"
+  },
+  {
+    "question": "Is she available today / right now?",
+    "answer": "Availability changes daily. The best way is to message her on WhatsApp for current free slots.",
+    "keywords": ["available", "today", "now", "free", "slot"],
+    "href": "/contact/"
+  },
+  {
+    "question": "What payment methods does she accept?",
+    "answer": "Cash is preferred. You can discuss other options when booking.",
+    "keywords": ["payment", "pay", "cash", "upi", "method"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she travel outside Gurgaon?",
+    "answer": "Short outcalls within Gurgaon and nearby areas are possible. Longer travel or hotel visits can be discussed with extra charges.",
+    "keywords": ["travel", "outstation", "hotel", "outcall", "outside"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she do dual or couple sessions?",
+    "answer": "She can consider couple or dual sessions. Extra charges apply and it must be arranged in advance.",
+    "keywords": ["couple", "dual", "two girls", "threesome"],
+    "href": "/services/"
+  },
+  {
+    "question": "What should I bring to the meeting?",
+    "answer": "Just yourself, the remaining payment, and a positive attitude. Everything else is taken care of.",
+    "keywords": ["bring", "what to bring", "prepare"],
+    "href": "/services/"
+  },
+  {
+    "question": "Is the place discreet?",
+    "answer": "Yes. The location is private and discreet. She values client privacy highly.",
+    "keywords": ["discreet", "privacy", "secret", "confidential"],
+    "href": "/about/"
+  },
+  {
+    "question": "Does she speak any Indian languages?",
+    "answer": "She mainly communicates in English. Basic Hindi understanding is limited.",
+    "keywords": ["hindi", "indian language", "speak"],
+    "href": "/about/"
+  },
+  {
+    "question": "Can I request specific outfits or roleplay?",
+    "answer": "Yes. She is open to outfits and light roleplay. Just mention your request when booking so she can prepare.",
+    "keywords": ["outfit", "dress", "roleplay", "costume", "fantasy"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she do CIM / facial?",
+    "answer": "These can be discussed. Not every request is automatic, so please ask in advance.",
+    "keywords": ["cim", "facial", "cum", "finish"],
+    "href": "/services/"
+  },
+  {
+    "question": "How early should I book?",
+    "answer": "It’s best to book a few hours in advance, especially for evening or weekend slots. Last-minute bookings depend on availability.",
+    "keywords": ["early", "advance booking", "how soon", "notice"],
+    "href": "/contact/"
+  },
+  {
+    "question": "What if I need to reschedule?",
+    "answer": "Just inform her as early as possible on WhatsApp. She is usually flexible if given reasonable notice.",
+    "keywords": ["reschedule", "change time", "postpone"],
+    "href": "/contact/"
+  },
+  {
+    "question": "Is she verified?",
+    "answer": "Yes. All photos are real and she can verify herself on a short video call if needed before the meeting.",
+    "keywords": ["verified", "real", "proof", "authenticate"],
+    "href": "/about/"
+  },
+  {
+    "question": "Does she provide dinner or social dates?",
+    "answer": "Yes, she can accompany you for dinner or a social outing as part of a longer booking. Rates will be higher for outcall + time.",
+    "keywords": ["dinner", "date", "social", "outing", "restaurant"],
+    "href": "/services/"
+  },
+  {
+    "question": "What is included in the basic rate?",
+    "answer": "The basic hourly rate covers companionship, kissing, oral and intercourse with protection. Special requests (toys, roleplay, longer sessions, threesome etc.) may have extra charges.",
+    "keywords": ["included", "what included", "basic", "cover"],
+    "href": "/services/"
+  },
+  {
+    "question": "Can I extend the session if I want more time?",
+    "answer": "Yes, if she is free after your booked time you can extend. Payment for the extra time is required.",
+    "keywords": ["extend", "more time", "extra hour"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she do strap-on or domination?",
+    "answer": "Light domination and strap-on can be discussed. Please mention it clearly when booking so she can confirm.",
+    "keywords": ["strap-on", "domination", "femdom", "dominant"],
+    "href": "/services/"
+  },
+  {
+    "question": "Is smoking allowed during the session?",
+    "answer": "Yes, both of you can smoke if you wish. Just keep the place tidy.",
+    "keywords": ["smoking", "smoke during", "cigarette"],
+    "href": "/services/"
+  },
+  {
+    "question": "Does she provide condoms and lube?",
+    "answer": "Yes, she always keeps quality condoms and lube available.",
+    "keywords": ["condom", "lube", "protection", "safe"],
+    "href": "/services/"
+  },
+  {
+    "question": "What is the best way to contact her?",
+    "answer": "WhatsApp is the fastest and preferred way. All links are on the Contact page.",
+    "keywords": ["best contact", "how to message", "whatsapp"],
+    "href": "/contact/"
   }
 ]
