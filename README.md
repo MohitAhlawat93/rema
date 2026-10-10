@@ -1,10 +1,12 @@
+[Owner editing guide](docs/EDITING_GUIDE.md) — biography, photo uploads, gallery order, social links and assistant answers.
+
 # witness_lema_ — Personal portfolio
 
 A middle-tier personal portfolio built selectively from the reference project project’s neutral design and interaction patterns. Target repository: `MohitAhlawat93/rema`. The only source project is reference project; the template can later be adapted for other clients.
 
 ## Current delivery: SIGNATURE-01
 
-- Five prerendered pages: Home, About, Gallery, Work and Contact.
+- Five prerendered pages: Home, About, Gallery, Services and Contact.
 - Ivory, charcoal and bronze editorial layout with responsive navigation.
 - Filtered gallery, native full-screen dialog, keyboard stepping and return focus.
 - Click-to-open compact FAQ assistant sharing the published content model.
@@ -14,7 +16,7 @@ A middle-tier personal portfolio built selectively from the reference project pr
 
 This is a design preview for **witness_lema_**. All identity and personal details must be approved by the owner before launch. Two reference-model photographs are explicitly labelled as reference photography; the people pictured are not the site owner. No inherited biography, education, location or other personal facts are attributed to her.
 
-The homepage includes a two-image crossfade with gentle zoom, manual slide controls, pause/play, reduced-motion support, a rotating circular WL monogram, layered portraits, a statement section, gallery, editorial interests and a compact FAQ assistant. The logo is an editable vector in `public/assets/mark.svg`.
+The homepage includes a two-image crossfade with gentle zoom, a discreet motion control, reduced-motion support, a rotating circular WL monogram, layered portraits, a statement section, gallery and a compact FAQ assistant. The logo is an editable vector in `public/assets/mark.svg`.
 
 ## Run
 

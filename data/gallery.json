@@ -1,0 +1,34 @@
+[
+  {
+    "src": "https://images.squarespace-cdn.com/content/v1/68806c9f433a21762c9e1a86/b1c39acf-72b5-4b36-b1c1-19a0f16ec17a/_DSC9687-copy.jpg?format=1000w",
+    "alt": "Reference model in a black dress beside a harbour-facing window",
+    "title": "By the window",
+    "category": "Reference portrait",
+    "hero": true,
+    "reference": true
+  },
+  {
+    "src": "https://images.squarespace-cdn.com/content/v1/68806c9f433a21762c9e1a86/cda55cdb-f75d-4069-b52b-2ef8da42da7f/_DSC9512-copy.jpg?format=1000w",
+    "alt": "Reference model in a black dress reclining on a circular sofa",
+    "title": "A different perspective",
+    "category": "Reference portrait",
+    "hero": true,
+    "reference": true
+  },
+  {
+    "src": "/assets/study-3.svg",
+    "alt": "Abstract rust-coloured arch and fine sweeping lines",
+    "title": "Quiet rhythm",
+    "category": "Art study",
+    "hero": false,
+    "reference": false
+  },
+  {
+    "src": "/assets/study-4.svg",
+    "alt": "Abstract muted olive ribbons and circular forms",
+    "title": "After the light",
+    "category": "Art study",
+    "hero": false,
+    "reference": false
+  }
+]
