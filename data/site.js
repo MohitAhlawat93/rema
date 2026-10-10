@@ -29,45 +29,66 @@ export const site = {
 
   profileFacts: [],
 
-  // Only owner-approved, lawful professional and social offerings belong here.
   services: [
     {
       number: '01',
-      title: 'Dinner & Social Companion',
-      text: 'A polished companion for dinner, conversation or a relaxed social evening. Each engagement is arranged with discretion and attention to the setting.',
-      tag: 'Enquire for availability',
+      title: 'Incall – 1 Hour',
+      text: 'Private meeting at my place. Perfect for a relaxed and intimate experience with full attention and care.',
+      tag: 'From ₹15,000',
       image: '/images/gallery/portrait-06.jpg'
     },
     {
       number: '02',
-      title: 'Event Companion',
-      text: 'Confident, personable company for selected private events, celebrations and public occasions, with details agreed clearly in advance.',
-      tag: 'By arrangement',
+      title: 'Incall – 2 Hours',
+      text: 'Extended private time for deeper connection, conversation and a more unhurried experience.',
+      tag: 'From ₹28,000',
       image: '/images/gallery/portrait-14.jpg'
     },
     {
       number: '03',
-      title: 'Weekend Travel Companion',
-      text: 'Thoughtful social companionship for a planned weekend itinerary, subject to schedule, destination and travel arrangements.',
-      tag: 'Travel considered',
+      title: 'Outcall – 1 Hour',
+      text: 'I come to your location (hotel or residence) within Gurgaon. Discreet and punctual.',
+      tag: 'From ₹30,000',
       image: '/images/gallery/portrait-16.jpg'
     },
     {
       number: '04',
-      title: 'Private Video Introduction',
-      text: 'A short, scheduled video conversation for introductions and general enquiries before making plans.',
-      tag: 'Advance booking',
+      title: 'Outcall – 2 Hours',
+      text: 'Longer outcall session at your preferred place. Ideal when you want more time without rushing.',
+      tag: 'From ₹55,000',
       image: '/images/gallery/portrait-20.jpg'
     },
     {
       number: '05',
-      title: 'Bespoke Social Experience',
-      text: 'A tailored social experience designed around a lawful occasion, location and preferred atmosphere. Share the idea privately for consideration.',
-      tag: 'Tailored enquiry',
+      title: 'Overnight / Full Night',
+      text: 'Spend the night together. Soft companionship, intimacy and the comfort of not watching the clock.',
+      tag: 'From ₹80,000',
       image: '/images/gallery/portrait-03.jpg'
+    },
+    {
+      number: '06',
+      title: 'Dinner Date',
+      text: 'Elegant company for dinner and conversation. A relaxed social evening before or instead of a private meeting.',
+      tag: 'By arrangement',
+      image: '/images/gallery/portrait-06.jpg'
+    },
+    {
+      number: '07',
+      title: 'Video Call Session',
+      text: 'Private live video session. Perfect for a personal introduction or a short, focused experience from anywhere.',
+      tag: '₹2,000 / 10 min',
+      image: '/images/gallery/portrait-14.jpg'
+    },
+    {
+      number: '08',
+      title: 'Custom Experience',
+      text: 'Tell me what you’re looking for — girlfriend style, passionate, longer time or something specific. We’ll shape it together.',
+      tag: 'Tailored',
+      image: '/images/gallery/portrait-16.jpg'
     }
   ],
-  servicesIntro: 'Every engagement is approached with warmth, discretion and careful attention to detail. Choose a starting point below, or get in touch to discuss a tailored lawful social experience.',
+
+  servicesIntro: 'Every meeting is private, clean and centred on your comfort and satisfaction. Choose a starting point below or message me to create something more personal.',
 
   social: {
     whatsapp: 'https://wa.me/918119034436',
