@@ -1,19 +1,7 @@
-# Selective source reuse
+# Portfolio template provenance
 
-Source: `MohitAhlawat93/rebecca_project` at commit `084f247cf462d6a005a07a81beef40a8d0d96966`.
+The owner-authorized reference project supplied neutral design patterns, gallery stepping/focus-return behaviour and isolated auth/origin helpers. Client data, runtime stores and credentials are not shared.
 
-| Source | Use in Signature |
-| --- | --- |
-| `styles.css` | Adapted paper/ink palette, serif/sans pairing, editorial spacing and reduced-motion pattern into a smaller stylesheet |
-| `script.js` gallery block | Adapted stepping and focus-return behaviour; native dialog supplies focus containment; added filtering |
-| `lib/admin-auth.js` | Copied authentication primitives; changed env/cookie/signature namespace from Rebecca to Signature |
-| `lib/admin-origin-guard.js` | Reused same-origin write validation |
-| Canonical data pattern | New public content model shared by prerendered pages and FAQ answers |
+The current edition is branded witness_lema_. All inherited personal biography has been removed. Two approved reference-library photographs illustrate the layout and are identified as reference models. Replace their entries in `data/site.js` with owner-approved photos. No production contact destination is active.
 
-Included content: selected neutral public profile facts and interests from `data/rebecca-data.js`, plus the fully clothed `_DSC9687-copy.jpg` portrait from `data/rebecca-images.js`. Three abstract studies remain as clearly labelled artwork.
-
-Excluded: rates, paid sexual-service booking/screening flows, live contact destinations, explicit image archives, tour booking, multilingual pages, growth automation, separate publishing stores, credentials, deployment links and Git history.
-
-A new repository was already empty. Selective extraction avoids carrying Rebecca's client-specific state and large coupled admin system into the middle tier. The original repository was read only and remains unchanged.
-
-Only `public/`, `data/site.js` and `lib/faq.js` are emitted into `dist`. Owner auth helpers are not shipped as browser files. Real owner authentication and persistence are deferred to SIGNATURE-02.
+The circular WL monogram, cinematic hero composition, pause/manual slide controls and layered homepage are specific to this edition. Reduced-motion users get a still hero and manual image selection.

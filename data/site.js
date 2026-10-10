@@ -1,34 +1,27 @@
-// One public content model for pages and the local FAQ assistant.
-// Neutral profile facts are drawn from rebecca_project/data/rebecca-data.js; source snapshot 2026-10-07.
+// Public content model. Replace demo assets and copy with owner-approved content here.
+const cdn='https://images.squarespace-cdn.com/content/v1/68806c9f433a21762c9e1a86/';
 export const site = {
-  name: 'Risqué Rebecca', brand: 'Élrebecca Signature', language: 'en', timezone: 'Asia/Singapore',
+  name: 'witness_lema_', brand: 'witness_lema_', language: 'en', timezone: 'UTC',
   demo: true, email: '', announcement: '', announcementExpiresAt: '',
-  description: 'Rebecca — a boutique portfolio demonstration by Élrebecca Signature.',
-  hero: { eyebrow: 'A personal portfolio', title: 'Curiosity. Character.\nA wider world.', intro: 'Singapore-based. English and Mandarin. A love of books, travel, culture and the unexpected.' },
-  about: { title: 'The person behind\nthe presence.', text: 'Rebecca is Chinese-Portuguese Singaporean, with a BBA and an MA. Her public profile describes a life across three continents and travels to 52 countries, shaped by curiosity, warmth and candour.' },
-  profileFacts: [
-    { label: 'Base', value: 'Singapore · sometimes Hong Kong' },
-    { label: 'Languages', value: 'English · Mandarin' },
-    { label: 'Education', value: 'BBA · MA' },
-    { label: 'Heritage', value: 'Chinese-Portuguese Singaporean' },
-    { label: 'Travel', value: '52 countries · three continents' },
-    { label: 'Background', value: 'Retired student athlete · classically trained pianist' }
-  ],
+  description: 'The world of witness_lema_ — a personal portfolio in pictures, stories and expression. Design preview with reference photography.',
+  hero: { eyebrow: 'The world of witness_lema_', title: 'A presence.\nAn impression.\nEntirely individual.', intro: 'A glimpse into a world of character, curiosity and considered detail.' },
+  about: { title: 'A little mystery.\nA personal introduction.', text: 'This is the beginning of witness_lema_’s own story. A place for her personality, creative influences and the details that make an introduction memorable.' },
+  profileFacts: [],
   work: [
-    { number: '01', title: 'Travel & culture', text: 'Favourite countries mentioned in Rebecca’s profile include Uzbekistan, Japan, Bolivia and the Czech Republic.', tag: 'Around the world' },
-    { number: '02', title: 'Books & ideas', text: 'Books, history, anthropology and economics sit alongside a curiosity about people, places and new perspectives.', tag: 'Always curious' },
-    { number: '03', title: 'Food & the arts', text: 'Cooking, fermentation, theatre, tasting menus and wine are among her interests. She is also a classically trained pianist.', tag: 'Life’s details' }
+    { number: '01', title: 'Places & perspectives', text: 'A space for favourite places, travel memories and the perspectives that stay with you.', tag: 'Sample editorial theme' },
+    { number: '02', title: 'Ideas & inspiration', text: 'The books, conversations and creative influences behind a personal point of view.', tag: 'Sample editorial theme' },
+    { number: '03', title: 'The finer details', text: 'Small rituals, good food, the arts and the things that make an ordinary day feel special.', tag: 'Sample editorial theme' }
   ],
   images: [
-    { src: 'https://images.squarespace-cdn.com/content/v1/68806c9f433a21762c9e1a86/b1c39acf-72b5-4b36-b1c1-19a0f16ec17a/_DSC9687-copy.jpg?format=1000w', alt: 'Rebecca in a black dress beside a harbour-facing window', title: 'Rebecca · by the window', category: 'Portrait' },
-    { src: '/assets/study-2.svg', alt: 'Abstract ivory sculptural ribbons on a dark background', title: 'In motion', category: 'Movement' },
-    { src: '/assets/study-3.svg', alt: 'Abstract rust-coloured arch and fine sweeping lines', title: 'Quiet rhythm', category: 'Form' },
-    { src: '/assets/study-4.svg', alt: 'Abstract muted olive ribbons and circular forms', title: 'After the light', category: 'Movement' }
+    { src: cdn+'b1c39acf-72b5-4b36-b1c1-19a0f16ec17a/_DSC9687-copy.jpg?format=1000w', alt: 'Reference model in a black dress beside a harbour-facing window', title: 'By the window', category: 'Reference portrait' },
+    { src: cdn+'cda55cdb-f75d-4069-b52b-2ef8da42da7f/_DSC9512-copy.jpg?format=1000w', alt: 'Reference model in a black dress reclining on a circular sofa', title: 'A different perspective', category: 'Reference portrait' },
+    { src: '/assets/study-3.svg', alt: 'Abstract rust-coloured arch and fine sweeping lines', title: 'Quiet rhythm', category: 'Art study' },
+    { src: '/assets/study-4.svg', alt: 'Abstract muted olive ribbons and circular forms', title: 'After the light', category: 'Art study' }
   ],
   faqs: [
-    { question: 'What can I explore here?', answer: 'Rebecca is based in Singapore, speaks English and Mandarin, and has a BBA and an MA. Her interests include travel, books, culture, history, food and F1.', keywords: ['about','profile','rebecca','explore','who'], href: '/about/' },
-    { question: 'How can I get in touch?', answer: 'The Contact page lets you prepare and copy an enquiry. A verified contact destination has not been connected yet, so the website cannot send it.', keywords: ['contact','touch','enquiry','email','message','book'], href: '/contact/' },
-    { question: 'What is in the gallery?', answer: 'The opening portrait comes from Rebecca’s public image library. The other three images are abstract design studies, clearly labelled as artwork.', keywords: ['photo','gallery','image','picture'], href: '/gallery/' },
-    { question: 'What are Rebecca’s interests?', answer: 'Rebecca’s profile lists books, travel, food, wine, culture, history and F1, with further interests in fitness, cooking, anthropology, economics, cars and theatre.', keywords: ['interests','hobbies','books','travel','culture','food','work'], href: '/work/' }
+    { question: 'Who is witness_lema_?', answer: 'This is the personal portfolio preview for witness_lema_. Her verified biography and personal details will be added before launch. The current photography shows a reference model, not witness_lema_.', keywords: ['about','profile','witness','lema','explore','who'], href: '/about/' },
+    { question: 'How can I get in touch?', answer: 'The Contact page lets you prepare and copy a general enquiry. A verified contact destination has not been connected yet, so the website cannot send it.', keywords: ['contact','touch','enquiry','email','message'], href: '/contact/' },
+    { question: 'Whose photographs are shown?', answer: 'The photographs are reference images for the design, not photographs of witness_lema_. They will be replaced with her approved collection. The abstract works are design studies.', keywords: ['photo','gallery','image','picture'], href: '/gallery/' },
+    { question: 'What can I discover?', answer: 'Explore the introduction, gallery and editorial interests page. These sample themes demonstrate the layout; the owner’s own interests are still to be supplied.', keywords: ['interests','hobbies','books','travel','culture','food','discover'], href: '/work/' }
   ]
 };

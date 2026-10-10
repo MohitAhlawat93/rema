@@ -1,6 +1,6 @@
-# Élrebecca Signature — Rebecca demonstration
+# witness_lema_ — Personal portfolio
 
-A middle-tier personal portfolio built selectively from the Rebecca project’s neutral design and interaction patterns. Target repository: `MohitAhlawat93/rema`. The only source project is Rebecca; the template can later be adapted for other clients.
+A middle-tier personal portfolio built selectively from the reference project project’s neutral design and interaction patterns. Target repository: `MohitAhlawat93/rema`. The only source project is reference project; the template can later be adapted for other clients.
 
 ## Current delivery: SIGNATURE-01
 
@@ -10,11 +10,11 @@ A middle-tier personal portfolio built selectively from the Rebecca project’s 
 - Click-to-open compact FAQ assistant sharing the published content model.
 - Enquiry preparation and clipboard fallback; **does not send enquiries**.
 - Privacy page, 404, security headers and deliberately disabled indexing.
-- Isolated authentication/origin helpers adapted from Rebecca, tested but **not connected to an admin endpoint**.
+- Isolated authentication/origin helpers adapted from reference project, tested but **not connected to an admin endpoint**.
 
-This is a design demo, not a production launch. It uses Rebecca’s neutral public biography, interests and one reviewed fully clothed portrait from the source repository. Three abstract SVG studies remain labelled artwork. No service rates, paid sexual-service booking/screening flows, live contact destinations, credentials or database configuration were copied. The Contact form is an unsent general-message composer.
+This is a design preview for **witness_lema_**. All identity and personal details must be approved by the owner before launch. Two reference-model photographs are explicitly labelled as reference photography; the people pictured are not the site owner. No inherited biography, education, location or other personal facts are attributed to her.
 
-The source profile snapshot describes Singapore/Hong Kong, English/Mandarin, BBA/MA, 52 countries, three continents, a Chinese-Portuguese Singaporean background and personal interests. These are source-repository facts, not newly independently verified claims.
+The homepage includes a two-image crossfade with gentle zoom, manual slide controls, pause/play, reduced-motion support, a rotating circular WL monogram, layered portraits, a statement section, gallery, editorial interests and a compact FAQ assistant. The logo is an editable vector in `public/assets/mark.svg`.
 
 ## Run
 
@@ -43,7 +43,7 @@ Build after editing content. Normal edits become deployment-free only when SIGNA
 
 ## Remaining stages
 
-**SIGNATURE-02:** authenticated four-area owner dashboard (Content, Photos, Assistant, Settings & Insights), one coordinated persisted draft, private preview, atomic publish and recoverable versions. Use separate client storage and credentials. Do not connect this client to Rebecca's runtime stores.
+**SIGNATURE-02:** authenticated four-area owner dashboard (Content, Photos, Assistant, Settings & Insights), one coordinated persisted draft, private preview, atomic publish and recoverable versions. Use separate client storage and credentials. Do not connect this client to reference project's runtime stores.
 
 **SIGNATURE-03:** server-side grounded AI, service limits and pause control, verified enquiry destination and spam controls, canonical URLs/sitemap/social previews after the final domain is known, configured basic insights. The current assistant is a deterministic local FAQ helper, not a live AI model.
 
