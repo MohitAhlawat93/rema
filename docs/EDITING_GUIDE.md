@@ -49,6 +49,16 @@ The public URL omits the `public` prefix. `public/images/gallery/portrait-01.web
 - Uploading a file alone does not display it: you must add the JSON entry too.
 - Remove old reference image entries when replacing them. Do not merely add new photographs after the references if you want the new photos in the hero/About.
 
+## Delete a photograph in GitHub
+
+1. First edit `data/gallery.json` and remove the complete object for that photograph.
+2. Open the matching file under `public/images/gallery/`.
+3. Select the three-dot menu and choose **Delete file** (or the trash icon when GitHub displays it).
+4. Write a short commit message such as `Remove portrait 07`, then commit directly to `main`.
+5. Do not rename all later files merely to close a numbering gap. Gaps such as `portrait-06.jpg` followed by `portrait-08.jpg` are safe; gallery order comes from `data/gallery.json`.
+
+Deleting only the file while leaving its JSON object will make the next build fail deliberately, protecting the public site from a broken image. GitHub keeps the deleted file in commit history, so it can be restored later.
+
 JSON uses double quotes and no trailing comma after the final item. The build checks local image paths so a misspelled filename fails deployment instead of publishing a broken photo.
 
 ## Assistant data today

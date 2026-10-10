@@ -1,34 +1,23 @@
 [
-  {
-    "src": "https://images.squarespace-cdn.com/content/v1/68806c9f433a21762c9e1a86/b1c39acf-72b5-4b36-b1c1-19a0f16ec17a/_DSC9687-copy.jpg?format=1000w",
-    "alt": "Reference model in a black dress beside a harbour-facing window",
-    "title": "By the window",
-    "category": "Reference portrait",
-    "hero": true,
-    "reference": true
-  },
-  {
-    "src": "https://images.squarespace-cdn.com/content/v1/68806c9f433a21762c9e1a86/cda55cdb-f75d-4069-b52b-2ef8da42da7f/_DSC9512-copy.jpg?format=1000w",
-    "alt": "Reference model in a black dress reclining on a circular sofa",
-    "title": "A different perspective",
-    "category": "Reference portrait",
-    "hero": true,
-    "reference": true
-  },
-  {
-    "src": "/assets/study-3.svg",
-    "alt": "Abstract rust-coloured arch and fine sweeping lines",
-    "title": "Quiet rhythm",
-    "category": "Art study",
-    "hero": false,
-    "reference": false
-  },
-  {
-    "src": "/assets/study-4.svg",
-    "alt": "Abstract muted olive ribbons and circular forms",
-    "title": "After the light",
-    "category": "Art study",
-    "hero": false,
-    "reference": false
-  }
+  { "src": "/images/gallery/portrait-01.jpg", "alt": "Mirror portrait of witness_lema_", "title": "Portrait 01", "category": "Portraits", "hero": true, "reference": false },
+  { "src": "/images/gallery/portrait-02.jpg", "alt": "Mirror portrait of witness_lema_", "title": "Portrait 02", "category": "Portraits", "hero": true, "reference": false },
+  { "src": "/images/gallery/portrait-03.jpg", "alt": "Seated portrait of witness_lema_", "title": "Portrait 03", "category": "Portraits", "hero": true, "reference": false },
+  { "src": "/images/gallery/portrait-04.jpg", "alt": "Indoor portrait of witness_lema_", "title": "Portrait 04", "category": "Portraits", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-05.jpg", "alt": "Full-length portrait of witness_lema_", "title": "Portrait 05", "category": "Portraits", "hero": true, "reference": false },
+  { "src": "/images/gallery/portrait-06.jpg", "alt": "Fashion portrait of witness_lema_", "title": "Portrait 06", "category": "Portraits", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-07.jpg", "alt": "Evening mirror portrait of witness_lema_", "title": "Portrait 07", "category": "Portraits", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-08.jpg", "alt": "Seated mirror portrait of witness_lema_", "title": "Portrait 08", "category": "Portraits", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-09.jpg", "alt": "Casual fashion portrait of witness_lema_", "title": "Portrait 09", "category": "Portraits", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-10.jpg", "alt": "Mirror portrait of witness_lema_", "title": "Portrait 10", "category": "Portraits", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-11.jpg", "alt": "Indoor portrait of witness_lema_", "title": "Portrait 11", "category": "Portraits", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-12.jpg", "alt": "Evening portrait of witness_lema_", "title": "Portrait 12", "category": "Portraits", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-13.jpg", "alt": "Relaxed portrait of witness_lema_", "title": "Portrait 13", "category": "Portraits", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-14.jpg", "alt": "Lifestyle portrait of witness_lema_", "title": "Portrait 14", "category": "Lifestyle", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-15.jpg", "alt": "Fashion portrait of witness_lema_", "title": "Portrait 15", "category": "Lifestyle", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-16.jpg", "alt": "Outdoor portrait of witness_lema_", "title": "Portrait 16", "category": "Lifestyle", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-17.jpg", "alt": "Indoor fashion portrait of witness_lema_", "title": "Portrait 17", "category": "Lifestyle", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-18.jpg", "alt": "Personal portrait of witness_lema_", "title": "Portrait 18", "category": "Portraits", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-19.jpg", "alt": "Personal portrait of witness_lema_", "title": "Portrait 19", "category": "Portraits", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-20.jpg", "alt": "Smiling portrait of witness_lema_", "title": "Portrait 20", "category": "Portraits", "hero": false, "reference": false },
+  { "src": "/images/gallery/portrait-21.jpg", "alt": "Silhouette portrait of witness_lema_", "title": "Portrait 21", "category": "Portraits", "hero": false, "reference": false }
 ]

@@ -8,9 +8,9 @@ import { createSessionToken, verifySessionToken, adminAuthConfigured, parseCooki
 import { validateOwnerWriteOrigin } from '../lib/admin-origin-guard.js';
 
 test('FAQ answers are sourced from the published model and unknowns are explicit',()=>{
- assert.equal(answerQuestion('How can I contact witness_lema_?',site.faqs).answer,site.faqs[1].answer);
- assert.match(answerQuestion('Tell me her private address',site.faqs).answer,/don’t have a confirmed answer/);
- assert.match(answerQuestion('What photos are these?',site.faqs).answer,/reference|abstract/i);
+ assert.equal(answerQuestion('How can I get in touch with her?',site.faqs).answer,site.faqs[1].answer);
+ assert.match(answerQuestion('zqxjv unrelated question',site.faqs).answer,/published website information/);
+ assert.equal(answerQuestion('Are the photos real?',site.faqs).answer,site.faqs[2].answer);
 });
 test('imported owner authentication fails closed, rejects tampering and invalidates rotated credentials',()=>{
  delete process.env.SIGNATURE_SESSION_SECRET;assert.equal(adminAuthConfigured(),false);assert.equal(verifySessionToken('bad'),null);
