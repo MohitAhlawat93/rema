@@ -9,8 +9,8 @@ const launcher=$('#assistant-launch'),panel=$('#assistant-panel'),question=$('#q
 function setAssistant(open) { panel.hidden=!open;launcher.hidden=open;launcher.setAttribute('aria-expanded',String(open));(open?question:launcher).focus(); }
 launcher.addEventListener('click',()=>setAssistant(true));$('#assistant-minimize').addEventListener('click',()=>setAssistant(false));
 function bubble(text, user=false, href='') {const p=document.createElement('p');p.className='bubble'+(user?' user':'');p.textContent=text;if(href){const a=document.createElement('a');a.href=href;a.textContent='Explore this page ↗';p.append(a);}messages.append(p);while(messages.children.length>40)messages.firstElementChild.remove();messages.scrollTop=messages.scrollHeight;}
-function ask(text) {if(!text.trim())return;bubble(text,true);const answer=answerQuestion(text,site.faqs);bubble(answer.answer,false,answer.href);question.value='';}
-$('#assistant-form').addEventListener('submit',e=>{e.preventDefault();ask(question.value);});
+async function ask(text) {const clean=text.trim();if(!clean)return;bubble(clean,true);question.value='';question.disabled=true;try{const response=await fetch('/api/assistant',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:clean})});if(!response.ok)throw new Error('Assistant unavailable');const answer=await response.json();bubble(answer.answer,false,answer.href);}catch{const answer=answerQuestion(clean,site.faqs);bubble(answer.answer,false,answer.href);}finally{question.disabled=false;question.focus();}}
+$('#assistant-form').addEventListener('submit',e=>{e.preventDefault();void ask(question.value);});
 document.querySelectorAll('[data-question]').forEach(b=>b.addEventListener('click',()=>ask(b.dataset.question)));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(menu.getAttribute('aria-expanded')==='true'){setMenu(false);menu.focus();}if(!panel.hidden)setAssistant(false);}});
 // Adapted from witness_lema_'s gallery stepping/focus-return flow; native dialog adds focus containment.
@@ -35,6 +35,10 @@ const hero=$('.cinematic-hero');
 $('.slide-controls')?.addEventListener('mouseenter',()=>{hovered=true;scheduleSlides();});$('.slide-controls')?.addEventListener('mouseleave',()=>{hovered=false;scheduleSlides();});
 hero?.addEventListener('focusin',()=>{focused=true;scheduleSlides();});hero?.addEventListener('focusout',e=>{focused=hero.contains(e.relatedTarget);scheduleSlides();});
 document.addEventListener('visibilitychange',scheduleSlides);reduced.addEventListener('change',()=>{paused=reduced.matches;scheduleSlides();});scheduleSlides();
+// About portraits rotate automatically, while respecting reduced-motion preferences.
+const aboutSlides=[...document.querySelectorAll('.about-slide')];let aboutIndex=0;
+function showAboutSlide(next){aboutIndex=next;aboutSlides.forEach((slide,i)=>{const active=i===next;slide.classList.toggle('active',active);slide.setAttribute('aria-hidden',String(!active));});}
+if(aboutSlides.length>1&&!reduced.matches)setInterval(()=>{if(!document.hidden)showAboutSlide((aboutIndex+1)%aboutSlides.length);},4500);
 document.querySelectorAll('[data-open-assistant]').forEach(b=>b.addEventListener('click',()=>setAssistant(true)));
 if('IntersectionObserver' in window&&!reduced.matches){const observer=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('in-view');observer.unobserve(entry.target);}});},{threshold:.08});document.querySelectorAll('.intro-editorial,.section-head,.work-row,.statement-band p').forEach(el=>{el.classList.add('reveal-ready');observer.observe(el);});}
 const backTop=document.createElement('button');backTop.className='back-top';backTop.textContent='↑';backTop.setAttribute('aria-label','Back to top');backTop.hidden=true;document.body.append(backTop);window.addEventListener('scroll',()=>{backTop.hidden=window.scrollY<700;},{passive:true});backTop.addEventListener('click',()=>window.scrollTo({top:0,behavior:reduced.matches?'instant':'smooth'}));

@@ -8,5 +8,8 @@
 /* Services */
 .service-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(26px,4vw,58px);padding-top:20px}.service-card{background:#ebe3d8;display:grid;grid-template-columns:minmax(180px,.8fr) 1fr;min-height:390px}.service-card>img{height:100%;min-height:390px;object-position:center;filter:saturate(.86)}.service-card-copy{padding:clamp(28px,4vw,56px);display:flex;flex-direction:column;align-items:flex-start}.service-card-copy .index{margin-bottom:auto}.service-card-copy h2{font-size:clamp(30px,3vw,46px);margin:35px 0 16px}.service-card-copy p{font-size:13px}.service-card-copy .tag{margin-top:auto;border-top:1px solid var(--line);width:100%;padding-top:15px}@media(max-width:1000px){.service-grid{grid-template-columns:1fr}.service-card{min-height:340px}}@media(max-width:600px){.service-card{grid-template-columns:1fr}.service-card>img{height:340px;min-height:0}.service-card-copy{min-height:300px}.service-card-copy h2{margin-top:26px}}
 
-/* Keep complete hero portraits visible instead of cropping them. */
-.hero-background img{object-fit:contain;object-position:right center;transform:none;transition:opacity 1.5s ease}.hero-background img.active{transform:none}@media(max-width:600px){.hero-background img{object-position:center center}}
+/* Restore the original full-bleed cinematic hero treatment. */
+.hero-background img{object-fit:cover;object-position:65% 45%;transform:scale(1.04);transition:opacity 1.5s ease,transform 7s linear}.hero-background img.active{transform:scale(1)}
+.about-rotator{position:relative;aspect-ratio:4/5;overflow:hidden;background:#e8e3d9}.about-rotator .about-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.025);transition:opacity 1.2s ease,transform 5s linear}.about-rotator .about-slide.active{opacity:1;transform:scale(1)}
+@media(max-width:600px){.hero-background img{object-position:55% 45%}}
+@media(prefers-reduced-motion:reduce){.about-rotator .about-slide{transition:none;transform:none}}

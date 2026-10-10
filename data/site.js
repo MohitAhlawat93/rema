@@ -27,6 +27,13 @@ export const site = {
     paragraphs: []
   },
 
+  // About-page slideshow. Use any three paths from public/images/gallery/.
+  aboutImages: [
+    '/images/gallery/portrait-20.jpg',
+    '/images/gallery/portrait-17.jpg',
+    '/images/gallery/portrait-15.jpg'
+  ],
+
   profileFacts: [],
 
   services: [
