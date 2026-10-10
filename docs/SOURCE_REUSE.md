@@ -10,7 +10,9 @@ Source: `MohitAhlawat93/rebecca_project` at commit `084f247cf462d6a005a07a81beef
 | `lib/admin-origin-guard.js` | Reused same-origin write validation |
 | Canonical data pattern | New public content model shared by prerendered pages and FAQ answers |
 
-Excluded: Rebecca-specific content and photo archives, rates, booking/screening flows, travel, multilingual pages, journals, press, growth automation, separate publishing stores, credentials, deployment links and Git history.
+Included content: selected neutral public profile facts and interests from `data/rebecca-data.js`, plus the fully clothed `_DSC9687-copy.jpg` portrait from `data/rebecca-images.js`. Three abstract studies remain as clearly labelled artwork.
+
+Excluded: rates, paid sexual-service booking/screening flows, live contact destinations, explicit image archives, tour booking, multilingual pages, growth automation, separate publishing stores, credentials, deployment links and Git history.
 
 A new repository was already empty. Selective extraction avoids carrying Rebecca's client-specific state and large coupled admin system into the middle tier. The original repository was read only and remains unchanged.
 

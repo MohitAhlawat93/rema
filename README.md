@@ -1,6 +1,6 @@
-# Élanora Signature — Anora demonstration
+# Élrebecca Signature — Rebecca demonstration
 
-A middle-tier personal portfolio built selectively from the Rebecca project’s neutral design and interaction patterns. Target repository: `MohitAhlawat93/rema`. No Anora repository code was used.
+A middle-tier personal portfolio built selectively from the Rebecca project’s neutral design and interaction patterns. Target repository: `MohitAhlawat93/rema`. The only source project is Rebecca; the template can later be adapted for other clients.
 
 ## Current delivery: SIGNATURE-01
 
@@ -12,7 +12,9 @@ A middle-tier personal portfolio built selectively from the Rebecca project’s 
 - Privacy page, 404, security headers and deliberately disabled indexing.
 - Isolated authentication/origin helpers adapted from Rebecca, tested but **not connected to an admin endpoint**.
 
-This is a design demo, not a production launch. Abstract local SVG studies are explicitly labelled placeholders. No Rebecca photographs, biography, rates, contacts, credentials or database configuration were copied. Personal biography, approved photos, professional offerings and contact destinations still need verified owner content. Sample copy does not represent confirmed facts about Anora.
+This is a design demo, not a production launch. It uses Rebecca’s neutral public biography, interests and one reviewed fully clothed portrait from the source repository. Three abstract SVG studies remain labelled artwork. No service rates, paid sexual-service booking/screening flows, live contact destinations, credentials or database configuration were copied. The Contact form is an unsent general-message composer.
+
+The source profile snapshot describes Singapore/Hong Kong, English/Mandarin, BBA/MA, 52 countries, three continents, a Chinese-Portuguese Singaporean background and personal interests. These are source-repository facts, not newly independently verified claims.
 
 ## Run
 
@@ -30,7 +32,7 @@ Open `http://127.0.0.1:3000`. On Vercel use the supplied build command and `dist
 
 | Content | File |
 | --- | --- |
-| Profile, sample offerings, image metadata, FAQs | `data/site.js` |
+| Profile, interests, image metadata, FAQs | `data/site.js` |
 | Page composition and shared shell | `scripts/build.mjs` |
 | Design and responsive behaviour | `public/styles.css` |
 | Gallery, navigation, FAQ and enquiry UI | `public/app.js` |
