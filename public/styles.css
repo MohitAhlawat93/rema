@@ -208,3 +208,58 @@
     transform: none;
   }
 }
+
+/* Mobile concierge: stable sheet, balanced launchers, quick compositor animation. */
+@keyframes lema-chat-quick-open {
+ from { opacity: 0; transform: translate3d(0, 10px, 0) scale(.985); }
+ to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+#assistant-panel.open { animation: lema-chat-quick-open .19s cubic-bezier(.2,.8,.2,1) both; }
+#assistant-panel #messages .bubble.pending::after { content: '…'; display: inline-block; animation: lema-chat-wait 1s ease-in-out infinite; }
+@keyframes lema-chat-wait { 0%,100% { opacity:.3; } 50% { opacity:1; } }
+@media (max-width: 640px) {
+ body.chat-visible { overflow: hidden; }
+ #assistant-launch {
+   right: 10px;
+   bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+   max-width: calc(50vw - 12px);
+   min-height: 44px;
+   padding: 9px 10px;
+   gap: 5px;
+   white-space: nowrap;
+ }
+ #assistant-launch span { margin-right: 0; font-size: 18px; }
+ #afterhours-launch {
+   left: 10px;
+   bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+   max-width: calc(50vw - 14px);
+   min-height: 44px;
+   padding: 8px 10px;
+   gap: 7px;
+ }
+ #afterhours-launch .afterhours-star { width: 26px; height: 26px; flex-shrink: 0; }
+ #afterhours-launch strong { font-size: 15px; }
+ #afterhours-launch small { font-size: 8px; }
+ #assistant-panel:not(.expanded) {
+   left: auto;
+   right: 12px;
+   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+   width: min(344px, calc(100vw - 24px));
+   height: min(410px, calc(100dvh - 38px));
+   max-height: calc(100dvh - 38px);
+   border-radius: 16px;
+ }
+ #assistant-panel.expanded {
+   left: 8px;
+   right: 8px;
+   bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+   width: auto;
+   height: calc(100dvh - 24px);
+   max-height: calc(100dvh - 24px);
+   border-radius: 15px;
+ }
+ #assistant-panel #assistant-form input { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+ #assistant-panel.open, #assistant-panel #messages .bubble.pending::after { animation: none; }
+}
