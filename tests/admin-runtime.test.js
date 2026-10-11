@@ -34,11 +34,11 @@ function dashboard({seoAvailable=true}={}){
   if(!elements.has(selector))elements.set(selector,new FakeElement());
   return elements.get(selector);
  };
- const tabs=['overview','profile','services','photos','assistant','seo'].map(tab=>new FakeElement({tab}));
+ const tabs=['overview','profile','services','photos','assistant','links','reviews','seo'].map(tab=>new FakeElement({tab}));
  const panels=tabs.map(item=>new FakeElement({panel:item.dataset.tab}));
  const fields=['title','description','heading','image'].map(seoField=>new FakeElement({seoField}));
  const paragraphs=[0,1].map(seoParagraph=>new FakeElement({seoParagraph:String(seoParagraph)}));
- const saves=[new FakeElement(),new FakeElement()];
+ const saves=Array.from({length:8},()=>new FakeElement());
  const lists={
   '[data-tab]':tabs,'[data-panel]':panels,
   '[data-seo-field]':fields,'[data-seo-paragraph]':paragraphs,'[data-save]':saves
@@ -57,7 +57,7 @@ function dashboard({seoAvailable=true}={}){
   version:1,publishedVersion:1,history:[]
  };
  const fetch=async(url,options={})=>{
-  calls.push({url,method:options.method||'GET'});
+  calls.push({url,method:options.method||'GET',body:options.body});
   let data={},ok=true;
   if(url==='/api/admin/session')data={state};
   else if(url==='/api/admin/knowledge')data={items:[]};
@@ -149,4 +149,40 @@ test('backend distinguishes save from publish and gives precise client-safe erro
  assert.match(edge,/if\(action==='publish'\)\{[\s\S]*?const current=await rpc\('witness_lema_admin_state'/);
  assert.match(backend,/statusCode: 409/);
  assert.match(route,/\[400,409,413\]/);
+});
+
+test('all admin Save Draft controls persist changes from their sections',async()=>{
+ const ui=dashboard();
+ await initialized(ui);
+ assert.equal(ui.saves.length,8);
+ for(let index=0;index<ui.saves.length;index++){
+  ui.state.draft.hero={...ui.state.draft.hero,title:'Updated heading '+index};
+  ui.state.draft.about={title:'About '+index,heading:'Heading '+index,text:'Biography '+index};
+  ui.state.draft.services=[{title:'Service '+index,text:'Service details '+index}];
+  ui.state.draft.afterhours={enabled:true,title:'Afterhours '+index,intro:'Intro',links:[]};
+  ui.state.draft.contactLinks=[];
+  ui.state.draft.reviews=[];
+  await ui.saves[index].onclick();
+  assert.match(ui.element('[data-notice]').textContent,/Draft saved privately/,'save control '+index+' must persist');
+  const saved=ui.calls.filter(x=>x.url==='/api/admin/state'&&x.method==='PUT').at(-1);
+  const payload=JSON.parse(saved.body);
+  assert.equal(payload.state.hero.title,'Updated heading '+index);
+  assert.equal(payload.state.about.heading,'Heading '+index);
+  assert.equal(payload.state.services[0].title,'Service '+index);
+  assert.equal(payload.state.afterhours.title,'Afterhours '+index);
+ }
+ assert.equal(ui.calls.filter(x=>x.method==='PUT'&&x.url==='/api/admin/state').length,8);
+});
+test('every indexed page has an independently editable and savable SEO draft',async()=>{
+ const ui=dashboard();
+ await initialized(ui);
+ const picker=ui.element('[data-seo-page]');
+ for(const route of routes){
+  picker.value=route;picker.onchange({target:picker});
+  ui.fields[0].value='Useful updated owner title '+route;
+  ui.fields[0].oninput();
+  await ui.saves[6].onclick();
+  assert.equal(ui.state.draft.seo.pages[route].title,'Useful updated owner title '+route);
+  assert.match(ui.element('[data-notice]').textContent,/Draft saved privately/);
+ }
 });
