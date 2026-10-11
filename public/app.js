@@ -49,6 +49,7 @@ function hydrateBusiness(){
     document.querySelectorAll('[data-business-logo]').forEach(el=>{el.src=logo;el.alt=name+' logo';});
     const icon=document.querySelector('[data-business-icon]');if(icon)icon.href=logo;
   }
+  document.querySelectorAll('[data-business-city]').forEach(el=>{el.textContent='Service location: '+(b.city||'');});
   const slot=document.querySelector('[data-business-email-slot]');
   if(slot){
     slot.replaceChildren();
