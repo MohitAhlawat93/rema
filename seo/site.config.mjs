@@ -27,6 +27,11 @@ const pages = {
     description: 'Contact Witness Lema directly on WhatsApp for private meetings in Gurgaon. Independent Kenyan companion — discreet and responsive.',
     index: true, image: '/images/gallery/portrait-03.jpg'
   },
+  '/reviews/': {
+    title: 'Guest Reviews | Witness Lema Gurgaon',
+    description: 'Read genuine visitor-submitted reviews of Witness Lema and share your own experience in English or Hindi. Reviews are published by their authors.',
+    index: true, image: '/images/gallery/portrait-01.jpg'
+  },
   '/privacy/': {
     title: 'Privacy Notice | Witness Lema',
     description: 'How the Witness Lema website handles enquiries and third-party services.',

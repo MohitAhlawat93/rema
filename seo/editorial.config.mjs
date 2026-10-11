@@ -49,6 +49,17 @@ export default {
       {href: '/about/', label: 'About Witness Lema'}
     ]
   },
+  '/reviews/': {
+    heading: 'Visitor reviews and feedback',
+    paragraphs: [
+      'This page displays reviews submitted by visitors about their own experiences. Reviewers choose the name or alias they want shown and consent to publication before submitting feedback in English or Hindi.',
+      'Reviews appear without prior owner approval. The website owner can remove spam or inappropriate entries. If you wish to share feedback, use the form on this page. No ratings or endorsements are invented for search engines.'
+    ],
+    links: [
+      {href: '/about/', label: 'Learn about Witness Lema'},
+      {href: '/contact/', label: 'Contact Witness Lema'}
+    ]
+  },
   '/contact/': {
     heading: 'How to reach Witness Lema',
     paragraphs: [

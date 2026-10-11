@@ -15,7 +15,7 @@ class FakeElement{
  focus(){}
  querySelectorAll(){return [];}
 }
-const routes=['/','/about/','/gallery/','/services/','/contact/'];
+const routes=['/','/about/','/gallery/','/services/','/contact/','/reviews/'];
 const defaults={pages:Object.fromEntries(routes.map(route=>[route,{
  title:'A useful and descriptive Witness Lema page title',
  description:'A factual summary of this page with enough meaningful information to help real visitors find the relevant content.',

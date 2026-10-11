@@ -9,8 +9,8 @@ const defaults=Object.fromEntries(SEO_ROUTES.map(route=>[route,{
   ...config.pages[route],heading:editorial[route].heading,paragraphs:editorial[route].paragraphs,links:editorial[route].links
 }]));
 
-test('SEO editor defaults cover exactly five meaningful public pages',()=>{
- assert.equal(SEO_ROUTES.length,5);
+test('SEO editor defaults cover all six meaningful public pages',()=>{
+ assert.equal(SEO_ROUTES.length,6);
  for(const route of SEO_ROUTES){
   const p=cleanSEOPage(null,route,defaults[route]);
   assert.equal(p.title,config.pages[route].title);
@@ -70,4 +70,44 @@ test('Dynamic sitemaps reflect published index choices',()=>{
  const images=imageSitemap(pages,{images:photos,aboutImages:[photos[0].src]},origin);
  assert.ok(images.includes('portrait-01.jpg'));
  assert.ok(!images.includes('/gallery/</loc>'));
+});
+
+test('Reviews publishes real SEO metadata, index flags and sitemap presence',()=>{
+ const review=defaults['/reviews/'];
+ assert.ok(review);
+ assert.match(review.title,/Reviews/);
+ assert.equal(review.index,true);
+ const edited={...review,title:'Published authentic guest reviews at Witness Lema',
+  description:'Visitors can read published reviews and submit their own genuine feedback about Witness Lema in either English or Hindi.',
+  heading:'What our visitors have shared about their experiences',
+  paragraphs:['Read published visitor feedback and share a review in your own words with the display name you approve.'],links:[{href:'/contact/',label:'Contact Witness Lema'}],index:true};
+ const template='<html><head><title>Old</title><meta name="description" content="old"><meta name="robots" content="noindex">'+
+ '<meta property="og:title" content="old"><meta property="og:description" content="old"><meta property="og:image" content="old">'+
+ '<meta name="twitter:title" content="old"><meta name="twitter:description" content="old"><meta name="twitter:image" content="old">'+
+ '<script type="application/ld+json">'+JSON.stringify({'@context':'https://schema.org','@graph':[{'@type':'WebPage'}]})+'</script>'+
+ '</head><body><main><section class="seo-editorial" aria-label="Further information"><h2>Old</h2></section></main></body></html>';
+ const page=cleanSEOPage(edited,'/reviews/',review);
+ const html=renderLivePage(template,'/reviews/',page,{},origin,true);
+ assert.match(html,/<title>Published authentic guest reviews at Witness Lema<\/title>/);
+ assert.match(html,/Read published visitor feedback/);
+ assert.match(html,/index, follow/);
+ const pages=Object.fromEntries(SEO_ROUTES.map(r=>[r,cleanSEOPage(null,r,defaults[r])]));
+ pages['/reviews/']=page;
+ assert.ok(xmlSitemap(pages,origin).includes('<loc>'+origin+'/reviews/</loc>'));
+ pages['/reviews/']={...page,index:false};
+ assert.ok(!xmlSitemap(pages,origin).includes('<loc>'+origin+'/reviews/</loc>'));
+ assert.match(renderLivePage(template,'/reviews/',pages['/reviews/'],{},origin,true),/noindex, nofollow/);
+ assert.doesNotMatch(html,/"@type":"AggregateRating"/);
+});
+
+test('published Reviews SEO never invents structured ratings or fake testimonials',()=>{
+ const base=defaults['/reviews/'];
+ const entry=cleanSEOPage({title:'Verified title for actual reader reviews',
+ description:'Review the genuine, visitor-submitted feedback shown by this website, and submit your own experience in either English or Hindi.',
+ heading:'Read reviews from visitors to the website',
+ paragraphs:['This page shows the real entries published by visitors and lets anyone submit feedback they wrote themselves.'],
+ links:[{href:'/about/',label:'Read about Lema'}],index:false},'/reviews/',base);
+ assert.equal(entry.index,false);
+ const sitemap=xmlSitemap(Object.fromEntries(SEO_ROUTES.map(r=>[r,r==='/reviews/'?entry:defaults[r]])),origin);
+ assert.ok(!sitemap.includes('/reviews/</loc>'));
 });

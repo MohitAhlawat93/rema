@@ -87,8 +87,8 @@ Deno.serve(async(req)=>{
       // Owner-edited SEO must have a known public route and safe, truthful data.
       if(payload.seo!==undefined){
         const pages=payload.seo?.pages;
-        const routes=new Set(['/','/about/','/gallery/','/services/','/contact/']);
-        if(!pages||typeof pages!=='object'||Array.isArray(pages)||Object.keys(pages).length!==5)return json({error:'SEO must contain the five public pages.'},400);
+        const routes=new Set(['/','/about/','/gallery/','/services/','/contact/','/reviews/']);
+        if(!pages||typeof pages!=='object'||Array.isArray(pages)||Object.keys(pages).length!==6)return json({error:'SEO must contain the six public pages.'},400);
         const allowedImage=(image)=>typeof image==='string'&&image.length<=2048&&(
           (/^\/images\/[a-z0-9_./-]+\.(?:jpe?g|png|webp)$/i.test(image)&&!image.includes('..'))||
           image.startsWith(SUPABASE_URL+'/storage/v1/object/public/witness-lema-gallery/')

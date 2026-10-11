@@ -44,7 +44,7 @@ test('private preview follows internal page links but never external, admin, or 
  assert.match(app,/document\.addEventListener\('click',event=>/);
 });
 test('all editable public routes read one published content model',()=>{
- assert.deepEqual(CONTENT_ROUTES,[...SEO_ROUTES,'/reviews/','/privacy/']);
+ assert.deepEqual(CONTENT_ROUTES,[...SEO_ROUTES,'/privacy/']);
  for(const route of CONTENT_ROUTES){
   const out=renderLivePage(shell,route,SEO_ROUTES.includes(route)?seo:null,payload,url,true,supa);
   assert.match(out,/Updated contact/,'contact links missing on '+route);
@@ -98,7 +98,7 @@ test('templates include all content routes without broadening indexable SEO page
  ]);
  assert.match(middleware,/CONTENT_ROUTES/);
  assert.match(middleware,/reviews\/.*privacy\//);
- assert.match(builder,/for\(const route of \['\/reviews\/','\/privacy\/'\]\)/);
+ assert.match(builder,/for\(const route of \['\/privacy\/'\]\)/);
  assert.match(siteAPI,/'no-store'/);
  assert.match(middleware,/cache-control':'no-store'/);
 });

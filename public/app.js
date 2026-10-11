@@ -1,4 +1,5 @@
 import { site } from './data/site.js';
+import { officialWhatsAppUrl, whatsappEnquiryUrl, formatEnquiry } from './lib/contact.js';
 // Live chat stays helpful without falling back to an unrelated FAQ match.
 const $ = s => document.querySelector(s);
 const html = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -114,16 +115,19 @@ nav.addEventListener('click',()=>setMenu(false));
 const launcher=$('#assistant-launch'),panel=$('#assistant-panel'),question=$('#question'),messages=$('#messages');
 const chatHistory=[];
 function setAssistant(open,focus=true){panel.hidden=!open;launcher.hidden=open;launcher.setAttribute('aria-expanded',String(open));panel.setAttribute('aria-hidden',String(!open));panel.classList.toggle('open',open);if(focus)(open?question:launcher).focus();}
-const autoChatKey='lema-concierge-first-visit-v2';
+const autoChatKey='lema-concierge-first-visit-v3';
 const chatSeen=()=>{try{return sessionStorage.getItem(autoChatKey)==='1';}catch{return false;}};
 const markChatSeen=()=>{try{sessionStorage.setItem(autoChatKey,'1');}catch{}};
+let autoChatReady=false;
+function attemptAutoChat(){
+  if(!autoChatReady||chatSeen()||!panel.hidden)return;
+  if(document.hidden||!$('#afterhours-backdrop').hidden)return;
+  markChatSeen();
+  setAssistant(true,false); // Never steal keyboard focus on automatic open.
+}
 launcher.addEventListener('click',()=>{markChatSeen();setAssistant(true);});
-// Open once per browser session after the visitor can see the page; avoid
-// re-opening after dismissal and avoid stealing keyboard focus automatically.
-if(!chatSeen())window.setTimeout(()=>{
-  if(!panel.hidden||document.hidden||!$('#afterhours-backdrop').hidden)return;
-  markChatSeen();setAssistant(true,false);
-},1600);
+if(!chatSeen())window.setTimeout(()=>{autoChatReady=true;attemptAutoChat();},1500);
+document.addEventListener('visibilitychange',attemptAutoChat);
 $('#assistant-minimize').addEventListener('click',()=>setAssistant(false));
 $('#assistant-expand').addEventListener('click',()=>{const expanded=panel.classList.toggle('expanded');$('#assistant-expand').setAttribute('aria-pressed',String(expanded));$('#assistant-expand').setAttribute('aria-label',expanded?'Shrink chat':'Expand chat');question.focus();});
 function bubble(text,user=false,href=''){const p=document.createElement('p');p.className='bubble'+(user?' user':'');p.textContent=String(text||'');if(href&&/^\/(?:[\w/-]*)$/.test(href)){const a=document.createElement('a');a.href=href;a.textContent='Explore this page ↗';p.append(a);}messages.append(p);while(messages.children.length>40)messages.firstElementChild.remove();messages.scrollTop=messages.scrollHeight;return p;}
@@ -150,7 +154,7 @@ async function ask(text){
 $('#assistant-form').addEventListener('submit',e=>{e.preventDefault();void ask(question.value);});
 document.querySelectorAll('[data-question]').forEach(b=>b.addEventListener('click',()=>ask(b.dataset.question)));
 const afterhoursLaunch=$('#afterhours-launch'),afterhoursBackdrop=$('#afterhours-backdrop'),afterhoursClose=$('#afterhours-close');
-function setAfterhours(open){if(open&&afterhoursLaunch.hidden)return;afterhoursBackdrop.hidden=!open;afterhoursLaunch.setAttribute('aria-expanded',String(open));document.body.classList.toggle('afterhours-visible',open);(open?afterhoursClose:afterhoursLaunch).focus();}
+function setAfterhours(open){if(open&&afterhoursLaunch.hidden)return;afterhoursBackdrop.hidden=!open;afterhoursLaunch.setAttribute('aria-expanded',String(open));document.body.classList.toggle('afterhours-visible',open);(open?afterhoursClose:afterhoursLaunch).focus();if(!open)attemptAutoChat();}
 afterhoursLaunch.addEventListener('click',()=>setAfterhours(true));
 afterhoursClose.addEventListener('click',()=>setAfterhours(false));
 afterhoursBackdrop.addEventListener('click',event=>{if(event.target===afterhoursBackdrop)setAfterhours(false);});
@@ -185,7 +189,47 @@ $('#review-form')?.addEventListener('submit',async event=>{
   }catch(error){status.textContent=error.message||'Could not submit the review.';}
   finally{submit.disabled=false;}
 });
-$('#enquiry')?.addEventListener('submit',async e=>{e.preventDefault();const d=new FormData(e.target);const text=`Hello witness_lema_,\n\nName: ${d.get('name')}\nEmail: ${d.get('email')}\nProject: ${d.get('type')}\nPreferred date: ${d.get('date')||'Flexible'}\n\n${d.get('message')}`;try{await navigator.clipboard.writeText(text);$('#form-status').textContent='Enquiry copied. Nothing has been sent. Paste it into WhatsApp or your preferred contact channel.';$('#copy-fallback').hidden=true;}catch{$('#copy-fallback').value=text;$('#copy-fallback').hidden=false;$('#copy-fallback').focus();$('#copy-fallback').select();$('#form-status').textContent='Your browser blocked automatic copying. Select and copy the prepared enquiry below. Nothing has been sent.';}});
+// Contact details come from owner-managed published settings.
+const contactWhatsApp=()=>officialWhatsAppUrl(site.contactLinks,site.social);
+const composeContactMessage=form=>formatEnquiry(Object.fromEntries(new FormData(form).entries()));
+const directWhatsApp=$('[data-whatsapp-direct]');
+function refreshContactAction(){
+ const base=contactWhatsApp();
+ if(directWhatsApp){directWhatsApp.hidden=!base;directWhatsApp.href=base||'#';}
+ const send=$('[data-whatsapp-send]');
+ if(send){send.hidden=!base;send.disabled=!base;}
+ const fallback=$('[data-whatsapp-unavailable]');
+ if(fallback)fallback.hidden=Boolean(base);
+}
+refreshContactAction();
+$('#enquiry')?.addEventListener('submit',event=>{
+ event.preventDefault();
+ const form=event.currentTarget;
+ if(!form.reportValidity())return;
+ const href=whatsappEnquiryUrl(contactWhatsApp(),composeContactMessage(form));
+ const status=$('#form-status'),manual=$('[data-whatsapp-manual]');
+ if(!href){
+   status.textContent='No valid official WhatsApp contact is configured. Use Copy message, or a contact link above.';
+   return;
+ }
+ manual.href=href;manual.hidden=false;
+ window.open(href,'_blank','noopener,noreferrer'); // User gesture; does not send.
+ status.textContent='WhatsApp has opened with your message ready. Review it and tap Send there. Nothing was sent automatically. If it did not open, use the link below.';
+});
+$('[data-copy-enquiry]')?.addEventListener('click',async()=>{
+ const form=$('#enquiry'),status=$('#form-status');
+ if(!form.reportValidity())return;
+ const message=composeContactMessage(form);
+ try{
+  await navigator.clipboard.writeText(message);
+  status.textContent='Message copied. Paste it into your preferred contact app to send.';
+  $('#copy-fallback').hidden=true;
+ }catch{
+  const fallback=$('#copy-fallback');
+  fallback.value=message;fallback.hidden=false;fallback.focus();fallback.select();
+  status.textContent='Select and copy the prepared message below. Nothing has been sent.';
+ }
+});
 // Hero rotation pauses on request, hidden tabs, focus, hover and reduced motion.
 const slides=[...document.querySelectorAll('.hero-slide')];
 const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');

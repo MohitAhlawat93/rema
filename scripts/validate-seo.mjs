@@ -57,7 +57,7 @@ assert.ok(home.includes('<link rel="preload" as="image"'), 'Homepage primary her
 assert.ok(home.includes('fetchpriority="low"'), 'Secondary hero images should use low priority');
 assert.ok(home.includes('decoding="async"'), 'Gallery should decode images asynchronously');
 if(config.indexingEnabled){
-  assert.equal(indexed,5);
+  assert.equal(indexed,6);
   assert.match(robots,/Sitemap: .*\/sitemap\.xml/);
   assert.match(images,/<image:image>/);
   assert.doesNotMatch(robots,/Disallow: \/$/m);

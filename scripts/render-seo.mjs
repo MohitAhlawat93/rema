@@ -125,7 +125,7 @@ for (const route of ['/', '/about/', '/gallery/']) {
   imageRows.push('  <url><loc>'+escapeXML(absolute(route))+'</loc>'+urls.map(src=>'<image:image><image:loc>'+escapeXML(absolute(src))+'</image:loc></image:image>').join('')+'</url>');
 }
 await writeFile(path.join(root,'image-sitemap.xml'),'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n'+imageRows.join('\n')+'\n</urlset>\n');
-const editableRoutes=['/','/about/','/gallery/','/services/','/contact/'];
+const editableRoutes=['/','/about/','/gallery/','/services/','/contact/','/reviews/'];
 const defaults=Object.fromEntries(editableRoutes.map(route=>[route,{
   title:config.pages[route].title,
   description:config.pages[route].description,
@@ -144,9 +144,9 @@ for(const route of editableRoutes){
   await mkdir(folder,{recursive:true});
   await cp(path.join(root,route==='/'?'index.html':route.slice(1)+'index.html'),path.join(folder,'index.html'));
 }
-// Reviews and Privacy also use the published server-side content model.
-// They remain noindex and are deliberately absent from owner SEO controls.
-for(const route of ['/reviews/','/privacy/']){
+// Privacy remains private-to-the-SEO-editor and deliberately noindex.
+// Reviews now uses the editable SEO template path above.
+for(const route of ['/privacy/']){
   const folder=path.join(root,'_seo_templates',route.slice(1,-1));
   await mkdir(folder,{recursive:true});
   await cp(path.join(root,route.slice(1)+'index.html'),path.join(folder,'index.html'));

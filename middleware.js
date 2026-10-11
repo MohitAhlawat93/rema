@@ -61,6 +61,6 @@ export default async function middleware(req){
  const html=renderLivePage(raw,pathname,pages[pathname]||null,publishedForPage,canonical,production,supa);
  const h=cacheHeaders('text/html; charset=utf-8');
  if(new URL(req.url).searchParams.get('admin_preview')==='1')h['x-robots-tag']='noindex, nofollow';
- if(!production||!SEO_ROUTES.includes(pathname)||!pages[pathname]?.index)h['x-robots-tag']='noindex, nofollow';
+ if(!production||!pages[pathname]?.index)h['x-robots-tag']='noindex, nofollow';
  return new Response(req.method==='HEAD'?null:html,{status:200,headers:h});
 }

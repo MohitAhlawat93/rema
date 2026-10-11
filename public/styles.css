@@ -118,3 +118,33 @@
 #review-form button:disabled{opacity:.6;cursor:wait}
 #review-form-status{min-height:1.5em;line-height:1.6}
 @media(max-width:760px){.review-submit{grid-template-columns:1fr;margin-top:30px;padding-top:28px;gap:20px}}
+
+/* Compact automatic concierge: unobtrusive on desktop and mobile. */
+#assistant-panel:not(.expanded){width:min(306px,calc(100vw - 24px));height:min(358px,calc(100dvh - 95px));max-height:calc(100dvh - 95px)}
+#assistant-panel.expanded{width:min(540px,calc(100vw - 24px));height:min(580px,calc(100dvh - 42px))}
+#assistant-panel .assistant-head{padding:9px 12px}
+#assistant-panel .assistant-head strong{font-size:18px}
+#assistant-panel .assistant-head-actions button{width:32px;height:32px;min-width:32px}
+#assistant-panel .assistant-language{padding:4px 12px}
+#assistant-panel #messages{padding:10px;gap:7px}
+#assistant-panel #messages .bubble{padding:8px 10px;font-size:12px}
+#assistant-panel .suggestions{padding:5px 10px;gap:5px}
+#assistant-panel .suggestions button{padding:5px 8px}
+#assistant-panel #assistant-form{padding:7px 9px 9px}
+#assistant-panel #assistant-form input{padding:7px 11px}
+#assistant-panel #assistant-form button{width:34px;height:34px}
+#assistant-launch{padding:9px 13px}
+#enquiry .contact-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:0 0 12px}
+#enquiry .contact-actions button{margin:0}
+#enquiry .contact-actions .secondary-contact{padding:13px 18px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:12px}
+#enquiry .contact-actions .secondary-contact:hover{border-color:var(--bronze)}
+#enquiry .contact-actions .button{min-height:46px}
+#enquiry [data-whatsapp-manual],.contact-direct-link{display:inline-block;text-decoration:underline;text-underline-offset:4px;font-size:13px;margin:8px 0 18px}
+#form-status{font-size:12px;line-height:1.6;max-width:560px}
+@media(max-width:640px){
+ #assistant-panel:not(.expanded){right:8px;bottom:8px;width:min(286px,calc(100vw - 16px));height:min(344px,calc(100dvh - 110px));max-height:calc(100dvh - 110px)}
+ #assistant-panel.expanded{right:8px;bottom:8px;left:auto;width:calc(100vw - 16px);height:min(510px,calc(100dvh - 36px));max-height:calc(100dvh - 36px)}
+ #enquiry .contact-actions{align-items:stretch}
+ #enquiry .contact-actions button{width:100%;justify-content:center}
+}
+@media(max-height:530px){#assistant-panel:not(.expanded){height:calc(100dvh - 40px);max-height:calc(100dvh - 40px)}}
