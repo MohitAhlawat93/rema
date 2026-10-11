@@ -18,9 +18,12 @@ await check('reviews form','/reviews/',{},(r,b)=>html(r,b)&&b.includes('id="revi
 await check('contact form','/contact/',{},(r,b)=>html(r,b)&&b.includes('id="enquiry"'));
 await check('owner sign-in page','/admin',{},(r,b)=>r.status===200&&/login|sign in|owner/i.test(b));
 await check('admin requires session','/api/admin/session',{},r=>r.status===401);
-await check('reviews endpoint rejects GET','/api/reviews',{},r=>r.status===405);
+await check('public reviews list is readable','/api/reviews',{},(r,b)=>r.status===200&&Array.isArray(JSON.parse(b).items));
+await check('owner review list requires login','/api/admin/review-inbox',{},r=>r.status===401);
+await check('owner review removal requires login','/api/admin/review-inbox',
+  {method:'DELETE',headers:{'content-type':'application/json',origin},body:JSON.stringify({id:1})},r=>r.status===401);
 await check('invalid review rejected without saving','/api/reviews',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({author:'Tester',text:'Too short',language:'en',consent:false})},r=>r.status===400);
 await check('chatbot greeting','/api/assistant',post('Hello'),(r,b)=>r.status===200&&/hello/i.test(JSON.parse(b).answer||''));
 await check('chatbot does not promise availability','/api/assistant',post('Can I meet today?'),(r,b)=>r.status===200&&/calendar|confirm|availability/i.test(JSON.parse(b).answer||''));
-console.log('Live smoke: '+(10-failures.length)+'/10 passed');
+console.log('Live smoke: '+(12-failures.length)+'/12 passed');
 if(failures.length)process.exitCode=1;
