@@ -1,56 +1,50 @@
-[Owner editing guide](docs/EDITING_GUIDE.md) — biography, photo uploads, gallery order, social links and assistant answers.
+# Witness Lema — website, owner dashboard, and SEO
 
-# witness_lema_ — Personal portfolio
+Live repository: `MohitAhlawat93/rema`. The website is built as prerendered HTML/CSS/JS and deployed to Vercel; owner updates and public Q&A live in a separate, restricted Witness Lema namespace in Supabase.
 
-A middle-tier personal portfolio built selectively from the reference project project’s neutral design and interaction patterns. Target repository: `MohitAhlawat93/rema`. The only source project is reference project; the template can later be adapted for other clients.
+## Implemented
 
-## Current delivery: SIGNATURE-01
+- Home, About, Gallery, Services, Contact, Privacy and 404 pages; accessible navigation, photo gallery and reduced-motion controls.
+- Owner dashboard at `/admin`: profile/links, services, photos, assistant settings and knowledge, private draft, publish and restore.
+- Backend login protection, restricted writes, distributed request limits, database version checks, and server-side content validation.
+- Concierge FAQ/knowledge retrieval with controlled AI fallback.
+- SEO based on selected design patterns from Rebecca: owner-editable page settings and factual on-page supporting copy, server-generated metadata and structured data, canonical URLs, XML and image sitemaps, safe indexing modes, and CI validation.
 
-- Five prerendered pages: Home, About, Gallery, Services and Contact.
-- Ivory, charcoal and bronze editorial layout with responsive navigation.
-- Filtered gallery, native full-screen dialog, keyboard stepping and return focus.
-- Click-to-open compact FAQ assistant sharing the published content model.
-- Enquiry preparation and clipboard fallback; **does not send enquiries**.
-- Privacy page, 404, security headers and deliberately disabled indexing.
-- Isolated authentication/origin helpers adapted from reference project, tested but **not connected to an admin endpoint**.
+## Where to edit
 
-This is a design preview for **witness_lema_**. All identity and personal details must be approved by the owner before launch. Two reference-model photographs are explicitly labelled as reference photography; the people pictured are not the site owner. No inherited biography, education, location or other personal facts are attributed to her.
+| Change | Location |
+| --- | --- |
+| Public profile, service options, image order and alt text, contact links, assistant answers | [Owner admin](/admin) |
+| Search-result titles, descriptions, previews and page indexing controls | [seo/site.config.mjs](seo/site.config.mjs) |
+| Visible supporting page copy and contextual internal links | [seo/editorial.config.mjs](seo/editorial.config.mjs) |
+| Base fallback website content in GitHub | [data/site.js](data/site.js) |
+| Gallery source-image metadata | [data/gallery.json](data/gallery.json) |
+| Layout and styles | [scripts/build.mjs](scripts/build.mjs), [public/styles.css](public/styles.css) |
+| Search verification, owner steps, domain setup | [docs/SEO_GUIDE.md](docs/SEO_GUIDE.md) |
+| Actual search result competition and growth monitoring | [docs/SEARCH_GROWTH_PLAYBOOK.md](docs/SEARCH_GROWTH_PLAYBOOK.md) |
 
-The homepage includes a two-image crossfade with gentle zoom, a discreet motion control, reduced-motion support, a rotating circular WL monogram, layered portraits, a statement section, gallery and a compact FAQ assistant. The logo is an editable vector in `public/assets/mark.svg`.
+## Build and verification
 
-## Run
+Node 22+ and no npm dependencies:
 
-Node 22 or later; no package dependencies.
-
-```sh
+```bash
 npm run build
 npm test
-npm start
+npm run validate:seo
+
+# Local simulation of public production indexing (on Unix/macOS):
+SEO_INDEXING_ENABLED=true npm run build
+SEO_INDEXING_ENABLED=true npm run validate:seo
 ```
 
-Open `http://127.0.0.1:3000`. On Vercel use the supplied build command and `dist` output directory. No domain is hardcoded and no external services are contacted by this stage.
+GitHub Actions checks both preview-style and production-style indexing. Do **not** run multiple pushes while editing: bundle related changes into one commit to minimize Vercel builds.
 
-## Edit locations
+## Important limitations
 
-| Content | File |
-| --- | --- |
-| Profile, interests, image metadata, FAQs | `data/site.js` |
-| Page composition and shared shell | `scripts/build.mjs` |
-| Design and responsive behaviour | `public/styles.css` |
-| Gallery, navigation, FAQ and enquiry UI | `public/app.js` |
-| Local artwork | `public/assets/` |
-| FAQ matching | `lib/faq.js` |
+- Vercel public-domain accessibility and Google Search Console ownership need independent verification. Google indexing and rankings are not guaranteed.
+- Owner edits made in `/admin` appear in JavaScript-loaded live content; build-generated HTML metadata and static fallback remain those from the last GitHub build. Any material changes to search-facing metadata should also be made in the SEO configuration.
+- The Contact form prepares/copies an enquiry but does not deliver it.
+- This adult-oriented site may be filtered by Google SafeSearch. Only publish accurate, owner-approved content and licensed images. Never invent ratings, reviews, extra service areas, or client testimonials.
+- Credentials and private Supabase admin state must not be committed to GitHub.
 
-Build after editing content. Normal edits become deployment-free only when SIGNATURE-02 persistence is implemented.
-
-## Remaining stages
-
-**SIGNATURE-02:** authenticated four-area owner dashboard (Content, Photos, Assistant, Settings & Insights), one coordinated persisted draft, private preview, atomic publish and recoverable versions. Use separate client storage and credentials. Do not connect this client to reference project's runtime stores.
-
-**SIGNATURE-03:** server-side grounded AI, service limits and pause control, verified enquiry destination and spam controls, canonical URLs/sitemap/social previews after the final domain is known, configured basic insights. The current assistant is a deterministic local FAQ helper, not a live AI model.
-
-**SIGNATURE-04:** browser/mobile acceptance, real provider and persistence tests, recovery verification and owner instructions. Remove demo copy and indexing restrictions only after approved content and launch checks.
-
-No admin, upload, Publish or analytics buttons are shown until their backing services exist. The imported authentication code is groundwork, not a claim of production security readiness. Distributed login throttling remains required when sign-in is wired.
-
-See `docs/SOURCE_REUSE.md` for provenance and scope decisions.
+Source-reuse notes: [docs/SOURCE_REUSE.md](docs/SOURCE_REUSE.md).

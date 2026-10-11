@@ -2,11 +2,28 @@ import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { site } from '../data/site.js';
 import config from '../seo/site.config.mjs';
+import editorial from '../seo/editorial.config.mjs';
 
 function escapeHTML(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 const escapeXML=escapeHTML;
+// Editorial modules are displayed to visitors AND supplied to search engines.
+// Never create hidden, keyword-only, crawler-only, or duplicate local-area pages.
+const allowedLinks=new Set(Object.keys(config.pages));
+const editorialMarkup=(route)=>{
+  const block=editorial[route];if(!block)return '';
+  if(typeof block.heading!=='string'||block.heading.length<12||block.heading.length>110)throw new Error('Invalid editorial heading: '+route);
+  if(!Array.isArray(block.paragraphs)||block.paragraphs.length<1||block.paragraphs.length>4
+     ||!block.paragraphs.every(p=>typeof p==='string'&&p.length>=60&&p.length<=850))
+     throw new Error('Invalid page copy: '+route);
+  if(!Array.isArray(block.links)||block.links.length>5||!block.links.every(l=>allowedLinks.has(l.href)&&l.href!==route&&typeof l.label==='string'&&l.label.length>=6&&l.label.length<=85))
+     throw new Error('Invalid internal links: '+route);
+  return '<section class="seo-editorial" aria-label="Further information">'+
+    '<div class="seo-editorial-copy"><h2>'+escapeHTML(block.heading)+'</h2>'+
+    block.paragraphs.map(p=>'<p>'+escapeHTML(p)+'</p>').join('')+'</div>'+
+    '<nav aria-label="Related pages" class="seo-editorial-links">'+block.links.map(l=>'<a href="'+escapeHTML(l.href)+'">'+escapeHTML(l.label)+' <span aria-hidden="true">↗</span></a>').join('')+'</nav></section>';
+};
 const root = path.resolve('dist');
 const originURL = new URL(config.origin);
 if (originURL.protocol !== 'https:' || originURL.pathname !== '/' || originURL.search || originURL.hash || originURL.username || originURL.password) {
@@ -26,6 +43,11 @@ function structuredData(route,page) {
     {'@type':'WebSite','@id':origin+'/#website',url:origin+'/',name:config.brand,inLanguage:config.language},
     {'@type':'WebPage','@id':url+'#webpage',url,name:page.title,description:page.description,inLanguage:config.language,isPartOf:{'@id':origin+'/#website'},primaryImageOfPage: {'@type':'ImageObject',url:absolute(page.image)}}
   ];
+  // A minimal identity node: no invented reviews, awards, address, ages, or sameAs.
+  if(route==='/'||route==='/about/'){
+    graph.push({'@type':'Person','@id':origin+'/#person',name:'Witness Lema',url:origin+'/',image:absolute(config.pages['/about/'].image)});
+    graph[1].about={'@id':origin+'/#person'};
+  }
   if(route!=='/' && route!=='/404/'){
     graph.push({'@type':'BreadcrumbList','@id':url+'#breadcrumb',itemListElement:[
       {'@type':'ListItem',position:1,name:'Home',item:origin+'/'},
@@ -43,6 +65,7 @@ for (const [route,page] of routes) {
   const file=route==='/404/'?'404.html':route==='/'?'index.html':route.slice(1)+'index.html';
   const filename=path.join(root,file);
   let html=await readFile(filename,'utf8');
+  html=html.replace(/<html lang="[^"]*">/i,'<html lang="'+escapeHTML(config.language)+'">');
   if(!html.includes('</head>'))throw new Error('Missing <head> in '+file);
   html=html.replace(/<title>[\s\S]*?<\/title>/i,'<title>'+escapeHTML(page.title)+'</title>');
   html=html.replace(/<meta name="description"[^>]*>/i,'<meta name="description" content="'+escapeHTML(page.description)+'">');
@@ -68,7 +91,15 @@ for (const [route,page] of routes) {
     route==='/' && config.googleVerification ? '<meta name="google-site-verification" content="'+escapeHTML(config.googleVerification)+'">' : '',
     '<script type="application/ld+json">'+structuredData(route,page)+'</script>'
   ].filter(Boolean).join('\n');
+  if(route==='/'){
+    const primary=site.images.find(image=>image.hero)?.src;
+    if(primary && /^\/images\/[A-Za-z0-9_./-]+$/.test(primary)){
+      html=html.replace('</head>','<link rel="preload" as="image" href="'+escapeHTML(primary)+'" fetchpriority="high"></head>');
+    }
+  }
   html=html.replace('</head>',meta+'</head>');
+  // The editorial text is genuine visible HTML; it remains accessible without JS.
+  if(editorial[route]) html=html.replace('</main>',editorialMarkup(route)+'</main>');
   await writeFile(filename,html);
 }
 const robots=config.indexingEnabled?[

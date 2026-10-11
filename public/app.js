@@ -7,8 +7,8 @@ try{
   const response=await fetch('/api/site-content'+(previewMode?'?preview=1':''));
   if(response.ok){const data=await response.json();Object.assign(site,data.payload||{});if(data.preview)document.documentElement.classList.add('admin-preview');}
 }catch{/* Bundled content remains a reliable fallback. */}
-function serviceMarkup(item,index){return `<article class="service-card">${item.image?`<img src="${html(item.image)}" alt="" width="900" height="1100" loading="lazy">`:''}<div class="service-card-copy"><span class="index">${html(item.number||String(index+1).padStart(2,'0'))}</span><h2>${html(item.title)}</h2><p>${html(item.text)}</p><span class="tag">${html(item.tag||'')}</span></div></article>`;}
-function tileMarkup(image,index){return `<figure class="gallery-tile"><button class="photo" data-photo="${index}" aria-label="View ${html(image.title)}"><img src="${html(image.src)}" alt="${html(image.alt)}" width="900" height="1100" loading="lazy"></button><figcaption><span>${html(image.title)}</span><span class="caption-kind">${html(image.category)}</span></figcaption></figure>`;}
+function serviceMarkup(item,index){return `<article class="service-card">${item.image?`<img src="${html(item.image)}" alt="" width="900" height="1100" loading="lazy" decoding="async">`:''}<div class="service-card-copy"><span class="index">${html(item.number||String(index+1).padStart(2,'0'))}</span><h2>${html(item.title)}</h2><p>${html(item.text)}</p><span class="tag">${html(item.tag||'')}</span></div></article>`;}
+function tileMarkup(image,index){return `<figure class="gallery-tile"><button class="photo" data-photo="${index}" aria-label="View ${html(image.title)}"><img src="${html(image.src)}" alt="${html(image.alt)}" width="900" height="1100" loading="lazy" decoding="async"></button><figcaption><span>${html(image.title)}</span><span class="caption-kind">${html(image.category)}</span></figcaption></figure>`;}
 function socialMarkup(){return Object.entries(site.social||{}).filter(([,url])=>url).map(([name,url])=>`<a href="${html(url)}" target="_blank" rel="noopener noreferrer">${name==='instagram'?'Instagram':name[0].toUpperCase()+name.slice(1)} <span aria-hidden="true">↗</span></a>`).join('');}
 function hydratePublishedContent(){
   document.querySelectorAll('.social-links').forEach(el=>el.innerHTML=socialMarkup());
@@ -19,7 +19,7 @@ function hydratePublishedContent(){
   if(suggestionButtons[0]){suggestionButtons[0].textContent=assistant.suggestionOneLabel||'Get in touch';suggestionButtons[0].dataset.question=assistant.suggestionOne||'How can I get in touch?';}
   if(suggestionButtons[1]){suggestionButtons[1].textContent=assistant.suggestionTwoLabel||'Services';suggestionButtons[1].dataset.question=assistant.suggestionTwo||'Which services are available?';}
   const heroImages=(site.images||[]).filter(image=>image.hero);
-  if($('.hero-background')&&heroImages.length)$('.hero-background').innerHTML=heroImages.map((image,index)=>`<img src="${html(image.src)}" alt="" class="hero-slide ${index?'':'active'}" ${index?'loading="eager"':'fetchpriority="high"'}>`).join('');
+  if($('.hero-background')&&heroImages.length)$('.hero-background').innerHTML=heroImages.map((image,index)=>`<img src="${html(image.src)}" alt="" width="900" height="1100" decoding="async" class="hero-slide ${index?'':'active'}" ${index?'loading="lazy" fetchpriority="low"':'loading="eager" fetchpriority="high"'}>`).join('');
   if($('.hero-copy .eyebrow'))$('.hero-copy .eyebrow').textContent=site.hero?.eyebrow||'';
   if($('.hero-copy h1'))$('.hero-copy h1').innerHTML=html(site.hero?.title||'').replaceAll('\n','<br>');
   if($('.hero-copy .intro'))$('.hero-copy .intro').textContent=site.hero?.intro||'';

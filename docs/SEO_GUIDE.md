@@ -49,3 +49,33 @@ Run 'npm run build && npm test && npm run validate:seo' to check local staging o
 Metadata is built from the GitHub snapshot, while the public website can also load later admin changes. If important content changed in admin after the last deployment, search-visible static HTML may be older. Synchronizing those will be a later SEO improvement.
 
 Google indexing and ranking are not guaranteed by this implementation.
+
+## Edit the new useful text on every page (without writing code)
+
+Open [seo/editorial.config.mjs](../seo/editorial.config.mjs) in GitHub and click the pencil.
+
+1. Each `'/about/'`, `'/gallery/'`, `'/services/'`, `'/contact/'` and `'/'` block contains a `heading`, `paragraphs`, and a `links` list.
+2. Update the sentences so they sound natural and only say things Lema has approved. Do NOT mention fake client reviews, awards, unverified locations or services.
+3. Keep the single quotation marks, square brackets and commas intact. If a sentence contains an apostrophe, use a curly apostrophe (for example `Lema’s`) or escape it as `Lema\'s`.
+4. Update all desired pages, then make ONE GitHub commit. This content is already in the initial page HTML and can be read without JavaScript.
+5. The SEO validator enforces basic length and valid internal links; GitHub Actions will report invalid edits.
+
+Editing visible main profile, photos, links, or services: use [the private admin dashboard](https://rema-ruby.vercel.app/admin), **Save draft → Preview → Publish**. Those changes update the public site without a GitHub commit, but the build-generated metadata and extra editorial content can still be an older snapshot until the next GitHub build.
+
+## Monitor real traffic and competitors (no fake estimates)
+
+Open [the search growth playbook](SEARCH_GROWTH_PLAYBOOK.md). It explains how to compare real search results, use Google Search Console's Queries and Pages reports, and improve one useful page at a time. Never commit Google export files containing private performance data or account tokens into the public GitHub repository.
+
+## Site performance
+
+Test [PageSpeed Insights](https://pagespeed.web.dev/) with the production homepage and gallery on MOBILE, then Desktop. Target good field Core Web Vitals (LCP up to 2.5 seconds, INP up to 200 milliseconds, CLS up to 0.1). These are targets, not measured results for Lema.
+
+The build now marks one primary hero image as high priority and other hero images as lower priority, preserves image dimensions, and uses asynchronous image decoding. This does not replace an actual on-device performance test.
+
+## Public access and trust
+
+- Public SEO won't work while Vercel Authentication asks visitors to log in. In Vercel, protect Preview deployments only; retain the site's own authenticated /admin login.
+- Google's SafeSearch may filter results for adult-oriented services even if indexing succeeds. Accurate adult classification is deliberate.
+- Publish only original images that you have permission to use; describe them accurately in /admin > Photographs > Alt text.
+- Do not purchase fake reviews or keyword-stuffed backlinks; do not make near-duplicate pages for neighbouring cities.
+- Ensure prices, biography, social links and supported areas actually match what you publish.

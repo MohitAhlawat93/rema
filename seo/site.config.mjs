@@ -2,28 +2,28 @@
 // Edit titles/descriptions here, then commit once to trigger a single Vercel build.
 const pages = {
   '/': {
-    title: 'Witness Lema | Personal Portfolio in Gurgaon',
-    description: 'Meet Witness Lema in Gurgaon. Explore her personal introduction, curated portraits, services and ways to make contact.',
+    title: 'Witness Lema | Kenyan Companion in Gurgaon',
+    description: 'Explore Witness Lema’s official Gurgaon website, including her introduction, portrait gallery, available services and contact options.',
     index: true, image: '/images/gallery/portrait-01.jpg'
   },
   '/about/': {
-    title: 'About Witness Lema | Profile and Introduction',
-    description: 'Get to know Witness Lema through her personal profile, background, interests and curated introduction.',
+    title: 'About Witness Lema | Kenyan Companion in Gurgaon',
+    description: 'Read Witness Lema’s introduction, learn about her Kenyan background and explore her profile and curated photographs.',
     index: true, image: '/images/gallery/portrait-17.jpg'
   },
   '/gallery/': {
-    title: 'Witness Lema Gallery | Portraits and Photography',
-    description: 'Browse the curated Witness Lema photo gallery, including portraits and lifestyle photography.',
+    title: 'Witness Lema Photo Gallery | Portraits and Lifestyle',
+    description: 'Browse the Witness Lema gallery, with selected portraits and lifestyle photographs presented in an easy-to-explore collection.',
     index: true, image: '/images/gallery/portrait-02.jpg'
   },
   '/services/': {
-    title: 'Services and Experiences | Witness Lema, Gurgaon',
-    description: 'Explore the currently published services and experience options from Witness Lema in Gurgaon.',
+    title: 'Witness Lema Services | Gurgaon Companion Experiences',
+    description: 'Read the currently published Witness Lema service options, descriptions and starting prices, and find out how to confirm the details.',
     index: true, image: '/images/gallery/portrait-06.jpg'
   },
   '/contact/': {
-    title: 'Contact Witness Lema | Get in Touch',
-    description: 'Find the official contact options for Witness Lema and prepare a private enquiry through the website.',
+    title: 'Contact Witness Lema | Official Contact Options',
+    description: 'Find Witness Lema’s published contact links and prepare an enquiry to copy and send using your preferred contact channel.',
     index: true, image: '/images/gallery/portrait-03.jpg'
   },
   '/privacy/': {

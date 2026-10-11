@@ -22,10 +22,22 @@ for(const [route,page] of Object.entries(config.pages)){
   assert.ok(html.includes('<meta property="og:image"'),route+' social image');
   assert.ok(html.includes('<meta name="twitter:card"'),route+' Twitter card');
   assert.ok(html.includes('<script type="application/ld+json">'),route+' JSON-LD');
+  const h1=html.split('<h1').length-1;
+  assert.equal(h1,1,route+' must have one primary heading');
+  if(page.index){
+    assert.ok(html.includes('class="seo-editorial"'),route+' must offer useful, visible supporting content');
+    assert.ok(html.includes('class="seo-editorial-links"'),route+' must have related internal links');
+    assert.ok(html.includes('aria-label="Related pages"'),route+' must link to related pages');
+  }
   const encoded=html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
   assert.ok(encoded,route+' JSON-LD block');
   const ld=JSON.parse(encoded[1]);
   assert.equal(ld['@context'],'https://schema.org');
+  if(route==='/'||route==='/about/'){
+    assert.ok(ld['@graph'].some(x=>x['@type']==='Person'&&x.name==='Witness Lema'),route+' identity schema');
+  }
+  // Never add anonymous ratings or fabricated endorsements to the SEO schema.
+  assert.ok(!ld['@graph'].some(x=>['Review','AggregateRating'].includes(x['@type'])),route+' must not fabricate reviews');
   const robotsTag=html.match(/<meta name="robots" content="([^"]+)">/i)?.[1]||'';
   if(expectedIndex){
     indexed++;
@@ -38,7 +50,12 @@ for(const [route,page] of Object.entries(config.pages)){
   assert.ok(!canonicals.has(canonical),'Duplicate canonical: '+canonical);
   canonicals.add(canonical);
 }
-assert.match(await readFile(path.join(root,'admin.html'),'utf8'),/noindex,nofollow/);
+const adminHtml=await readFile(path.join(root,'admin.html'),'utf8');
+assert.match(adminHtml,/noindex,nofollow/);
+const home=await readFile(path.join(root,'index.html'),'utf8');
+assert.ok(home.includes('<link rel="preload" as="image"'), 'Homepage primary hero preload');
+assert.ok(home.includes('fetchpriority="low"'), 'Secondary hero images should use low priority');
+assert.ok(home.includes('decoding="async"'), 'Gallery should decode images asynchronously');
 if(config.indexingEnabled){
   assert.equal(indexed,5);
   assert.match(robots,/Sitemap: .*\/sitemap\.xml/);
