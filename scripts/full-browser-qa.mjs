@@ -57,7 +57,7 @@ for(const profile of profiles){
      const doc=document.documentElement;
      const header=document.querySelector('h1');
      const images=[...document.images];
-     const deadImages=images.filter(x=>x.complete&&x.naturalWidth===0).map(x=>x.src);
+     const deadImages=images.filter(x=>x.getAttribute('src')&&x.complete&&x.naturalWidth===0).map(x=>x.src);
      const nav=document.querySelector('#navigation');
      const links=[...document.querySelectorAll('a[href]')].map(a=>a.getAttribute('href'));
      const perf=performance.getEntriesByType('resource');
@@ -68,7 +68,7 @@ for(const profile of profiles){
        overflowPx:Math.max(0,doc.scrollWidth-window.innerWidth),
        primaryNavigationLinks:nav?.querySelectorAll('a[href]').length??0,
        images:images.length,brokenImages:deadImages.length,
-       brokenImageSources:deadImages.slice(0,5).map(x=>new URL(x).pathname),
+       brokenImageSources:deadImages.slice(0,5).map(x=>new URL(x,location.href).pathname),
        hasMain:!!document.querySelector('main'),
        internalLinks:links.filter(x=>x?.startsWith('/')&&!x.startsWith('//')).length,
        loadedResourceKB:Math.round(perf.reduce((a,x)=>a+(x.transferSize||0),0)/1024),
