@@ -1,3 +1,4 @@
+import { DEFAULT_BUSINESS } from './business.mjs';
 // Witness Lema SEO settings (developer fallbacks).
 // Prefer editing titles, descriptions and images through the private /admin
 // Google SEO dashboard — no code or redeploy required for published changes.
@@ -54,7 +55,7 @@ export default {
   // When moving to a permanent custom domain, configure SEO_SITE_ORIGIN in Vercel.
   origin: process.env.SEO_SITE_ORIGIN || 'https://rema-ruby.vercel.app',
   indexingEnabled,
-  brand: 'Witness Lema',
+  brand: DEFAULT_BUSINESS.name,
   language: 'en-IN',
   locale: 'en_IN',
   // Google recommends appropriate adult-content classification on explicit pages.
