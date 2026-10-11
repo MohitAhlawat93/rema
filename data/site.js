@@ -1,10 +1,12 @@
 // Public content model. Replace demo assets and copy with owner-approved content here.
 import images from './gallery.json' with { type: 'json' };
+import { DEFAULT_BUSINESS } from '../seo/business.mjs';
 import knowledge from './assistant/knowledge.json' with { type: 'json' };
 
 export const site = {
-  name: 'witness_lema_',
-  brand: 'witness_lema_',
+  business: {...DEFAULT_BUSINESS},
+  name: DEFAULT_BUSINESS.wordmark,
+  brand: DEFAULT_BUSINESS.wordmark,
   language: 'en',
   timezone: 'UTC',
   demo: false,
