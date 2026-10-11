@@ -1,6 +1,42 @@
 import { site } from './data/site.js';
 import { answerQuestion } from './lib/faq.js';
 const $ = s => document.querySelector(s);
+const html = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const previewMode=new URLSearchParams(location.search).get('admin_preview')==='1';
+try{
+  const response=await fetch('/api/site-content'+(previewMode?'?preview=1':''));
+  if(response.ok){const data=await response.json();Object.assign(site,data.payload||{});if(data.preview)document.documentElement.classList.add('admin-preview');}
+}catch{/* Bundled content remains a reliable fallback. */}
+function serviceMarkup(item,index){return `<article class="service-card">${item.image?`<img src="${html(item.image)}" alt="" width="900" height="1100" loading="lazy">`:''}<div class="service-card-copy"><span class="index">${html(item.number||String(index+1).padStart(2,'0'))}</span><h2>${html(item.title)}</h2><p>${html(item.text)}</p><span class="tag">${html(item.tag||'')}</span></div></article>`;}
+function tileMarkup(image,index){return `<figure class="gallery-tile"><button class="photo" data-photo="${index}" aria-label="View ${html(image.title)}"><img src="${html(image.src)}" alt="${html(image.alt)}" width="900" height="1100" loading="lazy"></button><figcaption><span>${html(image.title)}</span><span class="caption-kind">${html(image.category)}</span></figcaption></figure>`;}
+function socialMarkup(){return Object.entries(site.social||{}).filter(([,url])=>url).map(([name,url])=>`<a href="${html(url)}" target="_blank" rel="noopener noreferrer">${name==='instagram'?'Instagram':name[0].toUpperCase()+name.slice(1)} <span aria-hidden="true">↗</span></a>`).join('');}
+function hydratePublishedContent(){
+  document.querySelectorAll('.social-links').forEach(el=>el.innerHTML=socialMarkup());
+  const heroImages=(site.images||[]).filter(image=>image.hero);
+  if($('.hero-background')&&heroImages.length)$('.hero-background').innerHTML=heroImages.map((image,index)=>`<img src="${html(image.src)}" alt="" class="hero-slide ${index?'':'active'}" ${index?'loading="eager"':'fetchpriority="high"'}>`).join('');
+  if($('.hero-copy .eyebrow'))$('.hero-copy .eyebrow').textContent=site.hero?.eyebrow||'';
+  if($('.hero-copy h1'))$('.hero-copy h1').innerHTML=html(site.hero?.title||'').replaceAll('\n','<br>');
+  if($('.hero-copy .intro'))$('.hero-copy .intro').textContent=site.hero?.intro||'';
+  if(location.pathname==='/about/'||location.pathname==='/about'){
+    const title=$('.page-heading h1');if(title)title.innerHTML=html(site.about?.title||'').replaceAll('\n','<br>');
+    const heading=$('.about-layout .editorial h2');if(heading)heading.textContent=site.about?.heading||'';
+    const biography=$('.about-layout .editorial .intro');if(biography)biography.textContent=site.about?.text||'';
+    const rotator=$('.about-rotator');if(rotator)rotator.innerHTML=(site.aboutImages||[]).slice(0,3).map((src,index)=>`<img class="about-slide ${index?'':'active'}" src="${html(src)}" alt="Portrait of witness_lema_" width="900" height="1100" aria-hidden="${index?'true':'false'}">`).join('');
+  }
+  const serviceGrid=$('.service-grid');if(serviceGrid)serviceGrid.innerHTML=(site.services||[]).map(serviceMarkup).join('');
+  if((location.pathname==='/services/'||location.pathname==='/services')&&$('.page-heading .intro'))$('.page-heading .intro').textContent=site.servicesIntro||'';
+  const fullGallery=$('.full-gallery');
+  if(fullGallery){
+    fullGallery.innerHTML=(site.images||[]).map(tileMarkup).join('');
+    const categories=[...new Set((site.images||[]).map(image=>image.category).filter(Boolean))];
+    const filters=$('.filters');if(filters)filters.innerHTML=`<button class="active" data-filter="All" aria-pressed="true">All images</button>${categories.map(category=>`<button data-filter="${html(category)}" aria-pressed="false">${html(category)}</button>`).join('')}`;
+    if($('[data-gallery-status]'))$('[data-gallery-status]').textContent=`Showing ${site.images.length} images`;
+  }
+  const selected=$('.editorial-gallery');if(selected&&site.images?.length)selected.innerHTML=[site.images.at(-4),site.images.at(-2)].filter(Boolean).map(image=>tileMarkup(image,site.images.indexOf(image))).join('');
+  const mainPortrait=$('.portrait-main img'),insetPortrait=$('.portrait-inset img');if(mainPortrait&&site.images?.[5])mainPortrait.src=site.images[5].src;if(insetPortrait&&site.images?.[8])insetPortrait.src=site.images[8].src;
+  if(previewMode&&document.documentElement.classList.contains('admin-preview'))document.body.insertAdjacentHTML('afterbegin','<div class="admin-preview-bar">Private Draft Preview · <a href="/admin">Return to Control</a></div>');
+}
+hydratePublishedContent();
 const menu = $('.menu-toggle'), nav = $('#navigation');
 function setMenu(open) { nav.classList.toggle('open',open);menu.setAttribute('aria-expanded',String(open)); }
 menu.addEventListener('click',()=>setMenu(menu.getAttribute('aria-expanded')!=='true'));
