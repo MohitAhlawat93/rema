@@ -20,11 +20,23 @@ function renderBusiness(){
  const b=state?.draft?.business;
  const warn=$('[data-business-warning]');
  if(warn)warn.hidden=Boolean(b);
- $$('[data-business-field]').forEach(input=>{
+ const choice=$('[data-business-logo-choice]');
+ if(choice){
+   choice.disabled=!b;
+   if(b){
+     const imageOptions=[['/assets/mark.svg','Default website mark'],...(state.draft.images||[])
+       .filter(x=>typeof x.src==='string'&&x.src).map((x,i)=>[x.src,x.title||'Photograph '+(i+1)])];
+     if(b.logoUrl&&!imageOptions.some(([src])=>src===b.logoUrl))imageOptions.unshift([b.logoUrl,'Current uploaded image']);
+     choice.innerHTML=imageOptions.map(([src,label])=>'<option value="'+esc(src)+'">'+esc(label)+'</option>').join('');
+     choice.value=b.logoUrl;
+     choice.onchange=()=>{b.logoUrl=choice.value;const field=$('[data-business-field="logoUrl"]');if(field)field.value=b.logoUrl;setDirty();};
+   }
+ }
+ $('[data-business-field]').forEach(input=>{
    input.disabled=!b;
    if(!b)return;
    input.value=b[input.dataset.businessField]??'';
-   input.oninput=()=>{b[input.dataset.businessField]=input.value;setDirty();updateSeoPreview();};
+   input.oninput=()=>{b[input.dataset.businessField]=input.value;setDirty();updateSeoPreview();if(input.dataset.businessField==='logoUrl'&&choice)choice.value=input.value;};
  });
 }
 function validateBusinessDraft(){
@@ -64,8 +76,10 @@ function initializeSeo(){
 function seoEntry(){return state?.draft?.seo?.pages?.[seoCurrent];}
 function updateSeoPreview(){
   const e=seoEntry();if(!e)return;
-  $('[data-seo-preview-title]').textContent=e.title||'(Title needed)';
-  $('[data-seo-preview-description]').textContent=e.description||'(Description needed)';
+  const b=state?.draft?.business,oldName=seoDefaults?.business?.name||'Witness Lema',oldCity=seoDefaults?.business?.city||'Gurgaon';
+  const branding=text=>String(text||'').replaceAll(oldName,b?.name||oldName).replaceAll(oldCity,b?.city||oldCity);
+  $('[data-seo-preview-title]').textContent=branding(e.title)||( '(Title needed)');
+  $('[data-seo-preview-description]').textContent=branding(e.description)||'(Description needed)';
   $('[data-seo-preview-url]').textContent=(window.location?.host||'Current website')+seoCurrent;
   const photo=$('[data-seo-preview-image]');
   if(photo){photo.src=e.image||'';photo.hidden=!e.image;}
@@ -113,6 +127,7 @@ function validateSeoDraft(){
   for(const [route,e] of Object.entries(state.draft.seo.pages||{})){
     if(!seoNames[route])throw new Error('Unknown SEO page.');
     if(!e.title||e.title.trim().length<10||e.title.length>70)throw new Error('SEO title for '+seoNames[route]+' must be 10–70 characters.');
+    const b=state.draft.business;if(b&&e.title.replaceAll('Witness Lema',b.name).replaceAll('Gurgaon',b.city).length>70)throw new Error('SEO title for '+seoNames[route]+' becomes too long after applying the business identity.');
     if(!e.description||e.description.trim().length<40||e.description.length>170)throw new Error('SEO description for '+seoNames[route]+' must be 40–170 characters.');
     if(!e.heading||e.heading.trim().length<12||e.heading.length>110)throw new Error('SEO section heading for '+seoNames[route]+' must be 12–110 characters.');
     if(!Array.isArray(e.paragraphs)||e.paragraphs.length<1||e.paragraphs.length>4||!e.paragraphs.every(p=>typeof p==='string'&&p.trim().length>=60&&p.length<=850))throw new Error('Write 2 helpful paragraphs of at least 60 characters on '+seoNames[route]+'.');
