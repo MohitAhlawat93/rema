@@ -69,6 +69,15 @@ function hydratePublishedContent(){
   if(previewMode&&document.documentElement.classList.contains('admin-preview'))document.body.insertAdjacentHTML('afterbegin','<div class="admin-preview-bar">Private Draft Preview · <a href="/admin">Return to Control</a></div>');
 }
 hydratePublishedContent();
+// Published guest reviews are managed independently of site draft versions.
+if(document.querySelector('[data-public-reviews]')){
+  void fetch('/api/reviews',{cache:'no-store'}).then(async response=>{
+    if(!response.ok)throw new Error('Reviews unavailable');
+    const result=await response.json();
+    if(Array.isArray(result.items)){site.reviews=result.items;hydrateReviews();}
+  }).catch(()=>{/* Keep safely rendered server-side reviews during outages. */});
+}
+
 // A private preview must remain a private preview when navigating from Home
 // to About, Services, Gallery, Reviews or Contact. Never leak preview data to
 // unauthenticated browsers, and never modify external/contact links.
@@ -168,7 +177,9 @@ $('#review-form')?.addEventListener('submit',async event=>{
     const result=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(result.error||'Could not send the review. Please try again.');
     form.reset();
-    status.textContent='Thank you! Your review was submitted for approval. It will not appear publicly until approved.';
+    status.textContent='Thank you! Your review is published and visible on this page.';
+    const latest=await fetch('/api/reviews',{cache:'no-store'});
+    if(latest.ok){const feed=await latest.json();if(Array.isArray(feed.items)){site.reviews=feed.items;hydrateReviews();}}
   }catch(error){status.textContent=error.message||'Could not submit the review.';}
   finally{submit.disabled=false;}
 });
