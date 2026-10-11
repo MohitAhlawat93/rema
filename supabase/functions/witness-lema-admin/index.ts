@@ -73,6 +73,28 @@ Deno.serve(async(req)=>{
       if(!Array.isArray(payload.images)||payload.images.length>250||!payload.images.some(x=>x.hero)||!Array.isArray(payload.aboutImages)||payload.aboutImages.length!==3)return json({error:'Invalid photo selection'},400);
       if(!payload.images.every(x=>x&&typeof x.src==='string'&&x.src.length<=2048&&(x.src.startsWith('/images/')||x.src.startsWith(SUPABASE_URL+'/storage/v1/object/public/witness-lema-gallery/'))))return json({error:'Invalid image source'},400);
       if(!payload.aboutImages.every(src=>payload.images.some(x=>x.src===src)))return json({error:'About photos must exist in gallery'},400);
+      // Client-owned public identity travels with the versioned published site.
+      // Requested domains are descriptive only; they NEVER set canonical/DNS/hosting.
+      if(payload.business!==undefined){
+        const b=payload.business;
+        const str=(value:unknown,max:number,min=0)=>typeof value==='string'&&value.length<=max&&value.trim().length>=min;
+        const validLogo=(value:unknown)=>typeof value==='string'&&(
+          value==='/assets/mark.svg'||
+          (/^\/images\/[a-z0-9/_-]+\.(?:png|jpe?g|webp)$/i.test(value)&&!value.includes('..'))||
+          (value.startsWith(SUPABASE_URL+'/storage/v1/object/public/witness-lema-gallery/')&&
+           /^https:\/\//.test(value)&&!/[<>"'\s]/.test(value)&&value.length<=2048)
+        );
+        const domain=(v:string)=>v===''||(
+          v.length<=253&&!v.includes('..')&&
+          /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(v)
+        );
+        if(!b||typeof b!=='object'||Array.isArray(b)||
+          !str(b.name,80,2)||!str(b.wordmark,70,2)||!str(b.tagline,90)||
+          !str(b.city,90,2)||!str(b.email,254)||!validLogo(b.logoUrl)||
+          (b.email!==''&&!/^[^\s@<>]+@[^\s@<>]+\.[a-zA-Z]{2,}$/.test(b.email))||
+          !str(b.requestedDomain,253)||!domain(b.requestedDomain)
+        )return json({error:'Invalid business identity: check name, location, logo, email or requested domain.'},400);
+      }
       if(!payload.social||!Object.values(payload.social).every(validLink))return json({error:'Invalid social link'},400);
       const editableLinks=(links:unknown)=>Array.isArray(links)&&links.length<=24&&links.every(link=>link&&typeof link==='object'&&typeof link.label==='string'&&link.label.trim().length>0&&link.label.length<=60&&validLink(link.url)&&link.url.length>0);
       if(payload.contactLinks!==undefined&&!editableLinks(payload.contactLinks))return json({error:'Invalid contact channels'},400);
