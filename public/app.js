@@ -28,10 +28,10 @@ function hydrateReviews(){
   const holders=[...document.querySelectorAll('[data-public-reviews]')];if(!holders.length)return;
   const reviews=(Array.isArray(site.reviews)?site.reviews:[]).filter(item=>item&&item.published===true&&item.consent===true&&(item.textEn||item.textHi)).slice(0,40);
   if(!reviews.length){
-    holders.forEach(holder=>holder.innerHTML='<article class="review-quote review-example"><span class="review-language">Layout example · not a client review</span><blockquote>Approved guest feedback will appear here in English.</blockquote><p>Example only</p></article><article class="review-quote review-example" lang="hi"><span class="review-language">नमूना · ग्राहक समीक्षा नहीं</span><blockquote>अनुमति मिलने के बाद असली अतिथियों की समीक्षाएँ यहाँ दिखाई जाएँगी।</blockquote><p>केवल उदाहरण</p></article>');
+    holders.forEach(holder=>{const section=holder.closest('.reviews-section');if(section&&!section.classList.contains('reviews-page'))section.hidden=true;else holder.innerHTML='<p class="review-empty">No reviews published yet.</p>';});
     return;
   }
-  holders.forEach(holder=>holder.innerHTML=reviews.map(item=>`<article class="review-quote"><span class="review-language">Guest feedback · अतिथि के शब्द</span>${item.textEn?`<blockquote lang="en">${html(item.textEn)}</blockquote>`:''}${item.textHi?`<blockquote lang="hi">${html(item.textHi)}</blockquote>`:''}<p>— ${html(item.author||'Guest')}</p></article>`).join(''));
+  holders.forEach(holder=>{const section=holder.closest('.reviews-section');if(section)section.hidden=false;holder.innerHTML=reviews.map(item=>`<article class="review-quote"><span class="review-language">Guest feedback · अतिथि के शब्द</span>${item.textEn?`<blockquote lang="en">${html(item.textEn)}</blockquote>`:''}${item.textHi?`<blockquote lang="hi">${html(item.textHi)}</blockquote>`:''}<p>— ${html(item.author||'Guest')}</p></article>`).join('');});
 }
 function hydratePublishedContent(){
   document.querySelectorAll('.social-links').forEach(el=>el.innerHTML=socialMarkup());
@@ -106,7 +106,7 @@ async function ask(text){
     const message='Sorry, the chat connection is having a moment. Please try again, or ask in another way. You can also reach Lema from the Contact page.';
     bubble(message,false,'/contact/');
     chatHistory.push({role:'assistant',content:message});
-  }finally{question.disabled=false;question.focus();}
+  }finally{question.disabled=false;question.focus();if($('#assistant-learning-consent')?.checked&&clean.length>=12&&clean.length<=300){void fetch('/api/assistant-learning',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:clean,language:$('#assistant-language').value,consent:true})}).catch(()=>{});}}
 }
 $('#assistant-form').addEventListener('submit',e=>{e.preventDefault();void ask(question.value);});
 document.querySelectorAll('[data-question]').forEach(b=>b.addEventListener('click',()=>ask(b.dataset.question)));

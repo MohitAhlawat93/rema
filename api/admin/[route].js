@@ -66,6 +66,15 @@ export default async function handler(req,res){
       if(req.method==='PUT')return send(res,200,await callAdminBackend('knowledge-save',{body:readBody(req).items}));
       return send(res,405,{error:'Unsupported method.'});
     }
+    if(route==='learning'){
+      if(req.method==='GET')return send(res,200,await callAdminBackend('learning-list'));
+      if(req.method==='POST'){
+        const body=readBody(req);
+        if(!['approve','dismiss'].includes(body.action))return send(res,400,{error:'Invalid learning action.'});
+        return send(res,200,await callAdminBackend('learning-review',{body:{id:body.id,action:body.action,answer:body.answer,href:body.href}}));
+      }
+      return send(res,405,{error:'Unsupported method.'});
+    }
     if(route==='upload'){
       if(req.method==='POST'){
         const body=readBody(req);return send(res,200,await callAdminBackend('upload',{dataUrl:body.dataUrl,name:body.name}));

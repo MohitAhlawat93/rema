@@ -24,6 +24,41 @@ Deno.serve(async(req)=>{
       const windowSeconds=Number(input.body?.windowSeconds);
       return json(await rpc('witness_lema_consume_rate_limit',{p_scope:scope,p_subject_hash:subjectHash,p_max_attempts:maxAttempts,p_window_seconds:windowSeconds}));
     }
+    if(action==='learning-submit'){
+      const body=input.body?.body??input.body??{};
+      const question=String(body.question??'').trim();
+      const language=['en','hi','auto'].includes(body.language)?body.language:'auto';
+      const privatePattern=/(?:\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b|https?:\/\/|www\.|(?:\+?\d[\d()\s.-]{7,}\d)|@[a-z0-9_]{3,})/i;
+      if(body.consent!==true||question.length<12||question.length>300||privatePattern.test(question))return json({error:'Invalid submitted question'},422);
+      const cutoff=encodeURIComponent(new Date(Date.now()-30*86400000).toISOString());
+      await fetch(SUPABASE_URL+'/rest/v1/witness_lema_learning_queue?created_at=lt.'+cutoff,{
+        method:'DELETE',headers:{apikey:SERVICE_KEY,authorization:'Bearer '+SERVICE_KEY}
+      });
+      const stored=await fetch(SUPABASE_URL+'/rest/v1/witness_lema_learning_queue',{
+        method:'POST',headers:{apikey:SERVICE_KEY,authorization:'Bearer '+SERVICE_KEY,'content-type':'application/json','prefer':'return=minimal'},
+        body:JSON.stringify({question,language})
+      });
+      if(!stored.ok)throw new Error('Could not save question');
+      return json({ok:true});
+    }
+    if(action==='learning-list'){
+      const cutoff=encodeURIComponent(new Date(Date.now()-30*86400000).toISOString());
+      await fetch(SUPABASE_URL+'/rest/v1/witness_lema_learning_queue?created_at=lt.'+cutoff,{
+        method:'DELETE',headers:{apikey:SERVICE_KEY,authorization:'Bearer '+SERVICE_KEY}
+      });
+      const r=await fetch(SUPABASE_URL+'/rest/v1/witness_lema_learning_queue?status=eq.pending&select=id,question,language,created_at&order=created_at.desc&limit=60',
+        {headers:{apikey:SERVICE_KEY,authorization:'Bearer '+SERVICE_KEY}});
+      if(!r.ok)throw new Error('Could not load questions');
+      return json({items:await r.json()});
+    }
+    if(action==='learning-review'){
+      const body=input.body?.body??input.body??{};
+      const id=Number(body.id),reviewAction=String(body.action||''),answer=String(body.answer||'').trim(),href=String(body.href??'/contact/');
+      if(!Number.isSafeInteger(id)||id<1||!['approve','dismiss'].includes(reviewAction))return json({error:'Invalid review action'},400);
+      if(reviewAction==='approve'&&(answer.length<20||answer.length>3000||!['','/about/','/services/','/contact/','/gallery/'].includes(href)))return json({error:'Invalid approved answer'},400);
+      const result=await rpc('witness_lema_review_learning',{p_id:id,p_action:reviewAction,p_answer:answer,p_href:href});
+      return json(result);
+    }
     if(action==='upload'){
       const match=String(input.dataUrl||'').match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
       if(!match)return json({error:'Use a JPEG, PNG or WebP image.'},400);

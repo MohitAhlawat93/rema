@@ -1,6 +1,6 @@
 const $=selector=>document.querySelector(selector);
 const $$=selector=>[...document.querySelectorAll(selector)];
-let state=null,knowledge=[],dirty=false,seoDefaults=null,seoCurrent='/';
+let state=null,knowledge=[],learningItems=[],dirty=false,seoDefaults=null,seoCurrent='/';
 const clone=value=>JSON.parse(JSON.stringify(value));
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const notice=(text,type='')=>{const el=$('[data-notice]');if(!el)return;el.textContent=text;el.className='notice '+type;};
@@ -18,6 +18,30 @@ function photoCard(image,index){const about=(state.draft.aboutImages||[]).includ
 function renderPhotos(){const holder=$('[data-photos]');holder.innerHTML=(state.draft.images||[]).map(photoCard).join('');holder.querySelectorAll('[data-photo-field]').forEach(input=>input.oninput=()=>{state.draft.images[+input.dataset.index][input.dataset.photoField]=input.value;setDirty();});holder.querySelectorAll('[data-photo-hero]').forEach(input=>input.onchange=()=>{state.draft.images[+input.dataset.index].hero=input.checked;setDirty();});holder.querySelectorAll('[data-photo-about]').forEach(input=>input.onchange=()=>{const src=state.draft.images[+input.dataset.index].src;state.draft.aboutImages=(state.draft.aboutImages||[]).filter(item=>item!==src);if(input.checked)state.draft.aboutImages.push(src);renderPhotos();setDirty();});holder.querySelectorAll('[data-photo-remove]').forEach(button=>button.onclick=()=>{const image=state.draft.images[+button.dataset.index];if(!confirm('Remove this photograph from the draft? The stored file will remain available.'))return;state.draft.images.splice(+button.dataset.index,1);state.draft.aboutImages=(state.draft.aboutImages||[]).filter(src=>src!==image.src);renderPhotos();setDirty();});}
 function answerCard(item,index){return `<article class="repeat-card"><span class="number">${String(index+1).padStart(2,'0')}</span><div class="repeat-fields"><label class="wide">Question<input data-answer-field="question" data-index="${index}" value="${esc(item.question)}"></label><label class="wide">Answer<textarea rows="4" data-answer-field="answer" data-index="${index}">${esc(item.answer)}</textarea></label><label>Keywords, separated by commas<input data-answer-field="keywords" data-index="${index}" value="${esc((item.keywords||[]).join(', '))}"></label><label>Related page<input data-answer-field="href" data-index="${index}" value="${esc(item.href)}"></label></div><div class="card-actions"><button class="danger" data-answer-remove data-index="${index}" aria-label="Remove">×</button></div></article>`;}
 function renderAnswers(){const holder=$('[data-answers]');holder.innerHTML=knowledge.map(answerCard).join('');holder.querySelectorAll('[data-answer-field]').forEach(input=>input.oninput=()=>{const value=input.dataset.answerField==='keywords'?input.value.split(',').map(x=>x.trim()).filter(Boolean):input.value;knowledge[+input.dataset.index][input.dataset.answerField]=value;notice('Assistant changes are not saved yet.','');});holder.querySelectorAll('[data-answer-remove]').forEach(button=>button.onclick=()=>{knowledge.splice(+button.dataset.index,1);renderAnswers();});}
+function renderLearning(){
+  const holder=$('[data-learning-queue]');if(!holder)return;
+  holder.innerHTML=learningItems.length?learningItems.map(item=>
+    `<article class="repeat-card learning-card" data-learning-id="${Number(item.id)}"><p class="learning-question">${esc(item.question)}</p><span class="fine">Shared with permission · ${esc(item.language||'auto')}</span><label>Approved answer<textarea rows="3" data-learning-answer placeholder="Write a correct answer for future visitors."></textarea></label><div class="learning-actions"><label>Related page <select data-learning-href><option value="/contact/">Contact</option><option value="/about/">About</option><option value="/services/">Services</option><option value="/gallery/">Gallery</option><option value="">No link</option></select></label><button type="button" class="primary" data-learning-action="approve">Approve answer</button><button type="button" class="secondary" data-learning-action="dismiss">Dismiss</button></div></article>`
+  ).join(''):'<p class="fine">No questions waiting for review.</p>';
+  holder.querySelectorAll('[data-learning-action]').forEach(button=>button.onclick=async()=>{
+    const row=button.closest('[data-learning-id]'),id=Number(row.dataset.learningId),action=button.dataset.learningAction;
+    const answer=row.querySelector('[data-learning-answer]').value.trim();
+    if(action==='approve'&&answer.length<20){notice('Write a helpful answer of at least 20 characters.','error');return;}
+    button.disabled=true;
+    try{
+      const result=await api('learning',{method:'POST',body:JSON.stringify({id,action,answer,href:row.querySelector('[data-learning-href]').value})});
+      if(!result.ok)throw new Error('Question is no longer pending.');
+      learningItems=learningItems.filter(item=>item.id!==id);
+      renderLearning();
+      if(action==='approve'){const result=await api('knowledge');knowledge=result.items||knowledge;renderAnswers();$('[data-answer-count]').textContent=knowledge.length;}
+      notice(action==='approve'?'Answer approved and added to the live knowledge base.':'Question dismissed.','success');
+    }catch(error){notice(error.message||'Could not update question.','error');button.disabled=false;}
+  });
+}
+async function loadLearning(){
+  try{const data=await api('learning');learningItems=Array.isArray(data.items)?data.items:[];renderLearning();}
+  catch(error){const holder=$('[data-learning-queue]');if(holder)holder.textContent='Questions could not be loaded. Use Refresh questions to retry.';}
+}
 function renderHistory(){const holder=$('[data-history]');holder.innerHTML=(state.history||[]).slice().reverse().map(item=>`<article><span>Version ${item.version} · ${new Date(item.publishedAt).toLocaleString()}</span><button class="secondary" data-restore="${item.version}">Restore to draft</button></article>`).join('')||'<p>No earlier published versions yet.</p>';holder.querySelectorAll('[data-restore]').forEach(button=>button.onclick=()=>restoreVersion(+button.dataset.restore));}
 const seoNames={'/':'Home','/about/':'About','/gallery/':'Gallery','/services/':'Services','/contact/':'Contact'};
 function initializeSeo(){
@@ -156,6 +180,7 @@ async function loadWorkspace(){
   const seoWarning=$('[data-seo-loading-error]');
   if(seoWarning)seoWarning.hidden=Boolean(seoDefaults);
   void loadAiStatus();
+  void loadLearning();
   dirty=false;
   if(!seoDefaults||answers.status!=='fulfilled'){
     notice('Dashboard ready. Some optional settings did not load; refresh before editing those sections.','');
@@ -184,6 +209,7 @@ $('[data-add-review]').onclick=()=>{state.draft.reviews.unshift({author:'',textE
 $('[data-add-service]').onclick=()=>{state.draft.services.push({number:String(state.draft.services.length+1).padStart(2,'0'),title:'New service',text:'Add a refined description.',tag:'By arrangement',image:state.draft.images?.[0]?.src||''});renderServices();setDirty();};
 $('[data-add-answer]').onclick=()=>{knowledge.unshift({question:'',answer:'',keywords:[],href:'/contact/',published:true});renderAnswers();};
 $('[data-save-answers]').onclick=saveAnswers;
+$('[data-learning-refresh]').onclick=loadLearning;
 $('[data-upload]').onclick=uploadPhoto;
 $('[data-logout]').onclick=async()=>{await api('logout',{method:'POST',body:'{}'});state=null;showLogin('You have been signed out.');};
 window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
