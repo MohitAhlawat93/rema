@@ -89,6 +89,9 @@ Deno.serve(async(req)=>{
     }
     const allowedActions=new Set(['read','save','publish','restore','knowledge-read','knowledge-save']);
     if(!allowedActions.has(action))return json({error:'Unknown action.'},400);
-    return json(await rpc('witness_lema_admin_state',{action,body:input.body??{}}));
+    // Public admin routes wrap publish/restore/knowledge items in {body}; the SQL function needs the inner value.
+    // Save intentionally keeps {draft, expectedVersion} for optimistic concurrency checks.
+    const body = action==='save' ? (input.body??{}) : ((action==='publish'||action==='restore'||action==='knowledge-save') ? (input.body?.body??input.body??{}) : (input.body??{}));
+    return json(await rpc('witness_lema_admin_state',{action,body}));
   }catch(error){return json({error:error instanceof Error?error.message:'Request failed'},500);}
 });
