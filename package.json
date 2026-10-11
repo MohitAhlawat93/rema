@@ -1,5 +1,16 @@
 {
-  "name": "witness-lema-portfolio", "version": "0.1.0", "private": true, "type": "module",
-  "engines": { "node": ">=22" },
-  "scripts": { "build": "node scripts/build.mjs", "vercel-build": "npm run build", "test": "node --test", "start": "node scripts/serve.mjs" }
+  "name": "witness-lema-portfolio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs && node scripts/render-seo.mjs",
+    "vercel-build": "npm run build",
+    "test": "node --test",
+    "start": "node scripts/serve.mjs",
+    "validate:seo": "node scripts/validate-seo.mjs"
+  }
 }

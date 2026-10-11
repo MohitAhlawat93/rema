@@ -25,7 +25,7 @@ test('imported origin guard rejects cross-site writes',()=>{
 });
 test('all generated internal links and assets resolve; only public modules are shipped',async()=>{
  const root=path.resolve('dist');const files=await readdir(root,{recursive:true});
- for(const f of files.filter(f=>f.endsWith('.html'))){const html=await readFile(path.join(root,f),'utf8');assert.match(html,/noindex,nofollow/);assert.doesNotMatch(html,/Rebecca|Élanora|Élrebecca|RC_STORE_SECRET|supabase/i);for(const [,url] of html.matchAll(/(?:href|src)="(\/[^"#]*)"/g)){await access(path.join(root,url,url.endsWith('/')?'index.html':''));}}
+ for(const f of files.filter(f=>f.endsWith('.html'))){const html=await readFile(path.join(root,f),'utf8');assert.match(html,/noindex,\s*nofollow/);assert.doesNotMatch(html,/Rebecca|Élanora|Élrebecca|RC_STORE_SECRET|supabase/i);for(const [,url] of html.matchAll(/(?:href|src)="(\/[^"#]*)"/g)){await access(path.join(root,url,url.endsWith('/')?'index.html':''));}}
  await assert.rejects(access(path.join(root,'lib/admin-auth.js')));
  for(const route of ['about','gallery','services','contact'])await access(path.join(root,route,'index.html'));
 });
