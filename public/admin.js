@@ -146,7 +146,7 @@ function renderPendingReviews(){
     try{
       // Approval saves to a private draft; full validation happens on Publish.
       const updated=await api('state',{method:'PUT',body:JSON.stringify({state:state.draft,expectedVersion:state.version})});
-      state=updated;dirty=false;saved=true;
+      state=updated;savedDraftSnapshot=JSON.stringify(state.draft);dirty=false;saved=true;
       renderAll();
       const decision=await api('review-inbox',{method:'POST',body:JSON.stringify({action:'resolve',id,status:'approved'})});
       if(decision.ok!==true)throw new Error('Draft saved, but the review queue was not updated. Refresh and try again.');
