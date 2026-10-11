@@ -66,9 +66,20 @@ export default async function handler(req,res){
       if(req.method==='GET')return send(res,200,await reviewInbox('list'));
       if(req.method==='POST'){
         const body=readBody(req);
-        if(body.action!=='resolve'||!Number.isSafeInteger(Number(body.id))||
-           !['approved','rejected'].includes(body.status))return send(res,400,{error:'Invalid review decision.'});
-        return send(res,200,await reviewInbox('resolve',{id:Number(body.id),status:body.status}));
+        if(body.action!=='add'||typeof body.author!=='string'||typeof body.text!=='string'||
+           body.author.trim().length<2||body.author.trim().length>90||
+           body.text.trim().length<20||body.text.trim().length>1400||
+           !['en','hi'].includes(body.language)||body.consent!==true)
+          return send(res,400,{error:'Add a reviewer-approved name, review of at least 20 characters, and consent.'});
+        return send(res,201,await reviewInbox('submit',{
+          author:body.author,text:body.text,language:body.language,consent:true,source:'owner'
+        }));
+      }
+      if(req.method==='DELETE'){
+        const id=Number(readBody(req).id);
+        if(!Number.isSafeInteger(id)||id<1)return send(res,400,{error:'Invalid review ID.'});
+        const deleted=await reviewInbox('delete',{id});
+        return send(res,deleted.ok?200:404,deleted.ok?{ok:true}:{error:'Review not found.'});
       }
       return send(res,405,{error:'Unsupported method.'});
     }

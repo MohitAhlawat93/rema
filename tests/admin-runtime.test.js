@@ -38,7 +38,7 @@ function dashboard({seoAvailable=true}={}){
  const panels=tabs.map(item=>new FakeElement({panel:item.dataset.tab}));
  const fields=['title','description','heading','image'].map(seoField=>new FakeElement({seoField}));
  const paragraphs=[0,1].map(seoParagraph=>new FakeElement({seoParagraph:String(seoParagraph)}));
- const saves=Array.from({length:8},()=>new FakeElement());
+ const saves=Array.from({length:7},()=>new FakeElement());
  const lists={
   '[data-tab]':tabs,'[data-panel]':panels,
   '[data-seo-field]':fields,'[data-seo-paragraph]':paragraphs,'[data-save]':saves
@@ -154,7 +154,7 @@ test('backend distinguishes save from publish and gives precise client-safe erro
 test('all admin Save Draft controls persist changes from their sections',async()=>{
  const ui=dashboard();
  await initialized(ui);
- assert.equal(ui.saves.length,8);
+ assert.equal(ui.saves.length,7);
  for(let index=0;index<ui.saves.length;index++){
   ui.state.draft.hero={...ui.state.draft.hero,title:'Updated heading '+index};
   ui.state.draft.about={title:'About '+index,heading:'Heading '+index,text:'Biography '+index};
@@ -171,7 +171,7 @@ test('all admin Save Draft controls persist changes from their sections',async()
   assert.equal(payload.state.services[0].title,'Service '+index);
   assert.equal(payload.state.afterhours.title,'Afterhours '+index);
  }
- assert.equal(ui.calls.filter(x=>x.method==='PUT'&&x.url==='/api/admin/state').length,8);
+ assert.equal(ui.calls.filter(x=>x.method==='PUT'&&x.url==='/api/admin/state').length,7);
 });
 test('every indexed page has an independently editable and savable SEO draft',async()=>{
  const ui=dashboard();
@@ -185,4 +185,24 @@ test('every indexed page has an independently editable and savable SEO draft',as
   assert.equal(ui.state.draft.seo.pages[route].title,'Useful updated owner title '+route);
   assert.match(ui.element('[data-notice]').textContent,/Draft saved privately/);
  }
+});
+
+test('assistant Save Answers explains incomplete entries instead of calling broken backend',async()=>{
+ const ui=dashboard();
+ await initialized(ui);
+ ui.element('[data-add-answer]').onclick();
+ await ui.element('[data-save-answers]').onclick();
+ assert.match(ui.element('[data-notice]').textContent,/needs both a question and an answer/);
+ assert.equal(ui.calls.filter(x=>x.url==='/api/admin/knowledge'&&x.method==='PUT').length,0);
+});
+test('admin review manager allows add and delete actions',async()=>{
+ const [html,route]=await Promise.all([
+ readFile(new URL('../public/admin.html',import.meta.url),'utf8'),
+ readFile(new URL('../api/admin/[route].js',import.meta.url),'utf8')
+ ]);
+ assert.ok(html.includes('data-admin-review-form'));
+ assert.ok(html.includes('data-reviews-editor'));
+ assert.ok(code.includes('addLiveReview'));
+ assert.ok(code.includes("method:'DELETE'"));
+ assert.ok(route.includes("req.method==='DELETE'"));
 });

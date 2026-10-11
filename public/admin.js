@@ -1,6 +1,6 @@
 const $=selector=>document.querySelector(selector);
 const $$=selector=>[...document.querySelectorAll(selector)];
-let state=null,knowledge=[],pendingReviews=[],dirty=false,seoDefaults=null,seoCurrent='/',savedDraftSnapshot='',savingDraft=null;
+let state=null,knowledge=[],liveReviews=[],knowledgeDirty=false,dirty=false,seoDefaults=null,seoCurrent='/',savedDraftSnapshot='',savingDraft=null;
 const hasUnsavedDraft=()=>Boolean(state)&&(dirty||JSON.stringify(state.draft)!==savedDraftSnapshot);
 const clone=value=>JSON.parse(JSON.stringify(value));
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -18,7 +18,7 @@ function renderServices(){const holder=$('[data-services]');holder.innerHTML=(st
 function photoCard(image,index){const about=(state.draft.aboutImages||[]).includes(image.src);return `<article class="photo-card"><img src="${esc(image.src)}" alt=""><label>Title<input data-photo-field="title" data-index="${index}" value="${esc(image.title)}"></label><label>Alt text<input data-photo-field="alt" data-index="${index}" value="${esc(image.alt)}"></label><label>Category<input data-photo-field="category" data-index="${index}" value="${esc(image.category)}"></label><div class="checks"><label><input type="checkbox" data-photo-hero data-index="${index}" ${image.hero?'checked':''}> Home hero</label><label><input type="checkbox" data-photo-about data-index="${index}" ${about?'checked':''}> About</label></div><button data-photo-remove data-index="${index}">Remove from draft</button></article>`;}
 function renderPhotos(){const holder=$('[data-photos]');holder.innerHTML=(state.draft.images||[]).map(photoCard).join('');holder.querySelectorAll('[data-photo-field]').forEach(input=>input.oninput=()=>{state.draft.images[+input.dataset.index][input.dataset.photoField]=input.value;setDirty();});holder.querySelectorAll('[data-photo-hero]').forEach(input=>input.onchange=()=>{state.draft.images[+input.dataset.index].hero=input.checked;setDirty();});holder.querySelectorAll('[data-photo-about]').forEach(input=>input.onchange=()=>{const src=state.draft.images[+input.dataset.index].src;state.draft.aboutImages=(state.draft.aboutImages||[]).filter(item=>item!==src);if(input.checked)state.draft.aboutImages.push(src);renderPhotos();setDirty();});holder.querySelectorAll('[data-photo-remove]').forEach(button=>button.onclick=()=>{const image=state.draft.images[+button.dataset.index];if(!confirm('Remove this photograph from the draft? The stored file will remain available.'))return;state.draft.images.splice(+button.dataset.index,1);state.draft.aboutImages=(state.draft.aboutImages||[]).filter(src=>src!==image.src);renderPhotos();setDirty();});}
 function answerCard(item,index){return `<article class="repeat-card"><span class="number">${String(index+1).padStart(2,'0')}</span><div class="repeat-fields"><label class="wide">Question<input data-answer-field="question" data-index="${index}" value="${esc(item.question)}"></label><label class="wide">Answer<textarea rows="4" data-answer-field="answer" data-index="${index}">${esc(item.answer)}</textarea></label><label>Keywords, separated by commas<input data-answer-field="keywords" data-index="${index}" value="${esc((item.keywords||[]).join(', '))}"></label><label>Related page<input data-answer-field="href" data-index="${index}" value="${esc(item.href)}"></label></div><div class="card-actions"><button class="danger" data-answer-remove data-index="${index}" aria-label="Remove">×</button></div></article>`;}
-function renderAnswers(){const holder=$('[data-answers]');holder.innerHTML=knowledge.map(answerCard).join('');holder.querySelectorAll('[data-answer-field]').forEach(input=>input.oninput=()=>{const value=input.dataset.answerField==='keywords'?input.value.split(',').map(x=>x.trim()).filter(Boolean):input.value;knowledge[+input.dataset.index][input.dataset.answerField]=value;notice('Assistant changes are not saved yet.','');});holder.querySelectorAll('[data-answer-remove]').forEach(button=>button.onclick=()=>{knowledge.splice(+button.dataset.index,1);renderAnswers();});}
+function renderAnswers(){const holder=$('[data-answers]');holder.innerHTML=knowledge.map(answerCard).join('');holder.querySelectorAll('[data-answer-field]').forEach(input=>input.oninput=()=>{const value=input.dataset.answerField==='keywords'?input.value.split(',').map(x=>x.trim()).filter(Boolean):input.value;knowledge[+input.dataset.index][input.dataset.answerField]=value;knowledgeDirty=true;notice('Assistant changes are not saved yet. Choose Save answers.','');});holder.querySelectorAll('[data-answer-remove]').forEach(button=>button.onclick=()=>{knowledge.splice(+button.dataset.index,1);renderAnswers();});}
 function renderHistory(){const holder=$('[data-history]');holder.innerHTML=(state.history||[]).slice().reverse().map(item=>`<article><span>Version ${item.version} · ${new Date(item.publishedAt).toLocaleString()}</span><button class="secondary" data-restore="${item.version}">Restore to draft</button></article>`).join('')||'<p>No earlier published versions yet.</p>';holder.querySelectorAll('[data-restore]').forEach(button=>button.onclick=()=>restoreVersion(+button.dataset.restore));}
 const seoNames={'/':'Home','/about/':'About','/gallery/':'Gallery','/services/':'Services','/contact/':'Contact'};
 function initializeSeo(){
@@ -112,62 +112,54 @@ function renderLinks(){
     holder.querySelectorAll('[data-link-remove]').forEach(button=>button.onclick=()=>{links.splice(+button.dataset.linkRemove,1);renderLinks();setDirty();});
   });
 }
-function reviewCard(item,index){
-  return '<article class="repeat-card review-editor"><span class="number">'+String(index+1).padStart(2,'0')+'</span><div class="repeat-fields"><label>Reviewer-approved name or alias<input data-review-field="author" data-index="'+index+'" maxlength="90" value="'+esc(item.author||'')+'" placeholder="Guest-approved display name"></label><label>Review in English<textarea rows="3" data-review-field="textEn" data-index="'+index+'" maxlength="1400">'+esc(item.textEn||'')+'</textarea></label><label>Review in Hindi / हिंदी<textarea rows="3" data-review-field="textHi" data-index="'+index+'" maxlength="1400">'+esc(item.textHi||'')+'</textarea></label><div class="review-options wide"><label><input type="checkbox" data-review-consent="'+index+'" '+(item.consent?'checked':'')+'> Reviewer gave permission to publish this text and name</label><label><input type="checkbox" data-review-published="'+index+'" '+(item.published?'checked':'')+'> Show on website</label></div></div><div class="card-actions"><button type="button" class="danger" data-review-remove="'+index+'" aria-label="Delete review">×</button></div></article>';
-}
 function renderReviews(){
   const holder=$('[data-reviews-editor]');
-  holder.innerHTML=(state.draft.reviews||[]).map(reviewCard).join('')||'<p>No reviews published yet. Review submissions will appear above.</p>';
-  holder.querySelectorAll('[data-review-field]').forEach(input=>input.oninput=()=>{state.draft.reviews[+input.dataset.index][input.dataset.reviewField]=input.value;setDirty();});
-  holder.querySelectorAll('[data-review-consent]').forEach(input=>input.onchange=()=>{state.draft.reviews[+input.dataset.reviewConsent].consent=input.checked;setDirty();});
-  holder.querySelectorAll('[data-review-published]').forEach(input=>input.onchange=()=>{state.draft.reviews[+input.dataset.reviewPublished].published=input.checked;setDirty();});
-  holder.querySelectorAll('[data-review-remove]').forEach(button=>button.onclick=()=>{if(!confirm('Delete this review from the draft?'))return;state.draft.reviews.splice(+button.dataset.reviewRemove,1);renderReviews();setDirty();});
-}
-function renderPendingReviews(){
-  const holder=$('[data-review-submissions]');if(!holder)return;
-  holder.innerHTML=pendingReviews.length?pendingReviews.map(item=>
-    '<article class="repeat-card review-pending-card" data-review-submission="'+Number(item.id)+'">'+
-    '<p class="review-pending-body">'+esc(item.text)+'</p><p class="fine">— '+esc(item.author)+' · '+(item.language==='hi'?'हिंदी':'English')+'</p>'+
-    '<div class="review-pending-actions"><button class="primary" type="button" data-review-approve>Approve to draft</button>'+
-    '<button class="secondary" type="button" data-review-reject>Reject</button></div></article>'
-  ).join(''):'<p class="fine">No pending reviews to approve.</p>';
-  holder.querySelectorAll('[data-review-approve]').forEach(button=>button.onclick=async()=>{
-    const id=Number(button.closest('[data-review-submission]').dataset.reviewSubmission);
-    const item=pendingReviews.find(x=>Number(x.id)===id);if(!item)return;
-    const existing=(state.draft.reviews||[]).some(x=>x.author===item.author&&
-      (x.textEn===item.text||x.textHi===item.text));
-    if(!existing){
-      if(state.draft.reviews.length>=40){notice('The website has reached its 40-review limit. Remove one before approving another.','error');return;}
-      state.draft.reviews.push({author:item.author,textEn:item.language==='hi'?'':item.text,textHi:item.language==='hi'?item.text:'',consent:true,published:true});
-      setDirty();
-    }
+  if(!holder)return;
+  holder.innerHTML=liveReviews.length?liveReviews.map(item=>
+    '<article class="repeat-card"><div class="repeat-fields"><p class="fine">'+
+      esc(item.language==='hi'?'Hindi · हिंदी':'English')+
+      ' · '+esc(item.source==='owner'?'Added by owner':'Visitor review')+'</p>'+
+      '<p class="review-pending-body">'+esc(item.text)+'</p><p>— '+esc(item.author)+'</p></div>'+
+      '<div class="card-actions"><button type="button" class="danger" data-review-delete="'+
+       Number(item.id)+'">Delete review</button></div></article>'
+  ).join(''):'<p class="fine">No published reviews yet. Visitors can leave their own review on the Reviews page.</p>';
+  holder.querySelectorAll('[data-review-delete]').forEach(button=>button.onclick=async()=>{
+    const id=Number(button.dataset.reviewDelete);
+    if(!confirm('Delete this published review from the website?'))return;
     button.disabled=true;
-    let saved=false;
     try{
-      // Approval saves to a private draft; full validation happens on Publish.
-      const updated=await api('state',{method:'PUT',body:JSON.stringify({state:state.draft,expectedVersion:state.version})});
-      state=updated;savedDraftSnapshot=JSON.stringify(state.draft);dirty=false;saved=true;
-      renderAll();
-      const decision=await api('review-inbox',{method:'POST',body:JSON.stringify({action:'resolve',id,status:'approved'})});
-      if(decision.ok!==true)throw new Error('Draft saved, but the review queue was not updated. Refresh and try again.');
-      pendingReviews=pendingReviews.filter(x=>Number(x.id)!==id);renderPendingReviews();
-      notice('Review added to the saved draft. Click Publish website to show it publicly.','success');
-    }catch(error){
-      if(!saved&&!existing){state.draft.reviews=state.draft.reviews.filter(x=>!(x.author===item.author&&(x.textEn===item.text||x.textHi===item.text)));renderReviews();}
-      notice(error.message||'Could not approve review.','error');button.disabled=false;
-    }
-  });
-  holder.querySelectorAll('[data-review-reject]').forEach(button=>button.onclick=async()=>{
-    const id=Number(button.closest('[data-review-submission]').dataset.reviewSubmission);
-    if(!confirm('Reject this submitted review?'))return;
-    button.disabled=true;try{await api('review-inbox',{method:'POST',body:JSON.stringify({action:'resolve',id,status:'rejected'})});
-      pendingReviews=pendingReviews.filter(x=>Number(x.id)!==id);renderPendingReviews();notice('Submission rejected.','success');
-    }catch(error){notice(error.message||'Could not reject review.','error');button.disabled=false;}
+      const response=await api('review-inbox',{method:'DELETE',body:JSON.stringify({id})});
+      if(response.ok!==true)throw new Error('Could not delete review.');
+      liveReviews=liveReviews.filter(item=>Number(item.id)!==id);
+      renderReviews();notice('Review deleted from the live website.','success');
+    }catch(error){button.disabled=false;notice(error.message||'Could not delete review.','error');}
   });
 }
-async function loadPendingReviews(){
-  try{const result=await api('review-inbox');pendingReviews=Array.isArray(result.items)?result.items:[];renderPendingReviews();}
-  catch{const holder=$('[data-review-submissions]');if(holder)holder.textContent='Could not load submissions. Please refresh.';}
+async function loadLiveReviews(){
+  try{
+    const response=await api('review-inbox');
+    liveReviews=Array.isArray(response.items)?response.items:[];
+    renderReviews();
+  }catch(error){const holder=$('[data-reviews-editor]');if(holder)holder.textContent='Could not load published reviews. Try Refresh reviews.';}
+}
+async function addLiveReview(event){
+  event.preventDefault();
+  const form=event.currentTarget;
+  if(!form.reportValidity())return;
+  const data=new FormData(form);
+  const button=form.querySelector('button[type="submit"]');
+  button.disabled=true;
+  try{
+    const result=await api('review-inbox',{method:'POST',body:JSON.stringify({
+      action:'add',author:data.get('author'),text:data.get('text'),
+      language:data.get('language'),consent:data.get('consent')==='yes'
+    })});
+    if(result.ok!==true)throw new Error('Could not publish review.');
+    form.reset();form.hidden=true;
+    await loadLiveReviews();
+    notice('Review published immediately. Visitors can see it now.','success');
+  }catch(error){notice(error.message||'Could not publish review.','error');}
+  finally{button.disabled=false;}
 }
 function validateEditorialControls(){
   for(const type of ['afterhours','contactLinks'])for(const link of editableLinks(type)){
@@ -199,13 +191,14 @@ async function loadWorkspace(){
     })
   ]);
   knowledge=answers.status==='fulfilled'?(answers.value.items||[]):[];
+  knowledgeDirty=false;
   seoDefaults=defaults.status==='fulfilled'&&defaults.value?.pages?defaults.value:null;
   initializeSeo();
   renderAll();
   const seoWarning=$('[data-seo-loading-error]');
   if(seoWarning)seoWarning.hidden=Boolean(seoDefaults);
   void loadAiStatus();
-  void loadPendingReviews();
+  void loadLiveReviews();
   dirty=hasUnsavedDraft();
   if(!seoDefaults||answers.status!=='fulfilled'){
     notice('Dashboard ready. Some optional settings did not load; refresh before editing those sections.','');
@@ -261,7 +254,17 @@ async function publish(){
   }
 }
 async function restoreVersion(version){try{if(!confirm('Restore version '+version+' to Draft? The live website will stay unchanged.'))return;state=await api('state',{method:'POST',body:JSON.stringify({action:'restore',version})});savedDraftSnapshot=JSON.stringify(state.draft);dirty=false;initializeEditableSections();initializeSeo();dirty=hasUnsavedDraft();renderAll();notice('Older version restored to Draft. Save draft to keep any missing default settings.','success');}catch(error){notice(error.message,'error');}}
-async function saveAnswers(){try{notice('Saving assistant answers…');const result=await api('knowledge',{method:'PUT',body:JSON.stringify({items:knowledge})});notice('Saved '+result.saved+' assistant answers. They are live now.','success');}catch(error){notice(error.message,'error');}}
+async function saveAnswers(){
+  try{
+    const incomplete=knowledge.findIndex(item=>!item.question?.trim()||!item.answer?.trim());
+    if(incomplete!==-1)throw new Error('Question '+(incomplete+1)+' needs both a question and an answer. Complete it or remove it before saving.');
+    if(knowledge.length>250)throw new Error('Keep at most 250 assistant answers.');
+    notice('Saving assistant answers…');
+    const result=await api('knowledge',{method:'PUT',body:JSON.stringify({items:knowledge})});
+    knowledgeDirty=false;
+    notice('Saved '+result.saved+' assistant answers. They are live now.','success');
+  }catch(error){notice(error.message||'Could not save assistant answers.','error');}
+}
 async function optimise(file){const image=await createImageBitmap(file);const max=1600,scale=Math.min(1,max/Math.max(image.width,image.height));const canvas=document.createElement('canvas');canvas.width=Math.round(image.width*scale);canvas.height=Math.round(image.height*scale);canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);image.close();return canvas.toDataURL('image/jpeg',.86);}
 async function uploadPhoto(){const input=$('[data-photo-file]'),status=$('[data-upload-status]'),file=input.files?.[0];if(!file)return status.textContent='Choose a photograph first.';try{status.textContent='Optimising and uploading…';const dataUrl=await optimise(file);const result=await api('upload',{method:'POST',body:JSON.stringify({name:file.name,dataUrl})});state.draft.images.push({src:result.url,storagePath:result.path,alt:'Portrait of witness_lema_',title:file.name.replace(/\.[^.]+$/,''),category:'Portrait',hero:false,reference:false});renderPhotos();setDirty();status.textContent='Uploaded and added to Draft. Save the draft when ready.';input.value='';}catch(error){status.textContent=error.message;notice(error.message,'error');}}
 $('[data-login-form]').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget;const data=new FormData(form);const message=$('[data-login-message]');message.textContent='Signing in…';try{await api('login',{method:'POST',body:JSON.stringify({loginId:data.get('loginId'),password:data.get('password')})});form.reset();await loadWorkspace();}catch(error){message.textContent=error.message;}});
@@ -275,14 +278,16 @@ $('[data-preview]').onclick=()=>{
   if(hasUnsavedDraft()){notice('Save draft before previewing. Your changes are still in this browser.','error');return;}
   window.open('/?admin_preview=1','_blank','noopener');
 };
-$('[data-refresh]').onclick=async()=>{if(hasUnsavedDraft()&&!confirm('Discard unsaved changes and reload the workspace?'))return;try{await loadWorkspace();}catch(error){notice(error.message,'error');}};
+$('[data-refresh]').onclick=async()=>{if((hasUnsavedDraft()||knowledgeDirty)&&!confirm('Discard unsaved draft and assistant-answer changes and reload the workspace?'))return;try{await loadWorkspace();}catch(error){notice(error.message,'error');}};
 $$('[data-add-link]').forEach(button=>button.onclick=()=>{editableLinks(button.dataset.addLink).push({label:'',url:''});renderLinks();setDirty();});
-$('[data-review-queue-refresh]').onclick=loadPendingReviews;
-$('[data-add-review]').onclick=()=>{state.draft.reviews.unshift({author:'',textEn:'',textHi:'',consent:false,published:false});renderReviews();setDirty();};
+$('[data-review-refresh]').onclick=loadLiveReviews;
+$('[data-add-review]').onclick=()=>{const form=$('[data-admin-review-form]');form.hidden=!form.hidden;if(!form.hidden)form.querySelector('[name="author"]').focus();};
+$('[data-review-cancel]').onclick=()=>{$('[data-admin-review-form]').hidden=true;};
+$('[data-admin-review-form]').addEventListener('submit',addLiveReview);
 $('[data-add-service]').onclick=()=>{state.draft.services.push({number:String(state.draft.services.length+1).padStart(2,'0'),title:'New service',text:'Add a refined description.',tag:'By arrangement',image:state.draft.images?.[0]?.src||''});renderServices();setDirty();};
-$('[data-add-answer]').onclick=()=>{knowledge.unshift({question:'',answer:'',keywords:[],href:'/contact/',published:true});renderAnswers();};
+$('[data-add-answer]').onclick=()=>{knowledge.unshift({question:'',answer:'',keywords:[],href:'/contact/',published:true});knowledgeDirty=true;renderAnswers();notice('Finish both fields, then choose Save answers.');};
 $('[data-save-answers]').onclick=saveAnswers;
 $('[data-upload]').onclick=uploadPhoto;
 $('[data-logout]').onclick=async()=>{await api('logout',{method:'POST',body:'{}'});state=null;showLogin('You have been signed out.');};
-window.addEventListener('beforeunload',event=>{if(hasUnsavedDraft()){event.preventDefault();event.returnValue='';}});
+window.addEventListener('beforeunload',event=>{if(hasUnsavedDraft()||knowledgeDirty){event.preventDefault();event.returnValue='';}});
 loadWorkspace().catch(()=>showLogin());
