@@ -19,7 +19,7 @@ Deno.serve(async(req)=>{
     const action=String(input?.action||'');
     if(action==='review-inbox'){
       const reviewAction=String(input.body?.reviewAction||'');
-      if(!['submit','list','resolve'].includes(reviewAction))return json({error:'Unknown review action.'},400);
+      if(!['submit','list','delete'].includes(reviewAction))return json({error:'Unknown review action.'},400);
       const payload=input.body?.payload??{};
       if(!payload||typeof payload!=='object'||Array.isArray(payload))return json({error:'Invalid review request.'},400);
       // This RPC is executable only by service_role, never anon/authenticated.
