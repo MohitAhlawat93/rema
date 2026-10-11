@@ -1,9 +1,9 @@
 // Vercel Routing Middleware: render published SEO values in the HTTP HTML,
 // not as browser-only JavaScript. Only public, already-published Supabase rows
 // are used. Preview remains noindex. Private drafts are NEVER fetched here.
-import { SEO_ROUTES, cleanSEOPage, renderLivePage, xmlSitemap, imageSitemap } from './seo/live.mjs';
+import { SEO_ROUTES, CONTENT_ROUTES, cleanSEOPage, renderLivePage, xmlSitemap, imageSitemap } from './seo/live.mjs';
 export const config={
- matcher:['/','/about/','/gallery/','/services/','/contact/','/sitemap.xml','/image-sitemap.xml']
+ matcher:['/','/about/','/gallery/','/services/','/contact/','/reviews/','/privacy/','/sitemap.xml','/image-sitemap.xml']
 };
 const origin='https://rema-ruby.vercel.app';
 const siteOrigin=()=>{
@@ -11,7 +11,7 @@ const siteOrigin=()=>{
  return /^https:\/\/[a-z0-9.-]+(?::[0-9]{2,5})?$/i.test(v)?v:origin;
 };
 const active=()=>process.env.VERCEL_ENV==='production'&&process.env.SEO_INDEXING_ENABLED!=='false';
-const cacheHeaders=type=>({'content-type':type,'cache-control':'public, s-maxage=60, stale-while-revalidate=180','x-content-type-options':'nosniff'});
+const cacheHeaders=type=>({'content-type':type,'cache-control':'no-store','x-content-type-options':'nosniff'});
 async function getJson(url,headers={}){
  const r=await fetch(url,{headers,signal:AbortSignal.timeout(2600),cache:'no-store'});
  if(!r.ok)throw new Error('SEO data unavailable');
@@ -21,7 +21,7 @@ const staticTemplate=(path,url)=>new URL('/_seo_templates/'+path,url).toString()
 export default async function middleware(req){
  const pathname=new URL(req.url).pathname;
  const sitemap=pathname==='/sitemap.xml'||pathname==='/image-sitemap.xml';
- if(!SEO_ROUTES.includes(pathname)&&!sitemap)return new Response('Not found',{status:404});
+ if(!CONTENT_ROUTES.includes(pathname)&&!sitemap)return new Response('Not found',{status:404});
  const fallback=sitemap?(pathname==='/sitemap.xml'?'sitemap.xml':'image-sitemap.xml'):
      (pathname==='/'?'home':pathname.slice(1,-1))+'/index.html';
  const baseURL=staticTemplate(fallback,req.url);
@@ -37,7 +37,7 @@ export default async function middleware(req){
  if(!template.ok)return new Response('Website temporarily unavailable',{status:503,headers:{'content-type':'text/plain','cache-control':'no-store'}});
  const raw=await template.text();
  if(!payload||!defaults?.pages){
-   const h=new Headers(template.headers);h.set('cache-control','public, s-maxage=30, stale-while-revalidate=60');
+   const h=new Headers(template.headers);h.set('cache-control','no-store');
    if(!active())h.set('x-robots-tag','noindex, nofollow');
    return new Response(req.method==='HEAD'?null:raw,{status:200,headers:h});
  }
@@ -50,8 +50,9 @@ export default async function middleware(req){
    const xml=pathname==='/sitemap.xml'?xmlSitemap(pages,canonical,production):imageSitemap(pages,payload,canonical,supa,production);
    return new Response(req.method==='HEAD'?null:xml,{status:200,headers:cacheHeaders('application/xml; charset=utf-8')});
  }
- const html=renderLivePage(raw,pathname,pages[pathname],payload,canonical,production);
+ const html=renderLivePage(raw,pathname,pages[pathname]||null,payload,canonical,production,supa);
  const h=cacheHeaders('text/html; charset=utf-8');
- if(!production||!pages[pathname].index)h['x-robots-tag']='noindex, nofollow';
+ if(new URL(req.url).searchParams.get('admin_preview')==='1')h['x-robots-tag']='noindex, nofollow';
+ if(!production||!SEO_ROUTES.includes(pathname)||!pages[pathname]?.index)h['x-robots-tag']='noindex, nofollow';
  return new Response(req.method==='HEAD'?null:html,{status:200,headers:h});
 }
