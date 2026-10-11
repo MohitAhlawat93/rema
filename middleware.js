@@ -33,7 +33,10 @@ export default async function middleware(req){
  const dataPromise=supa&&key?getJson(supa+'/rest/v1/witness_lema_published_site?id=eq.main&select=payload,version&limit=1',
      {apikey:key,authorization:'Bearer '+key}).then(rows=>rows?.[0]?.payload||null).catch(()=>null):Promise.resolve(null);
  const defaultsPromise=getJson(new URL('/seo-defaults.json',req.url).toString()).catch(()=>null);
- const [template,payload,defaults]=await Promise.all([templatePromise,dataPromise,defaultsPromise]);
+ const publicReviewsPromise=pathname==='/reviews/'&&supa&&key?
+   getJson(supa+'/rest/v1/witness_lema_public_reviews?select=author,review_text,language&order=created_at.desc,id.desc&limit=100',
+     {apikey:key,authorization:'Bearer '+key}).catch(()=>null):Promise.resolve(null);
+ const [template,payload,defaults,publicReviews]=await Promise.all([templatePromise,dataPromise,defaultsPromise,publicReviewsPromise]);
  if(!template.ok)return new Response('Website temporarily unavailable',{status:503,headers:{'content-type':'text/plain','cache-control':'no-store'}});
  const raw=await template.text();
  if(!payload||!defaults?.pages){
@@ -50,7 +53,12 @@ export default async function middleware(req){
    const xml=pathname==='/sitemap.xml'?xmlSitemap(pages,canonical,production):imageSitemap(pages,payload,canonical,supa,production);
    return new Response(req.method==='HEAD'?null:xml,{status:200,headers:cacheHeaders('application/xml; charset=utf-8')});
  }
- const html=renderLivePage(raw,pathname,pages[pathname]||null,payload,canonical,production,supa);
+ const publishedForPage=pathname==='/reviews/'&&Array.isArray(publicReviews)?
+    {...payload,reviews:publicReviews.map(r=>({
+      author:r.author,textEn:r.language==='en'?r.review_text:'',
+      textHi:r.language==='hi'?r.review_text:'',published:true,consent:true
+    }))}:payload;
+ const html=renderLivePage(raw,pathname,pages[pathname]||null,publishedForPage,canonical,production,supa);
  const h=cacheHeaders('text/html; charset=utf-8');
  if(new URL(req.url).searchParams.get('admin_preview')==='1')h['x-robots-tag']='noindex, nofollow';
  if(!production||!SEO_ROUTES.includes(pathname)||!pages[pathname]?.index)h['x-robots-tag']='noindex, nofollow';
