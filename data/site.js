@@ -106,6 +106,23 @@ export const site = {
 
   servicesIntro: 'Every meeting is private, clean and centred on your comfort and satisfaction. Choose a starting point below or message me to create something more personal.',
 
+  // The owner can edit these two sets of social links independently in /admin.
+  afterhours: {
+    enabled: true,
+    title: 'Lema Afterhours',
+    intro: 'Stay close through Lema’s official channels and updates.',
+    links: [
+      { label: 'WhatsApp', url: 'https://wa.me/918119034436' },
+      { label: 'Instagram', url: 'https://www.instagram.com/reel/DdlFE68JfyZ/?cplk=ejN5ampjczV2OWJr' }
+    ]
+  },
+  contactLinks: [
+    { label: 'WhatsApp', url: 'https://wa.me/918119034436' },
+    { label: 'Instagram', url: 'https://www.instagram.com/reel/DdlFE68JfyZ/?cplk=ejN5ampjczV2OWJr' }
+  ],
+  // Reviews must be supplied by actual visitors with permission.
+  reviews: [],
+
   social: {
     whatsapp: 'https://wa.me/918119034436',
     telegram: '',
