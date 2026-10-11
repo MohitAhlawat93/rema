@@ -1,0 +1,35 @@
+name: Full browser audit — desktop, mobile, slow network
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  page-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Build production-style website
+        run: SEO_INDEXING_ENABLED=true npm run build
+      - name: Start website
+        run: |
+          node scripts/serve.mjs > /tmp/lema-qa-server.log 2>&1 &
+          for x in $(seq 1 30); do if curl -sf http://127.0.0.1:3000/ >/dev/null; then break; fi; sleep 1; done
+      - name: Test all pages in four device and network configurations
+        run: node scripts/full-browser-qa.mjs
+      - name: Preserve page-by-page report and screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lema-full-browser-audit
+          path: qa-output/
+          retention-days: 14
