@@ -100,11 +100,11 @@ function renderLinks(){
   const config=state.draft.afterhours;
   $('[data-afterhours-enabled]').checked=config.enabled!==false;
   $('[data-afterhours-enabled]').onchange=e=>{config.enabled=e.target.checked;setDirty();};
-  $('[data-afterhours-field]').forEach(input=>{
+  $$('[data-afterhours-field]').forEach(input=>{
     input.value=config[input.dataset.afterhoursField]||'';
     input.oninput=()=>{config[input.dataset.afterhoursField]=input.value;setDirty();};
   });
-  $('[data-links-editor]').forEach(holder=>{
+  $$('[data-links-editor]').forEach(holder=>{
     const type=holder.dataset.linksEditor,links=editableLinks(type);
     holder.innerHTML=links.map((link,index)=>'<div class="link-edit-row"><label>App / channel name<input maxlength="60" data-link-field="label" data-index="'+index+'" value="'+esc(link.label)+'" placeholder="WhatsApp, Telegram, YouTube…"></label><label>HTTPS link<input type="url" maxlength="2048" data-link-field="url" data-index="'+index+'" value="'+esc(link.url)+'" placeholder="https://…"></label><button type="button" class="danger" data-link-remove="'+index+'" aria-label="Remove link">×</button></div>').join('')||'<p class="fine">No channels. Add one when you are ready.</p>';
     holder.querySelectorAll('[data-link-field]').forEach(input=>input.oninput=()=>{links[+input.dataset.index][input.dataset.linkField]=input.value;setDirty();});
@@ -179,7 +179,7 @@ $$('[data-save]').forEach(button=>button.onclick=saveDraft);
 $('[data-publish]').onclick=publish;
 $('[data-preview]').onclick=()=>window.open('/?admin_preview=1','_blank','noopener');
 $('[data-refresh]').onclick=async()=>{try{await loadWorkspace();}catch(error){notice(error.message,'error');}};
-$('[data-add-link]').forEach(button=>button.onclick=()=>{editableLinks(button.dataset.addLink).push({label:'',url:''});renderLinks();setDirty();});
+$$('[data-add-link]').forEach(button=>button.onclick=()=>{editableLinks(button.dataset.addLink).push({label:'',url:''});renderLinks();setDirty();});
 $('[data-add-review]').onclick=()=>{state.draft.reviews.unshift({author:'',textEn:'',textHi:'',consent:false,published:false});renderReviews();setDirty();};
 $('[data-add-service]').onclick=()=>{state.draft.services.push({number:String(state.draft.services.length+1).padStart(2,'0'),title:'New service',text:'Add a refined description.',tag:'By arrangement',image:state.draft.images?.[0]?.src||''});renderServices();setDirty();};
 $('[data-add-answer]').onclick=()=>{knowledge.unshift({question:'',answer:'',keywords:[],href:'/contact/',published:true});renderAnswers();};
