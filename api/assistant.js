@@ -107,6 +107,8 @@ export default async function handler(request, response) {
 
   try {
     if (casualQuestion(question)) return json(response, 200, { answer: fallbackConversation(question), href: '' });
+    const local = localKnowledgeMatch(question);
+    if (local) return json(response, 200, { answer: local.answer, href: local.href || '' });
     const retrieved = await withTimeout(searchKnowledge(question), 1800, []);
     const matches = Array.isArray(retrieved) && retrieved.length ? retrieved : [];
     const best = matches[0] || localKnowledgeMatch(question);
