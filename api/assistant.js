@@ -115,9 +115,9 @@ export default async function handler(request, response) {
       try { answer = await withTimeout(process.env.GROQ_API_KEY ? askGroq(question, []) : askXai(question, []), 2500, ''); } catch { /* Contact guidance remains the safe fallback. */ }
       return json(response, 200, { answer: answer || 'I do not have a clear answer for that yet. Please use the contact page for help.', href: '/contact/' });
     }
-    let answer = '';
-    try { answer = await withTimeout(process.env.GROQ_API_KEY ? askGroq(question, matches) : askXai(question, matches), 2500, ''); } catch { /* Approved knowledge remains the safe fallback. */ }
-    return json(response, 200, { answer: answer || best.answer, href: best.href || '' });
+    // Exact RAG matches are returned directly for speed and fidelity. The model is
+    // reserved for general questions that do not have an approved website answer.
+    return json(response, 200, { answer: best.answer, href: best.href || '' });
   } catch {
     return json(response, 503, { error: 'Assistant search is temporarily unavailable.' });
   }
