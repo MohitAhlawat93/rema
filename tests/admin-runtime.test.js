@@ -16,7 +16,7 @@ class FakeElement{
  querySelectorAll(){return [];}
 }
 const routes=['/','/about/','/gallery/','/services/','/contact/','/reviews/'];
-const defaults={pages:Object.fromEntries(routes.map(route=>[route,{
+const defaults={business:{name:'Witness Lema',wordmark:'witness_lema_',tagline:'A WORLD OF HER OWN',city:'Gurgaon',email:'',logoUrl:'/assets/mark.svg',requestedDomain:''},pages:Object.fromEntries(routes.map(route=>[route,{
  title:'A useful and descriptive Witness Lema page title',
  description:'A factual summary of this page with enough meaningful information to help real visitors find the relevant content.',
  heading:'Helpful information for website visitors',
@@ -34,14 +34,15 @@ function dashboard({seoAvailable=true}={}){
   if(!elements.has(selector))elements.set(selector,new FakeElement());
   return elements.get(selector);
  };
- const tabs=['overview','profile','services','photos','assistant','links','reviews','seo'].map(tab=>new FakeElement({tab}));
+ const tabs=['overview','business','profile','services','photos','assistant','links','reviews','seo'].map(tab=>new FakeElement({tab}));
  const panels=tabs.map(item=>new FakeElement({panel:item.dataset.tab}));
  const fields=['title','description','heading','image'].map(seoField=>new FakeElement({seoField}));
+ const businessFields=['name','wordmark','tagline','city','email','logoUrl','requestedDomain'].map(businessField=>new FakeElement({businessField}));
  const paragraphs=[0,1].map(seoParagraph=>new FakeElement({seoParagraph:String(seoParagraph)}));
  const saves=Array.from({length:7},()=>new FakeElement());
  const lists={
   '[data-tab]':tabs,'[data-panel]':panels,
-  '[data-seo-field]':fields,'[data-seo-paragraph]':paragraphs,'[data-save]':saves
+  '[data-seo-field]':fields,'[data-seo-paragraph]':paragraphs,'[data-business-field]':businessFields,'[data-save]':saves
  };
  const document={
   querySelector:selector=>lists[selector]?.[0]||element(selector),
@@ -82,7 +83,7 @@ function dashboard({seoAvailable=true}={}){
   console,URL,Array,JSON,Date,String,Number,Promise
  });
  new vm.Script(code,{filename:'public/admin.js'}).runInContext(context);
- return {element,tabs,panels,fields,paragraphs,saves,calls,state};
+ return {element,tabs,panels,fields,businessFields,paragraphs,saves,calls,state};
 }
 async function initialized(ui){
  // Drain asynchronous mock responses and the dashboard's Promise.allSettled.
@@ -112,6 +113,18 @@ test('all admin navigation links and SEO controls work after login',async()=>{
  assert.ok(ui.calls.some(x=>x.url==='/api/admin/state'&&x.method==='POST'),'Publish request missing');
  assert.match(ui.element('[data-notice]').textContent,/Published successfully/);
 });
+test('business identity edits save privately and publish through the existing versioned API',async()=>{
+ const ui=dashboard();await initialized(ui);
+ const name=ui.businessFields.find(x=>x.dataset.businessField==='name');
+ assert.equal(typeof name.oninput,'function');
+ name.value='Example Studios';name.oninput();
+ assert.equal(ui.state.draft.business.name,'Example Studios');
+ await ui.saves[0].onclick();
+ assert.ok(ui.calls.some(x=>x.method==='PUT'&&JSON.parse(x.body||'{}').state?.business?.name==='Example Studios'));
+ await ui.element('[data-publish]').onclick();
+ assert.match(ui.element('[data-notice]').textContent,/Published successfully/);
+});
+
 test('missing SEO defaults cannot disable the rest of the admin dashboard',async()=>{
  const ui=dashboard({seoAvailable:false});
  await initialized(ui);
