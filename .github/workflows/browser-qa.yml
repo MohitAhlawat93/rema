@@ -1,0 +1,27 @@
+name: Browser QA — chatbot and WhatsApp
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium for real desktop and mobile viewport tests
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Build site and start local server
+        run: |
+          SEO_INDEXING_ENABLED=true npm run build
+          node scripts/serve.mjs > /tmp/lema-server.log 2>&1 &
+          for x in $(seq 1 30); do if curl -sf http://127.0.0.1:3000/ >/dev/null; then break; fi; sleep 1; done
+      - name: Verify auto popup, compact layout and contact handoff
+        run: node scripts/browser-qa.mjs
