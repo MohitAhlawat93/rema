@@ -88,7 +88,12 @@ Deno.serve(async(req)=>{
       if(payload.seo!==undefined){
         const pages=payload.seo?.pages;
         const routes=new Set(['/','/about/','/gallery/','/services/','/contact/','/reviews/']);
-        if(!pages||typeof pages!=='object'||Array.isArray(pages)||Object.keys(pages).length!==6)return json({error:'SEO must contain the six public pages.'},400);
+        const count=pages&&typeof pages==='object'&&!Array.isArray(pages)?Object.keys(pages).length:0;
+        // Backward-compatible during the Vercel rollout: legacy drafts have five
+        // SEO routes. The new editor always saves all six, including Reviews.
+        if(!pages||typeof pages!=='object'||Array.isArray(pages)||![5,6].includes(count)||
+          (count===5&&Object.hasOwn(pages,'/reviews/')))
+          return json({error:'SEO must contain the original five pages, or all six including Reviews.'},400);
         const allowedImage=(image)=>typeof image==='string'&&image.length<=2048&&(
           (/^\/images\/[a-z0-9_./-]+\.(?:jpe?g|png|webp)$/i.test(image)&&!image.includes('..'))||
           image.startsWith(SUPABASE_URL+'/storage/v1/object/public/witness-lema-gallery/')

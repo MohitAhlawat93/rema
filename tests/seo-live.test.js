@@ -111,3 +111,11 @@ test('published Reviews SEO never invents structured ratings or fake testimonial
  const sitemap=xmlSitemap(Object.fromEntries(SEO_ROUTES.map(r=>[r,r==='/reviews/'?entry:defaults[r]])),origin);
  assert.ok(!sitemap.includes('/reviews/</loc>'));
 });
+
+test('SEO publisher supports existing five-page drafts while allowing Reviews as sixth',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const edge=await readFile(new URL('../supabase/functions/witness-lema-admin/index.ts',import.meta.url),'utf8');
+ assert.ok(edge.includes("'/reviews/'"));
+ assert.ok(edge.includes('[5,6].includes(count)'));
+ assert.ok(edge.includes("count===5&&Object.hasOwn(pages,'/reviews/')"));
+});
