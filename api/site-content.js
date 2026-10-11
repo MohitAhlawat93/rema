@@ -18,6 +18,6 @@ export default async function handler(req,res){
     if(!response.ok)throw new Error('Published content is unavailable.');
     const row=(await response.json())[0];
     if(!row)throw new Error('Published content is unavailable.');
-    return send(res,200,row,'public, s-maxage=60, stale-while-revalidate=300');
+    return send(res,200,row,'no-store');
   }catch(error){return send(res,503,{error:error instanceof Error?error.message:'Content unavailable.'},'no-store');}
 }
