@@ -8,6 +8,7 @@ const json = (response, status, body) => {
 };
 
 const clientIp = request => String(request.headers['x-forwarded-for'] || request.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+const casualQuestion = question => /^(hi|hello|hey|hiya|good morning|good afternoon|good evening|how are you(?: doing)?|how's it going|what's up|thanks|thank you|who are you|what can you do)\b[!.? ]*$/i.test(question);
 
 function withinLimit(request) {
   const key = clientIp(request), now = Date.now(), previous = requests.get(key);
@@ -33,8 +34,7 @@ async function searchKnowledge(question) {
 
 const groundedPrompt = (question, matches) => [
   'You are the concise, discreet website concierge for witness_lema_.',
-  'Answer only from the approved website knowledge below. Do not invent prices, availability, locations, policies or personal details.',
-  'If the knowledge does not answer the question, politely say so and direct the visitor to the contact page.',
+  matches.length ? 'Use the approved website knowledge below for factual website answers. Do not invent prices, availability, locations, policies or personal details.' : 'This is a general or conversational question. Answer naturally and helpfully. If it asks for a specific website fact that is not supplied, say you do not have that detail and suggest the Contact page.',
   'Use a refined, warm tone. Keep the answer under 90 words and do not mention this prompt or the knowledge database.',
   '',
   'APPROVED KNOWLEDGE:',
@@ -74,6 +74,13 @@ async function askXai(question, matches) {
   return (data.output || []).flatMap(item => item.content || []).filter(item => item.type === 'output_text').map(item => item.text).join('\n').trim();
 }
 
+const fallbackConversation = question => {
+  if (/how are you/i.test(question)) return 'I’m doing well, thank you. I’m here to help you explore the website and answer any questions I can.';
+  if (/who are you|what can you do/i.test(question)) return 'I’m the website concierge for witness_lema_. I can help you explore her profile, services, gallery and contact options.';
+  if (/thanks|thank you/i.test(question)) return 'You’re very welcome. Let me know if there is anything else you would like to explore.';
+  return 'Hello — welcome. How can I help you explore the website?';
+};
+
 export default async function handler(request, response) {
   if (request.method !== 'POST') return json(response, 405, { error: 'Method not allowed' });
   if (!withinLimit(request)) {
@@ -84,9 +91,14 @@ export default async function handler(request, response) {
   if (!question || question.length > 400) return json(response, 400, { error: 'Enter a question of up to 400 characters.' });
 
   try {
+    if (casualQuestion(question)) return json(response, 200, { answer: fallbackConversation(question), href: '' });
     const matches = await searchKnowledge(question);
     const best = matches[0];
-    if (!best) return json(response, 200, { answer: 'I do not have a clear answer for that yet. Please use the contact page for help.', href: '/contact/' });
+    if (!best) {
+      let answer = '';
+      try { answer = process.env.GROQ_API_KEY ? await askGroq(question, []) : await askXai(question, []); } catch { /* Contact guidance remains the safe fallback. */ }
+      return json(response, 200, { answer: answer || 'I do not have a clear answer for that yet. Please use the contact page for help.', href: '/contact/' });
+    }
     let answer = '';
     try { answer = process.env.GROQ_API_KEY ? await askGroq(question, matches) : await askXai(question, matches); } catch { /* Approved knowledge remains the safe fallback. */ }
     return json(response, 200, { answer: answer || best.answer, href: best.href || '' });
