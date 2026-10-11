@@ -148,3 +148,63 @@
  #enquiry .contact-actions button{width:100%;justify-content:center}
 }
 @media(max-height:530px){#assistant-panel:not(.expanded){height:calc(100dvh - 40px);max-height:calc(100dvh - 40px)}}
+
+/* Mobile photo fidelity: one complete portrait per row, never a narrow crop. */
+@media (max-width: 767px) {
+  .gallery-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  .gallery-grid .gallery-tile {
+    min-width: 0;
+  }
+  .gallery-grid .gallery-tile:nth-child(even),
+  .editorial-gallery .gallery-tile:nth-child(even) {
+    padding-top: 0;
+  }
+  .gallery-grid .gallery-tile .photo {
+    width: 100%;
+  }
+  .gallery-grid .gallery-tile img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    aspect-ratio: auto;
+    object-fit: contain;
+    object-position: center;
+  }
+  .gallery-grid .gallery-tile figcaption {
+    gap: 12px;
+  }
+}
+@media (max-width: 600px) {
+  /* The introductory portraits should not hide behind one another on phones. */
+  .intro-portraits {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+  }
+  .portrait-inset {
+    position: static;
+    width: 100%;
+    border: 0;
+  }
+  .portrait-main img,
+  .portrait-inset img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: auto;
+    object-fit: contain;
+    border-radius: 0;
+  }
+  .portrait-note {
+    position: static;
+    writing-mode: initial;
+    transform: none;
+  }
+}

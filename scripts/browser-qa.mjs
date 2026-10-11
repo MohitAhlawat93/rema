@@ -31,6 +31,49 @@ try{
   });
   await context.close();
  }
+
+ await run('Home and Gallery show full-width uncropped photos on phones',async()=>{
+   for(const width of [320,390,600]){
+     const context=await browser.newContext({viewport:{width,height:844},isMobile:true,hasTouch:true});
+     for(const route of ['/','/gallery/']){
+       const page=await context.newPage();
+       await page.goto(root+route,{waitUntil:'domcontentloaded'});
+       await page.locator('.gallery-grid .gallery-tile img').first().waitFor({state:'attached'});
+       const layout=await page.evaluate(async()=>{
+         const grid=document.querySelector('.gallery-grid');
+         const photos=[...grid.querySelectorAll('.gallery-tile img')].slice(0,2);
+         await Promise.all(photos.map(img=>img.decode().catch(()=>{})));
+         return {
+           columns:getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length,
+           overflow:document.documentElement.scrollWidth-window.innerWidth,
+           photos:photos.map(img=>{
+             const bounds=img.getBoundingClientRect();
+             const container=grid.getBoundingClientRect();
+             return {
+               width:bounds.width,height:bounds.height,left:bounds.left,right:bounds.right,
+               availableWidth:container.width,
+               naturalRatio:img.naturalHeight/img.naturalWidth,
+               fit:getComputedStyle(img).objectFit
+             };
+           })
+         };
+       });
+       assert.equal(layout.columns,1,`${route} at ${width}px should have one photo column`);
+       assert.ok(layout.overflow<=2,`${route} at ${width}px has horizontal overflow: ${layout.overflow}px`);
+       assert.ok(layout.photos.length===2,'Expected at least two photographs');
+       for(const photo of layout.photos){
+         assert.ok(photo.width>=photo.availableWidth*.95,`Photo narrow at ${width}px: ${JSON.stringify(photo)}`);
+         assert.ok(photo.left>=-2&&photo.right<=width+2,`Photo outside phone viewport at ${width}px`);
+         assert.equal(photo.fit,'contain','Mobile image must not be cropped');
+         assert.ok(Number.isFinite(photo.naturalRatio)&&photo.naturalRatio>0,'Image failed to load');
+         assert.ok(Math.abs(photo.height/photo.width-photo.naturalRatio)<.045,
+           `Photo aspect ratio differs from original at ${width}px: ${JSON.stringify(photo)}`);
+       }
+       await page.close();
+     }
+     await context.close();
+   }
+ });
  await run('automatic chat waits for Afterhours dialog then opens after closure',async()=>{
   const ctx=await browser.newContext({viewport:{width:1280,height:720}});
   const page=await ctx.newPage();
