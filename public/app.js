@@ -14,7 +14,7 @@ function linkItems(items){
   if(Array.isArray(items))return items.filter(item=>item&&item.label&&permittedUrl(item.url)).map(item=>({label:String(item.label).slice(0,60),url:permittedUrl(item.url)}));
   return Object.entries(items||{}).filter(([,url])=>permittedUrl(url)).map(([label,url])=>({label:label[0].toUpperCase()+label.slice(1),url:permittedUrl(url)}));
 }
-function socialMarkup(){return linkItems(site.contactLinks?.length?site.contactLinks:site.social).map(({label,url})=>`<a href="${html(url)}" target="_blank" rel="noopener noreferrer">${html(label)} <span aria-hidden="true">↗</span></a>`).join('');}
+function socialMarkup(){return linkItems(Array.isArray(site.contactLinks)?site.contactLinks:site.social).map(({label,url})=>`<a href="${html(url)}" target="_blank" rel="noopener noreferrer">${html(label)} <span aria-hidden="true">↗</span></a>`).join('');}
 function hydrateAfterhours(){
   const config=site.afterhours||{};
   const launch=$('#afterhours-launch');
