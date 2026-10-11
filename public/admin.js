@@ -270,6 +270,7 @@ async function uploadPhoto(){const input=$('[data-photo-file]'),status=$('[data-
 $('[data-login-form]').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget;const data=new FormData(form);const message=$('[data-login-message]');message.textContent='Signing in…';try{await api('login',{method:'POST',body:JSON.stringify({loginId:data.get('loginId'),password:data.get('password')})});form.reset();await loadWorkspace();}catch(error){message.textContent=error.message;}});
 $('[data-password-toggle]').onclick=()=>{const input=$('[name="password"]'),show=input.type==='password';input.type=show?'text':'password';$('[data-password-toggle]').textContent=show?'Hide':'Show';$('[data-password-toggle]').setAttribute('aria-label',show?'Hide password':'Show password');input.focus();};
 $$('[data-tab]').forEach(button=>button.onclick=()=>switchTab(button.dataset.tab));
+$$('[data-go-tab]').forEach(button=>button.onclick=()=>{switchTab(button.dataset.goTab);document.querySelector('.workspace')?.scrollTo?.({top:0,behavior:'smooth'});});
 $('[data-seo-page]').onchange=event=>{seoCurrent=event.target.value;renderSeoEditor();};
 $('[data-publish-seo]').onclick=publish;
 $$('[data-save]').forEach(button=>button.onclick=saveDraft);

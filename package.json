@@ -11,6 +11,7 @@
     "vercel-build": "npm run build",
     "test": "node --test",
     "start": "node scripts/serve.mjs",
-    "validate:seo": "node scripts/validate-seo.mjs"
+    "validate:seo": "node scripts/validate-seo.mjs",
+    "audit:handover": "node scripts/handover-audit.mjs"
   }
 }
