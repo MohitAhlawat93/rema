@@ -109,7 +109,7 @@
 .review-submit>div>p:last-child{max-width:340px;line-height:1.7}
 #review-form{display:grid;gap:15px;max-width:620px}
 #review-form label{display:grid;gap:7px;font-size:12px;letter-spacing:.03em}
-#review-form input:not([type="checkbox"]),#review-form select,#review-form textarea{width:100%;max-width:100%;font:15px/1.5 inherit;padding:13px;border:1px solid var(--line);background:#fcf8f1;color:var(--ink);border-radius:4px;box-sizing:border-box}
+#review-form input:not([type="checkbox"]),#review-form select,#review-form textarea{width:100%;max-width:100%;font-size:15px;line-height:1.5;font-family:inherit;padding:13px;border:1px solid var(--line);background:#fcf8f1;color:var(--ink);border-radius:4px;box-sizing:border-box}
 #review-form textarea{resize:vertical;min-height:145px}
 #review-form .review-permission{display:flex;align-items:flex-start;gap:11px;line-height:1.65;letter-spacing:0;font-size:12px}
 .review-permission input{width:16px;height:16px;min-width:16px;margin:3px 0 0;accent-color:var(--bronze)}
