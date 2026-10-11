@@ -51,17 +51,34 @@ function scoreMatch(question, entry) {
   return headingHits ? score : 0;
 }
 const knownFallback = () => (baseSite.faqs || []).filter(x => x.question && x.answer);
+// Cache only approved public knowledge, never visitor messages.
+let knowledgeCache = { items: [], until: 0 }, knowledgeLoad = null;
+async function loadPublishedKnowledge(url, headers) {
+  if (Date.now() < knowledgeCache.until) return knowledgeCache.items;
+  if (!knowledgeLoad) {
+    knowledgeLoad = fetch(url+'/rest/v1/witness_lema_knowledge?published=eq.true&select=question,answer,keywords,href&limit=250',
+      { headers, signal: AbortSignal.timeout(1650) })
+      .then(async r => {
+        if (!r.ok) throw new Error('Knowledge temporarily unavailable');
+        const items = await r.json();
+        if (!Array.isArray(items)) return [];
+        knowledgeCache = { items, until: Date.now()+45000 };
+        return items;
+      }).catch(() => []).finally(() => { knowledgeLoad = null; });
+  }
+  return knowledgeLoad;
+}
 async function fetchPublicKnowledge(question) {
   const url = clean(process.env.SUPABASE_URL, 200).replace(/\/$/, '');
   const key = clean(process.env.SUPABASE_PUBLISHABLE_KEY, 400);
   if (!url || !key) return [];
   const headers = { apikey: key, authorization: 'Bearer ' + key };
   const [knowledge, retrieval] = await Promise.allSettled([
-    fetch(url + '/rest/v1/witness_lema_knowledge?published=eq.true&select=question,answer,keywords,href&limit=250', { headers, signal: AbortSignal.timeout(3300) }).then(r => r.ok ? r.json() : []),
+    loadPublishedKnowledge(url, headers),
     fetch(url + '/rest/v1/rpc/search_witness_lema_knowledge', {
       method: 'POST', headers: { ...headers, 'content-type': 'application/json' },
       body: JSON.stringify({ query_text: question, match_count: 5 }),
-      signal: AbortSignal.timeout(2500)
+      signal: AbortSignal.timeout(1650)
     }).then(r => r.ok ? r.json() : [])
   ]);
   const raw = [
@@ -70,17 +87,23 @@ async function fetchPublicKnowledge(question) {
   ];
   return [...new Map(raw.filter(x => x && x.question && x.answer).map(x => [x.question, x])).values()];
 }
+let profileCache = { value: baseSite, until: 0 }, profileLoad = null;
 async function fetchPublishedProfile() {
-  const url = clean(process.env.SUPABASE_URL, 200).replace(/\/$/, '');
-  const key = clean(process.env.SUPABASE_PUBLISHABLE_KEY, 400);
+  const url = clean(process.env.SUPABASE_URL,200).replace(/\/$/,'');
+  const key = clean(process.env.SUPABASE_PUBLISHABLE_KEY,400);
   if (!url || !key) return baseSite;
-  try {
-    const r = await fetch(url + '/rest/v1/witness_lema_published_site?id=eq.main&select=payload&limit=1', {
-      headers: { apikey: key, authorization: 'Bearer ' + key }, signal: AbortSignal.timeout(2500)
-    });
-    if (!r.ok) return baseSite;
-    return { ...baseSite, ...((await r.json())[0]?.payload || {}) };
-  } catch { return baseSite; }
+  if (Date.now() < profileCache.until) return profileCache.value;
+  if (!profileLoad) {
+    profileLoad = fetch(url+'/rest/v1/witness_lema_published_site?id=eq.main&select=payload&limit=1',{
+      headers:{apikey:key,authorization:'Bearer '+key},signal:AbortSignal.timeout(1650)
+    }).then(async r=>{
+      if(!r.ok) throw new Error('Profile temporarily unavailable');
+      const value={...baseSite,...((await r.json())[0]?.payload||{})};
+      profileCache={value,until:Date.now()+45000};
+      return value;
+    }).catch(()=>baseSite).finally(()=>{profileLoad=null;});
+  }
+  return profileLoad;
 }
 function simpleReply(question, language) {
   const q = normal(question);
@@ -96,7 +119,7 @@ const summariseProfile = site => JSON.stringify({
   services: (site.services || []).slice(0, 25).map(x => ({ title: x.title, text: x.text, priceOrLabel: x.tag })),
   contactLinks: site.contactLinks?.length ? site.contactLinks : site.social,
   afterhours: site.afterhours && { title: site.afterhours.title, links: site.afterhours.links }
-}).slice(0, 9000);
+}).slice(0, 6500);
 const prompt = (question, language, matches, site) => [
   'You are Lema Concierge, the warm and capable assistant on witness_lema_.',
   'Speak naturally in the visitor language: English, Hindi in Devanagari, or natural Hinglish when they mix languages. Requested language: ' + language + '.',
@@ -114,7 +137,7 @@ async function callGroq(question, language, matches, site, history) {
   if (!key) return '';
   const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
   const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST', signal: AbortSignal.timeout(7500),
+    method: 'POST', signal: AbortSignal.timeout(5000),
     headers: { authorization: 'Bearer ' + key, 'content-type': 'application/json' },
     body: JSON.stringify({
       model,
@@ -123,7 +146,7 @@ async function callGroq(question, language, matches, site, history) {
         ...history,
         { role: 'user', content: clean(question, 800) }
       ],
-      temperature: .45, max_completion_tokens: 400
+      temperature: .4, max_completion_tokens: 280
     })
   });
   if (!r.ok) throw new Error('Groq ' + r.status);
@@ -133,10 +156,10 @@ async function callXai(question, language, matches, site, history) {
   const key = process.env.XAI_API_KEY;
   if (!key) return '';
   const r = await fetch('https://api.x.ai/v1/responses', {
-    method: 'POST', signal: AbortSignal.timeout(7500),
+    method: 'POST', signal: AbortSignal.timeout(4500),
     headers: { authorization: 'Bearer ' + key, 'content-type': 'application/json' },
     body: JSON.stringify({
-      model: process.env.XAI_MODEL || 'grok-4', store: false, max_output_tokens: 400,
+      model: process.env.XAI_MODEL || 'grok-4', store: false, max_output_tokens: 280,
       input: prompt(question, language, matches, site) + '\n\nPREVIOUS CONVERSATION:\n' + history.map(x => x.role + ': ' + x.content).join('\n')
     })
   });
@@ -158,15 +181,16 @@ export default async function handler(request, response) {
   const question = clean(body.question,801);
   if (!question || question.length > 800) return json(response,400,{error:'Please enter a question of up to 800 characters.'});
   const language = localeOf(question,body.language);
+  // Free, deterministic conversational replies do not need any remote calls.
+  const shortReply=simpleReply(question,language);
+  if(shortReply) return json(response,200,{answer:shortReply,href:''});
+  const naturalReply=visitorReply(question,language,baseSite);
+  if(naturalReply) return json(response,200,naturalReply);
+  // Rate-limit costly database/AI requests, not cheap greetings.
   try {
-    const limit = await consumeRateLimit(request,'assistant',40,600);
-    if (!limit.allowed) { response.setHeader('retry-after',String(limit.retryAfterSeconds));return json(response,429,{error:language==='hi'?'थोड़ी देर बाद फिर कोशिश करें।':'Please try again shortly.'}); }
-  } catch { /* Gracefully allow chat if the rate-limiting backend is briefly unavailable. */ }
-  const shortReply = simpleReply(question,language);
-  if (shortReply) return json(response,200,{answer:shortReply,href:''});
-  // Answer common natural questions consistently even if the model key is absent.
-  const naturalReply = visitorReply(question,language,baseSite);
-  if (naturalReply) return json(response,200,naturalReply);
+    const limit=await consumeRateLimit(request,'assistant',40,600);
+    if(!limit.allowed){response.setHeader('retry-after',String(limit.retryAfterSeconds));return json(response,429,{error:language==='hi'?'थोड़ी देर बाद फिर कोशिश करें।':'Please try again shortly.'});}
+  } catch { /* Graceful fallback if the rate-limit store briefly fails. */ }
   const [knowledgeResult,siteResult] = await Promise.allSettled([fetchPublicKnowledge(question),fetchPublishedProfile()]);
   const site = siteResult.status === 'fulfilled' ? siteResult.value : baseSite;
   const knowledge = [...(knowledgeResult.status === 'fulfilled' ? knowledgeResult.value : []), ...knownFallback()];
@@ -174,6 +198,9 @@ export default async function handler(request, response) {
     .map(x=>({ ...x, score:scoreMatch(question,x) }))
     .filter(x=>x.score >= 2.5)
     .sort((a,b)=>b.score-a.score).slice(0,6);
+  // An exact owner-approved response should not wait for an external AI model.
+  const exact=knowledge.find(x=>normal(x.question)&&normal(x.question)===normal(question));
+  if(exact)return json(response,200,{answer:clean(exact.answer,2200),href:safeHref(exact.href)});
   const history = (Array.isArray(body.history) ? body.history : []).slice(-6)
     .filter(x => x && ['user','assistant'].includes(x.role) && typeof x.content === 'string')
     .map(x => ({ role:x.role, content:clean(x.content,450) }));
