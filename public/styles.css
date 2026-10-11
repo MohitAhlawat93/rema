@@ -24,3 +24,54 @@
 .seo-editorial-links a{font-size:13px;border-bottom:1px solid var(--bronze);padding:5px 0}
 .seo-editorial-links a:hover{color:var(--bronze)}
 @media(max-width:740px){.seo-editorial{grid-template-columns:1fr}.seo-editorial-links{gap:10px}}
+
+/* Lema Concierge — responsive paper/sage chat */
+#assistant-launch{z-index:80;display:flex;align-items:center;gap:7px;padding:13px 20px;box-shadow:0 12px 36px #19201833}
+#assistant-panel{z-index:85;width:min(430px,calc(100vw - 32px));height:min(590px,calc(100dvh - 105px));max-height:calc(100dvh - 64px);bottom:22px;right:22px;border-radius:20px;background:#f9f5ee;box-shadow:0 22px 75px #0d211c55;border:1px solid #9d9b88}
+#assistant-panel.open{animation:lema-chat-rise .25s ease-out}
+#assistant-panel.expanded{width:min(690px,calc(100vw - 32px));height:min(760px,calc(100dvh - 52px))}
+@keyframes lema-chat-rise{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+.assistant-head{padding:20px 22px;background:#303d33;color:#fff;border-bottom:0}
+.assistant-head strong{font:24px/1.1 var(--serif);color:#fff;letter-spacing:-.02em}
+.assistant-head span{color:#e7ddcb;font-size:11px;margin-top:7px}
+.assistant-head-actions{display:flex;gap:8px}
+.assistant-head-actions button{width:36px;height:36px;border:1px solid #e3d9c456;color:#fff;border-radius:50%;background:transparent;font-size:22px;display:grid;place-items:center}
+.assistant-head-actions button:hover{background:#ffffff1c}
+.assistant-language{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 20px;border-bottom:1px solid var(--line);font-size:11px;color:var(--soft)}
+.assistant-language select{padding:6px 8px;border:1px solid var(--line);background:#fffaf4;color:var(--ink);border-radius:6px;max-width:180px}
+#messages{padding:20px;display:flex;flex-direction:column;gap:10px}
+#messages .bubble{max-width:94%;align-self:flex-start;margin:0;padding:14px 16px;background:#e9e4da;border-radius:14px 14px 14px 4px;color:var(--ink);white-space:pre-line;font-size:13px;line-height:1.6}
+#messages .bubble.user{align-self:flex-end;background:#384b3d;color:#fff;border-radius:14px 14px 4px 14px;margin-left:18px}
+#messages .bubble a{color:inherit;font-weight:bold}
+#assistant-panel .suggestions{padding:10px 18px 13px;gap:8px;flex-wrap:wrap}
+#assistant-panel .suggestions button{padding:7px 11px;border-color:#c4b8a8;background:#f4eee4;color:var(--ink)}
+#assistant-form{padding:13px 15px 18px;background:#fffaf4;align-items:center}
+#assistant-form input{flex:1;width:100%;border:1px solid #dfd4c5;border-radius:24px;padding:12px 16px;background:white;font-size:13px}
+#assistant-form button{height:41px;width:41px;font-size:17px}
+/* Stay Close / Afterhours modal */
+#afterhours-launch{position:fixed;left:22px;bottom:22px;z-index:70;display:flex;align-items:center;gap:10px;background:#343f35;color:#f6efe3;border:1px solid #af9f81;border-radius:999px;padding:9px 20px 9px 10px;box-shadow:0 13px 35px #1c231d4a}
+#afterhours-launch .afterhours-star{height:31px;width:31px;display:grid;place-items:center;background:#ffffff25;border-radius:50%}
+#afterhours-launch>span:last-child{display:grid;text-align:left;line-height:1.2}
+#afterhours-launch small{font-size:9px;letter-spacing:.18em;text-transform:uppercase;opacity:.7}
+#afterhours-launch strong{font:18px var(--serif);margin-top:3px}
+#afterhours-backdrop{position:fixed;inset:0;z-index:110;display:grid;place-items:center;background:#17201bcc;backdrop-filter:blur(7px);padding:20px}
+.afterhours-visible{overflow:hidden}
+.afterhours-card{width:min(510px,100%);max-height:calc(100dvh - 40px);overflow:auto;position:relative;border-radius:24px;background:var(--paper);padding:clamp(25px,6vw,48px);box-shadow:0 26px 95px #0007}
+.afterhours-card h2{font-size:clamp(38px,5vw,56px);margin:0 0 16px}
+.afterhours-card>.eyebrow{margin:0 0 13px}
+.afterhours-card>p{max-width:400px}
+.afterhours-close{position:absolute;top:17px;right:18px;border:1px solid var(--line);background:transparent;border-radius:50%;font-size:23px;height:42px;width:42px}
+.afterhours-links{display:grid;gap:10px;margin:28px 0}
+.afterhours-links a{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:15px 19px;border-radius:9px;background:#fffaf5;border:1px solid var(--line);font-size:14px}
+.afterhours-links a:hover{border-color:var(--bronze);background:#eee8dc}
+/* Bilingual guest review cards */
+.reviews-section{padding:90px var(--pad);background:#e9e2d7}
+.reviews-section .section-head p{margin:10px 0 0}
+.review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.review-quote{padding:clamp(25px,4vw,45px);background:#f8f4ec;border:1px solid var(--line);min-height:250px}
+.review-quote blockquote{font:clamp(18px,2vw,25px)/1.6 var(--serif);margin:20px 0 25px;white-space:pre-line;overflow-wrap:anywhere}
+.review-quote>p{font-size:12px;letter-spacing:.07em}
+.review-language{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--bronze)}
+.review-example{border-style:dashed}
+@media(max-width:640px){#assistant-panel,#assistant-panel.expanded{left:10px;right:10px;bottom:10px;width:auto;height:min(640px,calc(100dvh - 80px));max-height:none;border-radius:18px}#assistant-launch{right:10px;bottom:10px}#afterhours-launch{left:10px;bottom:10px}.review-grid{grid-template-columns:1fr}.reviews-section{padding-block:60px}#messages{padding:14px}.afterhours-card{border-radius:16px}}
+@media(prefers-reduced-motion:reduce){#assistant-panel.open{animation:none}}

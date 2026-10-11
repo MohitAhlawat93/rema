@@ -49,7 +49,7 @@ export default async function handler(req,res){
     if(route==='ai-status'){
       if(req.method!=='GET')return send(res,405,{error:'Use GET.'});
       const groq=Boolean(process.env.GROQ_API_KEY),xai=Boolean(process.env.XAI_API_KEY);
-      return send(res,200,{configured:groq||xai,provider:groq?'Groq':'xAI Grok',model:process.env.AI_MODEL||(groq?'llama-3.3-70b-versatile':'grok-4.7')});
+      return send(res,200,{configured:groq||xai,provider:groq?'Groq':'xAI Grok',model:groq?(process.env.GROQ_MODEL||'llama-3.3-70b-versatile'):(process.env.XAI_MODEL||process.env.AI_MODEL||'grok-4')});
     }
     if(route==='state'){
       if(req.method==='GET')return send(res,200,await callAdminBackend('read'));

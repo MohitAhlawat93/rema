@@ -9,9 +9,34 @@ try{
 }catch{/* Bundled content remains a reliable fallback. */}
 function serviceMarkup(item,index){return `<article class="service-card">${item.image?`<img src="${html(item.image)}" alt="" width="900" height="1100" loading="lazy" decoding="async">`:''}<div class="service-card-copy"><span class="index">${html(item.number||String(index+1).padStart(2,'0'))}</span><h2>${html(item.title)}</h2><p>${html(item.text)}</p><span class="tag">${html(item.tag||'')}</span></div></article>`;}
 function tileMarkup(image,index){return `<figure class="gallery-tile"><button class="photo" data-photo="${index}" aria-label="View ${html(image.title)}"><img src="${html(image.src)}" alt="${html(image.alt)}" width="900" height="1100" loading="lazy" decoding="async"></button><figcaption><span>${html(image.title)}</span><span class="caption-kind">${html(image.category)}</span></figcaption></figure>`;}
-function socialMarkup(){return Object.entries(site.social||{}).filter(([,url])=>url).map(([name,url])=>`<a href="${html(url)}" target="_blank" rel="noopener noreferrer">${name==='instagram'?'Instagram':name[0].toUpperCase()+name.slice(1)} <span aria-hidden="true">↗</span></a>`).join('');}
+function permittedUrl(value){try{const u=new URL(String(value));return u.protocol==='https:'?u.href:'';}catch{return '';}}
+function linkItems(items){
+  if(Array.isArray(items))return items.filter(item=>item&&item.label&&permittedUrl(item.url)).map(item=>({label:String(item.label).slice(0,60),url:permittedUrl(item.url)}));
+  return Object.entries(items||{}).filter(([,url])=>permittedUrl(url)).map(([label,url])=>({label:label[0].toUpperCase()+label.slice(1),url:permittedUrl(url)}));
+}
+function socialMarkup(){return linkItems(Array.isArray(site.contactLinks)?site.contactLinks:site.social).map(({label,url})=>`<a href="${html(url)}" target="_blank" rel="noopener noreferrer">${html(label)} <span aria-hidden="true">↗</span></a>`).join('');}
+function hydrateAfterhours(){
+  const config=site.afterhours||{};
+  const launch=$('#afterhours-launch');
+  launch.hidden=config.enabled===false;
+  $('#afterhours-title').textContent=config.title||'Lema Afterhours';
+  $('#afterhours-intro').textContent=config.intro||'Stay close through the official channels.';
+  const links=linkItems(Array.isArray(config.links)?config.links:(site.contactLinks?.length?site.contactLinks:site.social));
+  $('[data-afterhours-links]').innerHTML=links.map(({label,url})=>`<a href="${html(url)}" target="_blank" rel="noopener noreferrer"><span>${html(label)}</span><span aria-hidden="true">↗</span></a>`).join('')||'<p>No channels are listed at the moment. Please visit Contact for updates.</p>';
+}
+function hydrateReviews(){
+  const holder=$('[data-public-reviews]');if(!holder)return;
+  const reviews=(Array.isArray(site.reviews)?site.reviews:[]).filter(item=>item&&item.published===true&&item.consent===true&&(item.textEn||item.textHi)).slice(0,40);
+  if(!reviews.length){
+    holder.innerHTML='<article class="review-quote review-example"><span class="review-language">Layout example · not a client review</span><blockquote>Approved guest feedback will be displayed here in English.</blockquote><p>Example only</p></article><article class="review-quote review-example" lang="hi"><span class="review-language">नमूना · असली ग्राहक समीक्षा नहीं</span><blockquote>असली अतिथि की अनुमति मिलने पर उनकी समीक्षा यहाँ दिखाई जाएगी।</blockquote><p>केवल उदाहरण</p></article>';
+    return;
+  }
+  holder.innerHTML=reviews.map(item=>`<article class="review-quote"><span class="review-language">Guest feedback · अतिथि के शब्द</span>${item.textEn?`<blockquote lang="en">${html(item.textEn)}</blockquote>`:''}${item.textHi?`<blockquote lang="hi">${html(item.textHi)}</blockquote>`:''}<p>— ${html(item.author||'Guest')}</p></article>`).join('');
+}
 function hydratePublishedContent(){
   document.querySelectorAll('.social-links').forEach(el=>el.innerHTML=socialMarkup());
+  hydrateAfterhours();
+  hydrateReviews();
   const assistant=site.assistant||{};
   if($('.assistant-head strong'))$('.assistant-head strong').textContent=assistant.name||'Website assistant';
   if($('#messages .bubble'))$('#messages .bubble').textContent=assistant.greeting||'Welcome. I can help you explore the website.';
@@ -48,13 +73,41 @@ function setMenu(open) { nav.classList.toggle('open',open);menu.setAttribute('ar
 menu.addEventListener('click',()=>setMenu(menu.getAttribute('aria-expanded')!=='true'));
 nav.addEventListener('click',()=>setMenu(false));
 const launcher=$('#assistant-launch'),panel=$('#assistant-panel'),question=$('#question'),messages=$('#messages');
-function setAssistant(open) { panel.hidden=!open;launcher.hidden=open;launcher.setAttribute('aria-expanded',String(open));(open?question:launcher).focus(); }
-launcher.addEventListener('click',()=>setAssistant(true));$('#assistant-minimize').addEventListener('click',()=>setAssistant(false));
-function bubble(text, user=false, href='') {const p=document.createElement('p');p.className='bubble'+(user?' user':'');p.textContent=text;if(href){const a=document.createElement('a');a.href=href;a.textContent='Explore this page ↗';p.append(a);}messages.append(p);while(messages.children.length>40)messages.firstElementChild.remove();messages.scrollTop=messages.scrollHeight;}
-async function ask(text) {const clean=text.trim();if(!clean)return;bubble(clean,true);question.value='';question.disabled=true;try{const response=await fetch('/api/assistant',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:clean})});if(!response.ok)throw new Error('Assistant unavailable');const answer=await response.json();bubble(answer.answer,false,answer.href);}catch{const answer=answerQuestion(clean,site.faqs);bubble(answer.answer,false,answer.href);}finally{question.disabled=false;question.focus();}}
+const chatHistory=[];
+function setAssistant(open){panel.hidden=!open;launcher.hidden=open;launcher.setAttribute('aria-expanded',String(open));panel.setAttribute('aria-hidden',String(!open));panel.classList.toggle('open',open);(open?question:launcher).focus();}
+launcher.addEventListener('click',()=>setAssistant(true));
+$('#assistant-minimize').addEventListener('click',()=>setAssistant(false));
+$('#assistant-expand').addEventListener('click',()=>{const expanded=panel.classList.toggle('expanded');$('#assistant-expand').setAttribute('aria-pressed',String(expanded));$('#assistant-expand').setAttribute('aria-label',expanded?'Shrink chat':'Expand chat');question.focus();});
+function bubble(text,user=false,href=''){const p=document.createElement('p');p.className='bubble'+(user?' user':'');p.textContent=String(text||'');if(href&&/^\/(?:[\w/-]*)$/.test(href)){const a=document.createElement('a');a.href=href;a.textContent='Explore this page ↗';p.append(a);}messages.append(p);while(messages.children.length>40)messages.firstElementChild.remove();messages.scrollTop=messages.scrollHeight;return p;}
+async function ask(text){
+  const clean=String(text||'').trim();if(!clean||question.disabled)return;
+  setAssistant(true);
+  const history=chatHistory.slice(-6);
+  bubble(clean,true);chatHistory.push({role:'user',content:clean});
+  question.value='';question.disabled=true;
+  const pending=bubble('Lema Concierge is composing a reply…');
+  try{
+    const response=await fetch('/api/assistant',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:clean,language:$('#assistant-language').value,history}),signal:AbortSignal.timeout(17000)});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.error||'Assistant temporarily unavailable.');
+    pending.remove();bubble(data.answer||'Please ask again in a different way.',false,data.href);
+    chatHistory.push({role:'assistant',content:data.answer||''});
+  }catch(error){
+    pending.remove();
+    const fallback=answerQuestion(clean,site.faqs);
+    const message=fallback?.answer&&!/do not have|can't answer|not sure/i.test(fallback.answer)?fallback.answer:(error.message||'I could not connect. Please try again or visit Contact.');
+    bubble(message,false,fallback?.href||'');
+    chatHistory.push({role:'assistant',content:message});
+  }finally{question.disabled=false;question.focus();}
+}
 $('#assistant-form').addEventListener('submit',e=>{e.preventDefault();void ask(question.value);});
 document.querySelectorAll('[data-question]').forEach(b=>b.addEventListener('click',()=>ask(b.dataset.question)));
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(menu.getAttribute('aria-expanded')==='true'){setMenu(false);menu.focus();}if(!panel.hidden)setAssistant(false);}});
+const afterhoursLaunch=$('#afterhours-launch'),afterhoursBackdrop=$('#afterhours-backdrop'),afterhoursClose=$('#afterhours-close');
+function setAfterhours(open){if(open&&afterhoursLaunch.hidden)return;afterhoursBackdrop.hidden=!open;afterhoursLaunch.setAttribute('aria-expanded',String(open));document.body.classList.toggle('afterhours-visible',open);(open?afterhoursClose:afterhoursLaunch).focus();}
+afterhoursLaunch.addEventListener('click',()=>setAfterhours(true));
+afterhoursClose.addEventListener('click',()=>setAfterhours(false));
+afterhoursBackdrop.addEventListener('click',event=>{if(event.target===afterhoursBackdrop)setAfterhours(false);});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(menu.getAttribute('aria-expanded')==='true'){setMenu(false);menu.focus();}if(!panel.hidden)setAssistant(false);if(!afterhoursBackdrop.hidden)setAfterhours(false);}});
 // Adapted from witness_lema_'s gallery stepping/focus-return flow; native dialog adds focus containment.
 const viewer=$('#photo-viewer');let index=0,returnFocus=null;
 function visibleIndices(){return [...document.querySelectorAll('[data-photo]')].filter(b=>!b.closest('figure').hidden).map(b=>Number(b.dataset.photo));}

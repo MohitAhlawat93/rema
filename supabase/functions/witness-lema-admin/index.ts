@@ -54,6 +54,15 @@ Deno.serve(async(req)=>{
       if(!payload.images.every(x=>x&&typeof x.src==='string'&&x.src.length<=2048&&(x.src.startsWith('/images/')||x.src.startsWith(SUPABASE_URL+'/storage/v1/object/public/witness-lema-gallery/'))))return json({error:'Invalid image source'},400);
       if(!payload.aboutImages.every(src=>payload.images.some(x=>x.src===src)))return json({error:'About photos must exist in gallery'},400);
       if(!payload.social||!Object.values(payload.social).every(validLink))return json({error:'Invalid social link'},400);
+      const editableLinks=(links:unknown)=>Array.isArray(links)&&links.length<=24&&links.every(link=>link&&typeof link==='object'&&typeof link.label==='string'&&link.label.trim().length>0&&link.label.length<=60&&validLink(link.url)&&link.url.length>0);
+      if(payload.contactLinks!==undefined&&!editableLinks(payload.contactLinks))return json({error:'Invalid contact channels'},400);
+      if(payload.afterhours!==undefined){
+        const config=payload.afterhours;
+        if(!config||typeof config!=='object'||typeof config.enabled!=='boolean'||typeof config.title!=='string'||!config.title.trim()||config.title.length>90||typeof config.intro!=='string'||config.intro.length>450||!editableLinks(config.links))return json({error:'Invalid Afterhours settings'},400);
+      }
+      if(payload.reviews!==undefined){
+        if(!Array.isArray(payload.reviews)||payload.reviews.length>40||!payload.reviews.every(item=>item&&typeof item==='object'&&typeof item.author==='string'&&item.author.trim().length>0&&item.author.length<=90&&typeof item.textEn==='string'&&typeof item.textHi==='string'&&item.textEn.length<=1400&&item.textHi.length<=1400&&(item.textEn.trim()||item.textHi.trim())&&typeof item.consent==='boolean'&&typeof item.published==='boolean'&&(!item.published||item.consent)))return json({error:'Reviews need authentic text, approved names and publishing permission'},400);
+      }
       if(!payload.assistant||typeof payload.assistant.name!=='string'||!payload.assistant.name.trim()||typeof payload.assistant.greeting!=='string'||!payload.assistant.greeting.trim())return json({error:'Invalid assistant settings'},400);
       // Owner-edited SEO must have a known public route and safe, truthful data.
       if(payload.seo!==undefined){
@@ -80,6 +89,9 @@ Deno.serve(async(req)=>{
     }
     const allowedActions=new Set(['read','save','publish','restore','knowledge-read','knowledge-save']);
     if(!allowedActions.has(action))return json({error:'Unknown action.'},400);
-    return json(await rpc('witness_lema_admin_state',{action,body:input.body??{}}));
+    // Public admin routes wrap publish/restore/knowledge items in {body}; the SQL function needs the inner value.
+    // Save intentionally keeps {draft, expectedVersion} for optimistic concurrency checks.
+    const body = action==='save' ? (input.body??{}) : ((action==='publish'||action==='restore'||action==='knowledge-save') ? (input.body?.body??input.body??{}) : (input.body??{}));
+    return json(await rpc('witness_lema_admin_state',{action,body}));
   }catch(error){return json({error:error instanceof Error?error.message:'Request failed'},500);}
 });

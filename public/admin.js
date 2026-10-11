@@ -86,12 +86,59 @@ function validateSeoDraft(){
     if(!Array.isArray(e.links)||e.links.length<1||e.links.length>4)throw new Error('Choose at least one related page on '+seoNames[route]+'.');
   }
 }
-function renderAll(){populateProfile();renderServices();renderPhotos();renderAnswers();renderHistory();renderSeoEditor();$('[data-version]').textContent=state.version;$('[data-published-version]').textContent=state.publishedVersion;$('[data-photo-count]').textContent=state.draft.images?.length||0;$('[data-answer-count]').textContent=knowledge.length;}
+function editableLinks(type) { return type === 'afterhours' ? state.draft.afterhours.links : state.draft.contactLinks; }
+function initializeEditableSections(){
+  if(!state.draft.afterhours || typeof state.draft.afterhours!=='object')state.draft.afterhours={
+    enabled:true,title:'Lema Afterhours',intro:'A thoughtful way to stay in touch and discover official updates.',
+    links:Object.entries(state.draft.social||{}).filter(([,url])=>url).map(([label,url])=>({label:label[0].toUpperCase()+label.slice(1),url}))
+  };
+  if(!Array.isArray(state.draft.afterhours.links))state.draft.afterhours.links=[];
+  if(!Array.isArray(state.draft.contactLinks))state.draft.contactLinks=Object.entries(state.draft.social||{}).filter(([,url])=>url).map(([label,url])=>({label:label[0].toUpperCase()+label.slice(1),url}));
+  if(!Array.isArray(state.draft.reviews))state.draft.reviews=[];
+}
+function renderLinks(){
+  const config=state.draft.afterhours;
+  $('[data-afterhours-enabled]').checked=config.enabled!==false;
+  $('[data-afterhours-enabled]').onchange=e=>{config.enabled=e.target.checked;setDirty();};
+  $$('[data-afterhours-field]').forEach(input=>{
+    input.value=config[input.dataset.afterhoursField]||'';
+    input.oninput=()=>{config[input.dataset.afterhoursField]=input.value;setDirty();};
+  });
+  $$('[data-links-editor]').forEach(holder=>{
+    const type=holder.dataset.linksEditor,links=editableLinks(type);
+    holder.innerHTML=links.map((link,index)=>'<div class="link-edit-row"><label>App / channel name<input maxlength="60" data-link-field="label" data-index="'+index+'" value="'+esc(link.label)+'" placeholder="WhatsApp, Telegram, YouTube…"></label><label>HTTPS link<input type="url" maxlength="2048" data-link-field="url" data-index="'+index+'" value="'+esc(link.url)+'" placeholder="https://…"></label><button type="button" class="danger" data-link-remove="'+index+'" aria-label="Remove link">×</button></div>').join('')||'<p class="fine">No channels. Add one when you are ready.</p>';
+    holder.querySelectorAll('[data-link-field]').forEach(input=>input.oninput=()=>{links[+input.dataset.index][input.dataset.linkField]=input.value;setDirty();});
+    holder.querySelectorAll('[data-link-remove]').forEach(button=>button.onclick=()=>{links.splice(+button.dataset.linkRemove,1);renderLinks();setDirty();});
+  });
+}
+function reviewCard(item,index){
+  return '<article class="repeat-card review-editor"><span class="number">'+String(index+1).padStart(2,'0')+'</span><div class="repeat-fields"><label>Reviewer-approved name or alias<input data-review-field="author" data-index="'+index+'" maxlength="90" value="'+esc(item.author||'')+'" placeholder="Guest-approved display name"></label><label>Review in English<textarea rows="3" data-review-field="textEn" data-index="'+index+'" maxlength="1400">'+esc(item.textEn||'')+'</textarea></label><label>Review in Hindi / हिंदी<textarea rows="3" data-review-field="textHi" data-index="'+index+'" maxlength="1400">'+esc(item.textHi||'')+'</textarea></label><div class="review-options wide"><label><input type="checkbox" data-review-consent="'+index+'" '+(item.consent?'checked':'')+'> Reviewer gave permission to publish this text and name</label><label><input type="checkbox" data-review-published="'+index+'" '+(item.published?'checked':'')+'> Show on website</label></div></div><div class="card-actions"><button type="button" class="danger" data-review-remove="'+index+'" aria-label="Delete review">×</button></div></article>';
+}
+function renderReviews(){
+  const holder=$('[data-reviews-editor]');
+  holder.innerHTML=(state.draft.reviews||[]).map(reviewCard).join('')||'<p>No reviews entered yet. Visitors will see labelled layout examples, not fabricated client testimonials.</p>';
+  holder.querySelectorAll('[data-review-field]').forEach(input=>input.oninput=()=>{state.draft.reviews[+input.dataset.index][input.dataset.reviewField]=input.value;setDirty();});
+  holder.querySelectorAll('[data-review-consent]').forEach(input=>input.onchange=()=>{state.draft.reviews[+input.dataset.reviewConsent].consent=input.checked;setDirty();});
+  holder.querySelectorAll('[data-review-published]').forEach(input=>input.onchange=()=>{state.draft.reviews[+input.dataset.reviewPublished].published=input.checked;setDirty();});
+  holder.querySelectorAll('[data-review-remove]').forEach(button=>button.onclick=()=>{if(!confirm('Delete this review from the draft?'))return;state.draft.reviews.splice(+button.dataset.reviewRemove,1);renderReviews();setDirty();});
+}
+function validateEditorialControls(){
+  for(const type of ['afterhours','contactLinks'])for(const link of editableLinks(type)){
+    if(!link.label?.trim()||link.label.length>60||!/^https:\/\/[^\s]+$/i.test(link.url||''))throw new Error('Every social channel needs a name and valid HTTPS link.');
+  }
+  if(state.draft.reviews.length>40)throw new Error('Keep at most 40 reviews.');
+  for(const item of state.draft.reviews){
+    if(!item.author?.trim()||(!item.textEn?.trim()&&!item.textHi?.trim()))throw new Error('Each review needs a reviewer-approved name and text in English or Hindi.');
+    if(item.published&&!item.consent)throw new Error('Before publishing a review, confirm the reviewer gave permission.');
+  }
+}
+function renderAll(){renderLinks();renderReviews();populateProfile();renderServices();renderPhotos();renderAnswers();renderHistory();renderSeoEditor();$('[data-version]').textContent=state.version;$('[data-published-version]').textContent=state.publishedVersion;$('[data-photo-count]').textContent=state.draft.images?.length||0;$('[data-answer-count]').textContent=knowledge.length;}
 async function loadAiStatus(){try{const status=await api('ai-status');$('[data-ai-status]').textContent=status.configured?status.provider+' connected':'Knowledge-only mode';$('[data-ai-detail]').textContent=status.configured?`${status.model} · API key is stored securely on the server.`:'Add a server-side Groq or xAI key to enable conversational answers.';}catch{$('[data-ai-status]').textContent='Status unavailable';}}
 async function loadWorkspace(){
   const session=await api('session');
   if(!session?.state?.draft)throw new Error('Your private workspace is unavailable.');
   state=session.state;
+  initializeEditableSections();
   showDashboard();
   // Neither optional assistant knowledge nor SEO defaults should prevent
   // the entire owner dashboard from opening if one request fails.
@@ -116,7 +163,7 @@ async function loadWorkspace(){
     notice('Private workspace connected. Live website version '+state.publishedVersion+'.','success');
   }
 }
-function validateDraft(){validateSeoDraft();if(!(state.draft.images||[]).some(image=>image.hero))throw new Error('Choose at least one Home hero photograph.');if((state.draft.aboutImages||[]).length!==3)throw new Error('Choose exactly three About photographs.');if(!(state.draft.services||[]).every(item=>item.title&&item.text))throw new Error('Every service needs a title and description.');if(!state.draft.assistant?.name?.trim())throw new Error('The assistant needs a public name.');if(!state.draft.assistant?.greeting?.trim())throw new Error('The assistant needs a welcome message.');}
+function validateDraft(){validateSeoDraft();validateEditorialControls();if(!(state.draft.images||[]).some(image=>image.hero))throw new Error('Choose at least one Home hero photograph.');if((state.draft.aboutImages||[]).length!==3)throw new Error('Choose exactly three About photographs.');if(!(state.draft.services||[]).every(item=>item.title&&item.text))throw new Error('Every service needs a title and description.');if(!state.draft.assistant?.name?.trim())throw new Error('The assistant needs a public name.');if(!state.draft.assistant?.greeting?.trim())throw new Error('The assistant needs a welcome message.');}
 async function saveDraft(){try{validateDraft();notice('Saving private draft…');state=await api('state',{method:'PUT',body:JSON.stringify({state:state.draft,expectedVersion:state.version})});dirty=false;renderAll();notice('Draft saved privately. Nothing was published.','success');}catch(error){notice(error.message,'error');}}
 async function publish(){try{if(dirty)await saveDraft();if(dirty)return;if(!confirm('Publish the saved draft to the live website now?'))return;notice('Publishing website…');state=await api('state',{method:'POST',body:JSON.stringify({action:'publish',expectedVersion:state.version})});renderAll();notice('Published successfully. Visitors now see version '+state.publishedVersion+'.','success');}catch(error){notice(error.message,'error');}}
 async function restoreVersion(version){try{if(!confirm('Restore version '+version+' to Draft? The live website will stay unchanged.'))return;state=await api('state',{method:'POST',body:JSON.stringify({action:'restore',version})});renderAll();notice('Older version restored to Draft. Preview it before publishing.','success');}catch(error){notice(error.message,'error');}}
@@ -132,6 +179,8 @@ $$('[data-save]').forEach(button=>button.onclick=saveDraft);
 $('[data-publish]').onclick=publish;
 $('[data-preview]').onclick=()=>window.open('/?admin_preview=1','_blank','noopener');
 $('[data-refresh]').onclick=async()=>{try{await loadWorkspace();}catch(error){notice(error.message,'error');}};
+$$('[data-add-link]').forEach(button=>button.onclick=()=>{editableLinks(button.dataset.addLink).push({label:'',url:''});renderLinks();setDirty();});
+$('[data-add-review]').onclick=()=>{state.draft.reviews.unshift({author:'',textEn:'',textHi:'',consent:false,published:false});renderReviews();setDirty();};
 $('[data-add-service]').onclick=()=>{state.draft.services.push({number:String(state.draft.services.length+1).padStart(2,'0'),title:'New service',text:'Add a refined description.',tag:'By arrangement',image:state.draft.images?.[0]?.src||''});renderServices();setDirty();};
 $('[data-add-answer]').onclick=()=>{knowledge.unshift({question:'',answer:'',keywords:[],href:'/contact/',published:true});renderAnswers();};
 $('[data-save-answers]').onclick=saveAnswers;
