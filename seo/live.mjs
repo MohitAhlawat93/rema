@@ -128,6 +128,8 @@ export function renderLivePage(html,route,page,published,origin,production=true,
    '<span class="fine" data-business-copyright>© '+new Date().getUTCFullYear()+' · '+esc(business.name)+'</span>');
  html=html.replace(/<div data-business-email-slot><\/div>/g,business.email?
    '<div data-business-email-slot><a href="mailto:'+esc(business.email)+'">'+esc(business.email)+'</a></div>':'<div data-business-email-slot></div>');
+ html=html.replace(/<p data-business-city>[\s\S]*?<\/p>/g,
+   '<p data-business-city>Service location: '+esc(business.city)+'</p>');
  // Shared owner-managed controls are server-rendered on every public page
  // rather than depending on JavaScript hydration or a stale build artifact.
  if(Array.isArray(site.contactLinks)||site.social){
