@@ -1,5 +1,5 @@
 import { site } from './data/site.js';
-import { answerQuestion } from './lib/faq.js';
+// Live chat stays helpful without falling back to an unrelated FAQ match.
 const $ = s => document.querySelector(s);
 const html = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const previewMode=new URLSearchParams(location.search).get('admin_preview')==='1';
@@ -25,13 +25,13 @@ function hydrateAfterhours(){
   $('[data-afterhours-links]').innerHTML=links.map(({label,url})=>`<a href="${html(url)}" target="_blank" rel="noopener noreferrer"><span>${html(label)}</span><span aria-hidden="true">↗</span></a>`).join('')||'<p>No channels are listed at the moment. Please visit Contact for updates.</p>';
 }
 function hydrateReviews(){
-  const holder=$('[data-public-reviews]');if(!holder)return;
+  const holders=[...document.querySelectorAll('[data-public-reviews]')];if(!holders.length)return;
   const reviews=(Array.isArray(site.reviews)?site.reviews:[]).filter(item=>item&&item.published===true&&item.consent===true&&(item.textEn||item.textHi)).slice(0,40);
   if(!reviews.length){
-    holder.innerHTML='<article class="review-quote review-example"><span class="review-language">Layout example · not a client review</span><blockquote>Approved guest feedback will be displayed here in English.</blockquote><p>Example only</p></article><article class="review-quote review-example" lang="hi"><span class="review-language">नमूना · असली ग्राहक समीक्षा नहीं</span><blockquote>असली अतिथि की अनुमति मिलने पर उनकी समीक्षा यहाँ दिखाई जाएगी।</blockquote><p>केवल उदाहरण</p></article>';
+    holders.forEach(holder=>holder.innerHTML='<article class="review-quote review-example"><span class="review-language">Layout example · not a client review</span><blockquote>Approved guest feedback will appear here in English.</blockquote><p>Example only</p></article><article class="review-quote review-example" lang="hi"><span class="review-language">नमूना · ग्राहक समीक्षा नहीं</span><blockquote>अनुमति मिलने के बाद असली अतिथियों की समीक्षाएँ यहाँ दिखाई जाएँगी।</blockquote><p>केवल उदाहरण</p></article>');
     return;
   }
-  holder.innerHTML=reviews.map(item=>`<article class="review-quote"><span class="review-language">Guest feedback · अतिथि के शब्द</span>${item.textEn?`<blockquote lang="en">${html(item.textEn)}</blockquote>`:''}${item.textHi?`<blockquote lang="hi">${html(item.textHi)}</blockquote>`:''}<p>— ${html(item.author||'Guest')}</p></article>`).join('');
+  holders.forEach(holder=>holder.innerHTML=reviews.map(item=>`<article class="review-quote"><span class="review-language">Guest feedback · अतिथि के शब्द</span>${item.textEn?`<blockquote lang="en">${html(item.textEn)}</blockquote>`:''}${item.textHi?`<blockquote lang="hi">${html(item.textHi)}</blockquote>`:''}<p>— ${html(item.author||'Guest')}</p></article>`).join(''));
 }
 function hydratePublishedContent(){
   document.querySelectorAll('.social-links').forEach(el=>el.innerHTML=socialMarkup());
@@ -74,8 +74,17 @@ menu.addEventListener('click',()=>setMenu(menu.getAttribute('aria-expanded')!=='
 nav.addEventListener('click',()=>setMenu(false));
 const launcher=$('#assistant-launch'),panel=$('#assistant-panel'),question=$('#question'),messages=$('#messages');
 const chatHistory=[];
-function setAssistant(open){panel.hidden=!open;launcher.hidden=open;launcher.setAttribute('aria-expanded',String(open));panel.setAttribute('aria-hidden',String(!open));panel.classList.toggle('open',open);(open?question:launcher).focus();}
-launcher.addEventListener('click',()=>setAssistant(true));
+function setAssistant(open,focus=true){panel.hidden=!open;launcher.hidden=open;launcher.setAttribute('aria-expanded',String(open));panel.setAttribute('aria-hidden',String(!open));panel.classList.toggle('open',open);if(focus)(open?question:launcher).focus();}
+const autoChatKey='lema-concierge-first-visit-v2';
+const chatSeen=()=>{try{return sessionStorage.getItem(autoChatKey)==='1';}catch{return false;}};
+const markChatSeen=()=>{try{sessionStorage.setItem(autoChatKey,'1');}catch{}};
+launcher.addEventListener('click',()=>{markChatSeen();setAssistant(true);});
+// Open once per browser session after the visitor can see the page; avoid
+// re-opening after dismissal and avoid stealing keyboard focus automatically.
+if(!chatSeen())window.setTimeout(()=>{
+  if(!panel.hidden||document.hidden||!$('#afterhours-backdrop').hidden)return;
+  markChatSeen();setAssistant(true,false);
+},1600);
 $('#assistant-minimize').addEventListener('click',()=>setAssistant(false));
 $('#assistant-expand').addEventListener('click',()=>{const expanded=panel.classList.toggle('expanded');$('#assistant-expand').setAttribute('aria-pressed',String(expanded));$('#assistant-expand').setAttribute('aria-label',expanded?'Shrink chat':'Expand chat');question.focus();});
 function bubble(text,user=false,href=''){const p=document.createElement('p');p.className='bubble'+(user?' user':'');p.textContent=String(text||'');if(href&&/^\/(?:[\w/-]*)$/.test(href)){const a=document.createElement('a');a.href=href;a.textContent='Explore this page ↗';p.append(a);}messages.append(p);while(messages.children.length>40)messages.firstElementChild.remove();messages.scrollTop=messages.scrollHeight;return p;}
@@ -94,9 +103,8 @@ async function ask(text){
     chatHistory.push({role:'assistant',content:data.answer||''});
   }catch(error){
     pending.remove();
-    const fallback=answerQuestion(clean,site.faqs);
-    const message=fallback?.answer&&!/do not have|can't answer|not sure/i.test(fallback.answer)?fallback.answer:(error.message||'I could not connect. Please try again or visit Contact.');
-    bubble(message,false,fallback?.href||'');
+    const message='Sorry, the chat connection is having a moment. Please try again, or ask in another way. You can also reach Lema from the Contact page.';
+    bubble(message,false,'/contact/');
     chatHistory.push({role:'assistant',content:message});
   }finally{question.disabled=false;question.focus();}
 }
