@@ -41,7 +41,7 @@ async function searchKnowledge(question) {
     method: 'POST',
     headers: { apikey: key, authorization: `Bearer ${key}`, 'content-type': 'application/json' },
     body: JSON.stringify({ query_text: question, match_count: 4 }),
-    signal: AbortSignal.timeout(3500)
+    signal: AbortSignal.timeout(1500)
   });
   if (!result.ok) throw new Error(`Supabase returned ${result.status}`);
   return result.json();
@@ -107,7 +107,7 @@ export default async function handler(request, response) {
 
   try {
     if (casualQuestion(question)) return json(response, 200, { answer: fallbackConversation(question), href: '' });
-    const retrieved = await withTimeout(searchKnowledge(question), 4000, []);
+    const retrieved = await withTimeout(searchKnowledge(question), 1800, []);
     const matches = Array.isArray(retrieved) && retrieved.length ? retrieved : [];
     const best = matches[0] || localKnowledgeMatch(question);
     if (!best) {
