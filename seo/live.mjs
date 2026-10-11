@@ -142,6 +142,12 @@ export function renderLivePage(html,route,page,published,origin,production=true,
    '<div data-business-email-slot><a href="mailto:'+esc(business.email)+'">'+esc(business.email)+'</a></div>':'<div data-business-email-slot></div>');
  html=html.replace(/<p data-business-city>[\s\S]*?<\/p>/g,
    '<p data-business-city>Service location: '+esc(business.city)+'</p>');
+ html=html.replace(/(<textPath data-business-orbit[^>]*>)[\s\S]*?(<\/textPath>)/g,
+   (_,a,b)=>a+esc(business.wordmark)+' · '+esc(business.tagline)+' · '+b);
+ html=html.replace(/<span data-business-statement>[\s\S]*?<\/span>/g,
+   '<span data-business-statement>'+esc(business.wordmark)+'</span>');
+ html=html.replace(/<p class="eyebrow" data-business-about-label>[\s\S]*?<\/p>/g,
+   '<p class="eyebrow" data-business-about-label>Meet '+esc(business.name)+'</p>');
  // Shared owner-managed controls are server-rendered on every public page
  // rather than depending on JavaScript hydration or a stale build artifact.
  if(Array.isArray(site.contactLinks)||site.social){
