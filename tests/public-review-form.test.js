@@ -25,7 +25,8 @@ test('review API enforces owner moderation and spam limits',async()=>{
   const migration=await read('../supabase/migrations/20261011100000_review_inbox_service_only.sql');
   assert.match(edge,/action==='review-inbox'/);
   assert.ok(edge.includes("rpc('witness_lema_review_inbox'"));
-  assert.match(migration,/revoke execute on function public[\\s\\S]*from public, anon, authenticated/i);
+  assert.ok(migration.includes('from public, anon, authenticated;'));
+  assert.ok(migration.includes('revoke execute on function public.witness_lema_review_inbox'));
   assert.match(sql,/enable row level security/);
   assert.match(sql,/revoke all on table witness_lema_private\.review_submissions from public, anon, authenticated/);
   assert.match(sql,/c\.secret_sha256=p_secret_sha256/);
