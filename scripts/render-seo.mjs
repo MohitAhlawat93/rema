@@ -144,8 +144,8 @@ for(const route of editableRoutes){
   await mkdir(folder,{recursive:true});
   await cp(path.join(root,route==='/'?'index.html':route.slice(1)+'index.html'),path.join(folder,'index.html'));
 }
-// Reviews and Privacy also use the published server-side content model.
-// They remain noindex and are deliberately absent from owner SEO controls.
+// Privacy remains private-to-the-SEO-editor and deliberately noindex.
+// Reviews now uses the editable SEO template path above.
 for(const route of ['/privacy/']){
   const folder=path.join(root,'_seo_templates',route.slice(1,-1));
   await mkdir(folder,{recursive:true});
