@@ -21,7 +21,8 @@ function localKnowledgeMatch(question) {
     const score = terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0);
     return { item, score };
   }).sort((a, b) => b.score - a.score)[0];
-  return best?.score ? best.item : null;
+  const minimumScore = terms.length === 1 ? 1 : 2;
+  return best && best.score >= minimumScore ? best.item : null;
 }
 
 function withinLimit(request) {
