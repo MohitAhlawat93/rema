@@ -5,6 +5,7 @@ import {
 } from '../../lib/admin-auth.js';
 import { validateOwnerWriteOrigin } from '../../lib/admin-origin-guard.js';
 import { callAdminBackend } from '../../lib/admin-backend.js';
+import { reviewInbox } from '../../lib/review-inbox.js';
 import { consumeRateLimit } from '../../lib/rate-limit.js';
 
 const readBody = req => typeof req.body === 'string' ? (()=>{try{return JSON.parse(req.body)}catch{return {}}})() : (req.body || {});
@@ -58,6 +59,16 @@ export default async function handler(req,res){
         const body=readBody(req),action=body.action;
         if(!['publish','restore'].includes(action))return send(res,400,{error:'Unknown state action.'});
         return send(res,200,await callAdminBackend(action,{body:action==='restore'?{version:Number(body.version)}:{expectedVersion:body.expectedVersion}}));
+      }
+      return send(res,405,{error:'Unsupported method.'});
+    }
+    if(route==='review-inbox'){
+      if(req.method==='GET')return send(res,200,await reviewInbox('list'));
+      if(req.method==='POST'){
+        const body=readBody(req);
+        if(body.action!=='resolve'||!Number.isSafeInteger(Number(body.id))||
+           !['approved','rejected'].includes(body.status))return send(res,400,{error:'Invalid review decision.'});
+        return send(res,200,await reviewInbox('resolve',{id:Number(body.id),status:body.status}));
       }
       return send(res,405,{error:'Unsupported method.'});
     }
