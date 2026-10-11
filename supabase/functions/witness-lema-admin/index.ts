@@ -17,6 +17,16 @@ Deno.serve(async(req)=>{
     if(allowed!==true)return json({error:'Unauthorized'},401);
     const input=await req.json();
     const action=String(input?.action||'');
+    if(action==='review-inbox'){
+      const reviewAction=String(input.body?.reviewAction||'');
+      if(!['submit','list','resolve'].includes(reviewAction))return json({error:'Unknown review action.'},400);
+      const payload=input.body?.payload??{};
+      if(!payload||typeof payload!=='object'||Array.isArray(payload))return json({error:'Invalid review request.'},400);
+      // This RPC is executable only by service_role, never anon/authenticated.
+      return json(await rpc('witness_lema_review_inbox',{
+        p_secret_sha256:await sha256(secret),p_action:reviewAction,p_payload:payload
+      }));
+    }
     if(action==='rate-limit'){
       const scope=String(input.body?.scope||'');
       const subjectHash=String(input.body?.subjectHash||'');
