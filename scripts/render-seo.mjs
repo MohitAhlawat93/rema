@@ -1,3 +1,4 @@
+import { DEFAULT_BUSINESS } from '../seo/business.mjs';
 import { readFile, writeFile, mkdir, cp } from 'node:fs/promises';
 import path from 'node:path';
 import { site } from '../data/site.js';
@@ -45,7 +46,7 @@ function structuredData(route,page) {
   ];
   // A minimal identity node: no invented reviews, awards, address, ages, or sameAs.
   if(route==='/'||route==='/about/'){
-    graph.push({'@type':'Person','@id':origin+'/#person',name:'Witness Lema',url:origin+'/',image:absolute(config.pages['/about/'].image)});
+    graph.push({'@type':'Person','@id':origin+'/#person',name:config.brand,url:origin+'/',image:absolute(config.pages['/about/'].image)});
     graph[1].about={'@id':origin+'/#person'};
   }
   if(route!=='/' && route!=='/404/'){
@@ -82,7 +83,7 @@ for (const [route,page] of routes) {
     '<meta property="og:description" content="'+escapeHTML(page.description)+'">',
     '<meta property="og:url" content="'+escapeHTML(url)+'">',
     '<meta property="og:image" content="'+escapeHTML(absolute(page.image))+'">',
-    '<meta property="og:image:alt" content="Witness Lema portrait photograph">',
+    '<meta property="og:image:alt" content="'+escapeHTML(config.brand)+' portrait photograph">',
     '<meta name="twitter:card" content="summary_large_image">',
     '<meta name="twitter:title" content="'+escapeHTML(page.title)+'">',
     '<meta name="twitter:description" content="'+escapeHTML(page.description)+'">',
@@ -135,7 +136,7 @@ const defaults=Object.fromEntries(editableRoutes.map(route=>[route,{
   paragraphs:editorial[route].paragraphs,
   links:editorial[route].links
 }]));
-await writeFile(path.join(root,'seo-defaults.json'),JSON.stringify({pages:defaults},null,2));
+await writeFile(path.join(root,'seo-defaults.json'),JSON.stringify({pages:defaults,business:DEFAULT_BUSINESS},null,2));
 // Private-to-the-build template URLs. They have explicit noindex headers and
 // are never linked in navigation or sitemaps. Middleware uses them as a safe
 // fallback when the published SEO store is temporarily unavailable.
