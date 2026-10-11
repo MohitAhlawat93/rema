@@ -75,3 +75,24 @@
 .review-example{border-style:dashed}
 @media(max-width:640px){#assistant-panel,#assistant-panel.expanded{left:10px;right:10px;bottom:10px;width:auto;height:min(640px,calc(100dvh - 80px));max-height:none;border-radius:18px}#assistant-launch{right:10px;bottom:10px}#afterhours-launch{left:10px;bottom:10px}.review-grid{grid-template-columns:1fr}.reviews-section{padding-block:60px}#messages{padding:14px}.afterhours-card{border-radius:16px}}
 @media(prefers-reduced-motion:reduce){#assistant-panel.open{animation:none}}
+
+/* Compact first-visit concierge: accessible, modest footprint on every device. */
+#assistant-panel{width:min(342px,calc(100vw - 24px));height:min(438px,calc(100dvh - 76px));max-height:calc(100dvh - 42px);right:16px;bottom:16px;border-radius:16px}
+#assistant-panel.expanded{width:min(590px,calc(100vw - 24px));height:min(620px,calc(100dvh - 36px))}
+#assistant-launch{right:16px;bottom:16px;font-size:11px;padding:10px 15px}
+#assistant-panel .assistant-head{padding:12px 15px}
+#assistant-panel .assistant-head strong{font-size:20px}
+#assistant-panel .assistant-head span{font-size:10px;margin-top:3px}
+#assistant-panel .assistant-head-actions button{width:32px;height:32px}
+#assistant-panel .assistant-language{padding:6px 14px}
+#assistant-panel #messages{padding:12px;gap:8px}
+#assistant-panel #messages .bubble{padding:9px 12px;font-size:12px;line-height:1.55}
+#assistant-panel .suggestions{padding:7px 12px;gap:6px}
+#assistant-panel .suggestions button{padding:5px 10px;font-size:10px}
+#assistant-panel #assistant-form{padding:9px 11px 12px}
+#assistant-panel #assistant-form input{padding:9px 12px;font-size:12px}
+#assistant-panel #assistant-form button{width:34px;height:34px}
+.reviews-page{padding-top:24px}
+.reviews-page .review-quote{min-height:200px}
+.review-disclaimer{margin-top:24px}
+@media(max-width:640px){#assistant-panel,#assistant-panel.expanded{left:auto;right:8px;bottom:8px;width:min(330px,calc(100vw - 16px));height:min(420px,calc(100dvh - 70px));max-height:none;border-radius:15px}#assistant-launch{right:8px;bottom:8px}}
