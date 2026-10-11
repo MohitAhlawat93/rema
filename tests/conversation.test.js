@@ -24,7 +24,7 @@ test('availability and verification are not invented',()=>{
 test('public frontend has a once-per-session automatic popup and a Reviews route',async()=>{
  const app=await readFile(new URL('../public/app.js',import.meta.url),'utf8');
  const build=await readFile(new URL('../scripts/build.mjs',import.meta.url),'utf8');
- assert.match(app,/lema-concierge-first-visit-v2/);
+ assert.match(app,/lema-concierge-first-visit-v3/);
  assert.match(app,/setAssistant\(true,false\)/);
  assert.match(build,/['"]\/reviews\/['"]/);
  assert.match(build,/data-public-reviews/);
