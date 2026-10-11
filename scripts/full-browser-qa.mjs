@@ -91,6 +91,7 @@ for(const profile of profiles){
    }
   }catch(error){
    failures.push(profile.name+' '+pageInfo.path+': '+error.message);
+   console.error('DETAIL '+profile.name+' '+pageInfo.path+': '+(error.stack||error.message));
   }
   const row={profile:profile.name,route:pageInfo.path,status,domMs,...metrics,jsErrors,resourceFailures};
   rows.push(row);
