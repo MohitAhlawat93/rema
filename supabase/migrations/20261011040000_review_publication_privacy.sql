@@ -12,7 +12,7 @@ begin
       new.payload := jsonb_set(new.payload, '{reviews}', '[]'::jsonb, true);
     else
       new.payload := jsonb_set(new.payload, '{reviews}', coalesce(
-        (select jsonb_agg(item value order by item.ordinality)
+        (select jsonb_agg(item.value order by item.ordinality)
            from jsonb_array_elements(new.payload->'reviews') with ordinality as item(value,ordinality)
           where item.value->>'consent' = 'true'
             and item.value->>'published' = 'true'
