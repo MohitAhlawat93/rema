@@ -185,6 +185,7 @@ async function loadWorkspace(){
   const session=await api('session');
   if(!session?.state?.draft)throw new Error('Your private workspace is unavailable.');
   state=session.state;
+  dirty=false;
   savedDraftSnapshot=JSON.stringify(state.draft);
   initializeEditableSections();
   showDashboard();
@@ -259,7 +260,7 @@ async function publish(){
     notice(message,'error');
   }
 }
-async function restoreVersion(version){try{if(!confirm('Restore version '+version+' to Draft? The live website will stay unchanged.'))return;state=await api('state',{method:'POST',body:JSON.stringify({action:'restore',version})});renderAll();notice('Older version restored to Draft. Preview it before publishing.','success');}catch(error){notice(error.message,'error');}}
+async function restoreVersion(version){try{if(!confirm('Restore version '+version+' to Draft? The live website will stay unchanged.'))return;state=await api('state',{method:'POST',body:JSON.stringify({action:'restore',version})});savedDraftSnapshot=JSON.stringify(state.draft);dirty=false;initializeEditableSections();initializeSeo();dirty=hasUnsavedDraft();renderAll();notice('Older version restored to Draft. Save draft to keep any missing default settings.','success');}catch(error){notice(error.message,'error');}}
 async function saveAnswers(){try{notice('Saving assistant answers…');const result=await api('knowledge',{method:'PUT',body:JSON.stringify({items:knowledge})});notice('Saved '+result.saved+' assistant answers. They are live now.','success');}catch(error){notice(error.message,'error');}}
 async function optimise(file){const image=await createImageBitmap(file);const max=1600,scale=Math.min(1,max/Math.max(image.width,image.height));const canvas=document.createElement('canvas');canvas.width=Math.round(image.width*scale);canvas.height=Math.round(image.height*scale);canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);image.close();return canvas.toDataURL('image/jpeg',.86);}
 async function uploadPhoto(){const input=$('[data-photo-file]'),status=$('[data-upload-status]'),file=input.files?.[0];if(!file)return status.textContent='Choose a photograph first.';try{status.textContent='Optimising and uploading…';const dataUrl=await optimise(file);const result=await api('upload',{method:'POST',body:JSON.stringify({name:file.name,dataUrl})});state.draft.images.push({src:result.url,storagePath:result.path,alt:'Portrait of witness_lema_',title:file.name.replace(/\.[^.]+$/,''),category:'Portrait',hero:false,reference:false});renderPhotos();setDirty();status.textContent='Uploaded and added to Draft. Save the draft when ready.';input.value='';}catch(error){status.textContent=error.message;notice(error.message,'error');}}
