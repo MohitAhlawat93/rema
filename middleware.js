@@ -36,7 +36,7 @@ export default async function middleware(req){
  const [template,payload,defaults]=await Promise.all([templatePromise,dataPromise,defaultsPromise]);
  if(!template.ok)return new Response('Website temporarily unavailable',{status:503,headers:{'content-type':'text/plain','cache-control':'no-store'}});
  const raw=await template.text();
- if(!payload||(!defaults?.pages&&SEO_ROUTES.includes(pathname))){
+ if(!payload||!defaults?.pages){
    const h=new Headers(template.headers);h.set('cache-control','no-store');
    if(!active())h.set('x-robots-tag','noindex, nofollow');
    return new Response(req.method==='HEAD'?null:raw,{status:200,headers:h});
