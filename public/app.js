@@ -82,7 +82,7 @@ launcher.addEventListener('click',()=>{markChatSeen();setAssistant(true);});
 // Open once per browser session after the visitor can see the page; avoid
 // re-opening after dismissal and avoid stealing keyboard focus automatically.
 if(!chatSeen())window.setTimeout(()=>{
-  if(!panel.hidden||!document.hidden||!$('#afterhours-backdrop').hidden)return;
+  if(!panel.hidden||document.hidden||!$('#afterhours-backdrop').hidden)return;
   markChatSeen();setAssistant(true,false);
 },1600);
 $('#assistant-minimize').addEventListener('click',()=>setAssistant(false));
