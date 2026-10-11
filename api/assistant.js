@@ -11,18 +11,17 @@ const json = (response, status, body) => {
 
 const clientIp = request => String(request.headers['x-forwarded-for'] || request.socket?.remoteAddress || 'unknown').split(',')[0].trim();
 const casualQuestion = question => /^(hi|hello|hey|hiya|good morning|good afternoon|good evening|how are you(?: doing)?|how's it going|what's up|thanks|thank you|who are you|what can you do)\b[!.? ]*$/i.test(question);
+const lightConversation = question => /^(tell me something interesting|tell me a fact|what do you think|can you help me|are you real|are you an ai|how does this work|nice to meet you|good night|goodbye)\b/i.test(question);
 const withTimeout = (promise, milliseconds, fallback) => Promise.race([promise, new Promise(resolve => setTimeout(() => resolve(fallback), milliseconds))]);
 
 function localKnowledgeMatch(question) {
   const terms = question.toLowerCase().split(/[^a-z0-9]+/).filter(word => word.length > 2);
-  return (site.faqs || []).map(item => {
+  const best = (site.faqs || []).map(item => {
     const haystack = `${item.question} ${(item.keywords || []).join(' ')}`.toLowerCase();
     const score = terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0);
     return { item, score };
-  }).sort((a, b) => b.score - a.score)[0]?.score ? (site.faqs || []).map(item => {
-    const haystack = `${item.question} ${(item.keywords || []).join(' ')}`.toLowerCase();
-    return { item, score: terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0) };
-  }).sort((a, b) => b.score - a.score)[0].item : null;
+  }).sort((a, b) => b.score - a.score)[0];
+  return best?.score ? best.item : null;
 }
 
 function withinLimit(request) {
@@ -96,6 +95,13 @@ const fallbackConversation = question => {
   return 'Hello — welcome. How can I help you explore the website?';
 };
 
+const fallbackLightConversation = question => {
+  if (/interesting|fact/i.test(question)) return 'Here is something interesting: the concierge can combine the website’s approved profile and service information with a natural conversation, so you can ask in your own words and still get a clear answer.';
+  if (/help me|how does this work/i.test(question)) return 'Of course. Ask me about the profile, services, gallery, or contact options, and I’ll guide you to the relevant information.';
+  if (/goodbye|good night/i.test(question)) return 'Goodbye — thank you for visiting. You are welcome back anytime.';
+  return 'Of course. I can help you explore the website and answer general questions in a natural way.';
+};
+
 export default async function handler(request, response) {
   if (request.method !== 'POST') return json(response, 405, { error: 'Method not allowed' });
   if (!withinLimit(request)) {
@@ -107,6 +113,7 @@ export default async function handler(request, response) {
 
   try {
     if (casualQuestion(question)) return json(response, 200, { answer: fallbackConversation(question), href: '' });
+    if (lightConversation(question)) return json(response, 200, { answer: fallbackLightConversation(question), href: '' });
     const local = localKnowledgeMatch(question);
     if (local) return json(response, 200, { answer: local.answer, href: local.href || '' });
     const retrieved = await withTimeout(searchKnowledge(question), 1800, []);
