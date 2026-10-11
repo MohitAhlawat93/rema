@@ -178,8 +178,10 @@ $('#review-form')?.addEventListener('submit',async event=>{
     if(!response.ok)throw new Error(result.error||'Could not send the review. Please try again.');
     form.reset();
     status.textContent='Thank you! Your review is published and visible on this page.';
-    const latest=await fetch('/api/reviews',{cache:'no-store'});
-    if(latest.ok){const feed=await latest.json();if(Array.isArray(feed.items)){site.reviews=feed.items;hydrateReviews();}}
+    try{
+      const latest=await fetch('/api/reviews',{cache:'no-store'});
+      if(latest.ok){const feed=await latest.json();if(Array.isArray(feed.items)){site.reviews=feed.items;hydrateReviews();}}
+    }catch{/* The review is already published; refreshing later will show it. */}
   }catch(error){status.textContent=error.message||'Could not submit the review.';}
   finally{submit.disabled=false;}
 });
