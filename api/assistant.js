@@ -26,7 +26,7 @@ async function searchKnowledge(question) {
     method: 'POST',
     headers: { apikey: key, authorization: `Bearer ${key}`, 'content-type': 'application/json' },
     body: JSON.stringify({ query_text: question, match_count: 4 }),
-    signal: AbortSignal.timeout(5000)
+    signal: AbortSignal.timeout(3500)
   });
   if (!result.ok) throw new Error(`Supabase returned ${result.status}`);
   return result.json();
@@ -54,7 +54,7 @@ async function askGroq(question, matches) {
       temperature: 0.2,
       max_completion_tokens: 260
     }),
-    signal: AbortSignal.timeout(9000)
+    signal: AbortSignal.timeout(3500)
   });
   if (!result.ok) throw new Error(`Groq returned ${result.status}`);
   const data = await result.json();
@@ -67,7 +67,7 @@ async function askXai(question, matches) {
     method: 'POST',
     headers: { authorization: `Bearer ${process.env.XAI_API_KEY}`, 'content-type': 'application/json' },
     body: JSON.stringify({ model: process.env.AI_MODEL || 'grok-4.7', input: groundedPrompt(question, matches), store: false, max_output_tokens: 260 }),
-    signal: AbortSignal.timeout(9000)
+    signal: AbortSignal.timeout(3500)
   });
   if (!result.ok) throw new Error(`xAI returned ${result.status}`);
   const data = await result.json();
