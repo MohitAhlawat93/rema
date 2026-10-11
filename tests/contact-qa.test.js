@@ -6,7 +6,9 @@ import {officialWhatsAppUrl,whatsappEnquiryUrl,formatEnquiry} from '../lib/conta
 test('official WhatsApp uses owner-managed HTTPS contact links only',()=>{
  assert.equal(officialWhatsAppUrl([{label:'WhatsApp',url:'https://wa.me/919876543210'}]),'https://wa.me/919876543210');
  assert.equal(officialWhatsAppUrl([{label:'WhatsApp',url:'https://api.whatsapp.com/send?phone=919876543210'}]),'https://wa.me/919876543210');
- assert.equal(officialWhatsAppUrl([{label:'Contact',url:'https://evil.example/wa.me/919876543210'}],{whatsapp:'https://wa.me/911234567890'}),'https://wa.me/911234567890');
+ assert.equal(officialWhatsAppUrl([{label:'Contact',url:'https://evil.example/wa.me/919876543210'}],{whatsapp:'https://wa.me/911234567890'}),'');
+ assert.equal(officialWhatsAppUrl(undefined,{whatsapp:'https://wa.me/911234567890'}),'https://wa.me/911234567890');
+ assert.equal(officialWhatsAppUrl([],{whatsapp:'https://wa.me/911234567890'}),'');
  assert.equal(officialWhatsAppUrl([{label:'WhatsApp',url:'http://wa.me/919876543210'}]),'');
  assert.equal(officialWhatsAppUrl([{label:'WhatsApp',url:'https://wa.me/1?text=bad'}]),'');
  assert.equal(officialWhatsAppUrl([{label:'WhatsApp',url:'https://wa.me/919876543210@evil.example'}]),'');
