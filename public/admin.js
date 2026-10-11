@@ -35,13 +35,13 @@ function validateBusinessDraft(){
     throw new Error('Business identity: check '+key+'.');
  }
  if(typeof b.email!=='string'||b.email.length>254||
-   (b.email!==''&&!/^[^\\s@<>]+@[^\\s@<>]+\\.[a-zA-Z]{2,}$/.test(b.email)))
+   (b.email!==''&&!/^[^\s@<>]+@[^\s@<>]+\.[a-zA-Z]{2,}$/.test(b.email)))
   throw new Error('Business identity: enter a valid email address.');
  if(!((b.logoUrl==='/assets/mark.svg')||
-   (/^\\/images\\/[a-z0-9/_-]+\\.(?:png|jpe?g|webp)$/i.test(b.logoUrl)&&!b.logoUrl.includes('..'))||
-   /^https:\\/\\/[^\\s<>"']+\\/storage\\/v1\\/object\\/public\\/witness-lema-gallery\\//.test(b.logoUrl)))
+   (/^\/images\/[a-z0-9/_-]+\.(?:png|jpe?g|webp)$/i.test(b.logoUrl)&&!b.logoUrl.includes('..'))||
+   /^https:\/\/[^\s<>"']+\/storage\/v1\/object\/public\/witness-lema-gallery\//.test(b.logoUrl)))
   throw new Error('Business identity: use an existing local image or approved uploaded logo URL.');
- if(typeof b.requestedDomain!=='string'||(b.requestedDomain&&!/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$/i.test(b.requestedDomain)))
+ if(typeof b.requestedDomain!=='string'||(b.requestedDomain&&!/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(b.requestedDomain)))
   throw new Error('Business identity: enter a domain only (example.com), without https://.');
 }
 function populateProfile(){$$('[data-path]').forEach(input=>{input.value=getPath(state.draft,input.dataset.path)||'';input.oninput=()=>{setPath(state.draft,input.dataset.path,input.value);setDirty();};});}
