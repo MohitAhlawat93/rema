@@ -13,6 +13,11 @@ jobs:
         with:
           node-version: '22'
       - run: npm run build
+      - name: Check JavaScript syntax
+        run: |
+          node --check public/app.js
+          node --check public/admin.js
+          node --check api/assistant.js
       - run: npm test
       - run: npm run validate:seo
       - name: Verify SEO production-mode output
