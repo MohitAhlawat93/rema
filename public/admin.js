@@ -1,6 +1,6 @@
 const $=selector=>document.querySelector(selector);
 const $$=selector=>[...document.querySelectorAll(selector)];
-let state=null,knowledge=[],dirty=false,seoDefaults=null,seoCurrent='/';
+let state=null,knowledge=[],pendingReviews=[],dirty=false,seoDefaults=null,seoCurrent='/';
 const clone=value=>JSON.parse(JSON.stringify(value));
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const notice=(text,type='')=>{const el=$('[data-notice]');if(!el)return;el.textContent=text;el.className='notice '+type;};
@@ -116,11 +116,52 @@ function reviewCard(item,index){
 }
 function renderReviews(){
   const holder=$('[data-reviews-editor]');
-  holder.innerHTML=(state.draft.reviews||[]).map(reviewCard).join('')||'<p>No reviews entered yet. Visitors will see labelled layout examples, not fabricated client testimonials.</p>';
+  holder.innerHTML=(state.draft.reviews||[]).map(reviewCard).join('')||'<p>No reviews published yet. Review submissions will appear above.</p>';
   holder.querySelectorAll('[data-review-field]').forEach(input=>input.oninput=()=>{state.draft.reviews[+input.dataset.index][input.dataset.reviewField]=input.value;setDirty();});
   holder.querySelectorAll('[data-review-consent]').forEach(input=>input.onchange=()=>{state.draft.reviews[+input.dataset.reviewConsent].consent=input.checked;setDirty();});
   holder.querySelectorAll('[data-review-published]').forEach(input=>input.onchange=()=>{state.draft.reviews[+input.dataset.reviewPublished].published=input.checked;setDirty();});
   holder.querySelectorAll('[data-review-remove]').forEach(button=>button.onclick=()=>{if(!confirm('Delete this review from the draft?'))return;state.draft.reviews.splice(+button.dataset.reviewRemove,1);renderReviews();setDirty();});
+}
+function renderPendingReviews(){
+  const holder=$('[data-review-submissions]');if(!holder)return;
+  holder.innerHTML=pendingReviews.length?pendingReviews.map(item=>
+    '<article class="repeat-card review-pending-card" data-review-submission="'+Number(item.id)+'">'+
+    '<p class="review-pending-body">'+esc(item.text)+'</p><p class="fine">— '+esc(item.author)+' · '+(item.language==='hi'?'हिंदी':'English')+'</p>'+
+    '<div class="review-pending-actions"><button class="primary" type="button" data-review-approve>Approve to draft</button>'+
+    '<button class="secondary" type="button" data-review-reject>Reject</button></div></article>'
+  ).join(''):'<p class="fine">No pending reviews to approve.</p>';
+  holder.querySelectorAll('[data-review-approve]').forEach(button=>button.onclick=async()=>{
+    const id=Number(button.closest('[data-review-submission]').dataset.reviewSubmission);
+    const item=pendingReviews.find(x=>Number(x.id)===id);if(!item)return;
+    const existing=(state.draft.reviews||[]).some(x=>x.author===item.author&&
+      (x.textEn===item.text||x.textHi===item.text));
+    if(!existing){
+      if(state.draft.reviews.length>=40){notice('The website has reached its 40-review limit. Remove one before approving another.','error');return;}
+      state.draft.reviews.push({author:item.author,textEn:item.language==='hi'?'':item.text,textHi:item.language==='hi'?item.text:'',consent:true,published:true});
+      setDirty();
+    }
+    button.disabled=true;
+    try{
+      validateDraft();
+      const updated=await api('state',{method:'PUT',body:JSON.stringify({state:state.draft,expectedVersion:state.version})});
+      state=updated;dirty=false;
+      renderAll();
+      await api('review-inbox',{method:'POST',body:JSON.stringify({action:'resolve',id,status:'approved'})});
+      pendingReviews=pendingReviews.filter(x=>Number(x.id)!==id);renderPendingReviews();
+      notice('Review added to the saved draft. Click Publish website to show it publicly.','success');
+    }catch(error){if(!existing){state.draft.reviews=state.draft.reviews.filter(x=>!(x.author===item.author&&(x.textEn===item.text||x.textHi===item.text)));renderReviews();}notice(error.message||'Could not approve review.','error');button.disabled=false;}
+  });
+  holder.querySelectorAll('[data-review-reject]').forEach(button=>button.onclick=async()=>{
+    const id=Number(button.closest('[data-review-submission]').dataset.reviewSubmission);
+    if(!confirm('Reject this submitted review?'))return;
+    button.disabled=true;try{await api('review-inbox',{method:'POST',body:JSON.stringify({action:'resolve',id,status:'rejected'})});
+      pendingReviews=pendingReviews.filter(x=>Number(x.id)!==id);renderPendingReviews();notice('Submission rejected.','success');
+    }catch(error){notice(error.message||'Could not reject review.','error');button.disabled=false;}
+  });
+}
+async function loadPendingReviews(){
+  try{const result=await api('review-inbox');pendingReviews=Array.isArray(result.items)?result.items:[];renderPendingReviews();}
+  catch{const holder=$('[data-review-submissions]');if(holder)holder.textContent='Could not load submissions. Please refresh.';}
 }
 function validateEditorialControls(){
   for(const type of ['afterhours','contactLinks'])for(const link of editableLinks(type)){
@@ -156,6 +197,7 @@ async function loadWorkspace(){
   const seoWarning=$('[data-seo-loading-error]');
   if(seoWarning)seoWarning.hidden=Boolean(seoDefaults);
   void loadAiStatus();
+  void loadPendingReviews();
   dirty=false;
   if(!seoDefaults||answers.status!=='fulfilled'){
     notice('Dashboard ready. Some optional settings did not load; refresh before editing those sections.','');
@@ -180,6 +222,7 @@ $('[data-publish]').onclick=publish;
 $('[data-preview]').onclick=()=>window.open('/?admin_preview=1','_blank','noopener');
 $('[data-refresh]').onclick=async()=>{try{await loadWorkspace();}catch(error){notice(error.message,'error');}};
 $$('[data-add-link]').forEach(button=>button.onclick=()=>{editableLinks(button.dataset.addLink).push({label:'',url:''});renderLinks();setDirty();});
+$('[data-review-queue-refresh]').onclick=loadPendingReviews;
 $('[data-add-review]').onclick=()=>{state.draft.reviews.unshift({author:'',textEn:'',textHi:'',consent:false,published:false});renderReviews();setDirty();};
 $('[data-add-service]').onclick=()=>{state.draft.services.push({number:String(state.draft.services.length+1).padStart(2,'0'),title:'New service',text:'Add a refined description.',tag:'By arrangement',image:state.draft.images?.[0]?.src||''});renderServices();setDirty();};
 $('[data-add-answer]').onclick=()=>{knowledge.unshift({question:'',answer:'',keywords:[],href:'/contact/',published:true});renderAnswers();};

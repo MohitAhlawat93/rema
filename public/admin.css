@@ -24,3 +24,9 @@
 
 /* Owner controls for independent Afterhours, contacts, and bilingual reviews. */
 .link-list{margin-top:18px}.link-edit-row{display:grid;grid-template-columns:minmax(110px,1fr) minmax(180px,1.5fr) auto;align-items:end;gap:10px;background:#f8f4ed;padding:12px;border:1px solid var(--line)}.link-edit-row label{min-width:0}.link-edit-row input{width:100%;max-width:100%}.link-edit-row .danger{margin-bottom:14px;border:1px solid var(--line);background:transparent;padding:10px 13px;color:#843e34}.section-head.compact{align-items:center;margin:14px 0 6px}.section-head.compact h3{margin:0}.review-editor .repeat-fields{grid-template-columns:1fr 1fr}.review-editor .repeat-fields>label:first-child{grid-column:1/-1}.review-options{display:grid;gap:10px}.review-options label{display:flex;align-items:flex-start;gap:8px;font-size:12px}.review-options input{width:auto;margin:6px 0 0}.panel[data-panel="links"] fieldset{min-width:0}.panel[data-panel="links"] fieldset>label:first-of-type{display:flex;align-items:center;gap:10px}.panel[data-panel="links"] fieldset>label:first-of-type input[type=checkbox]{width:auto;margin:0}@media(max-width:700px){.link-edit-row{grid-template-columns:1fr}.link-edit-row .danger{margin:0}.review-editor .repeat-fields{grid-template-columns:1fr}.review-editor .repeat-fields>label:first-child{grid-column:auto}}
+
+.review-queue-header{margin-top:40px}
+.review-queue-header h3{margin-bottom:7px}
+.review-pending-card{display:grid;gap:12px}
+.review-pending-body{font-size:16px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.review-pending-actions{display:flex;gap:10px;flex-wrap:wrap}

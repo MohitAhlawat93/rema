@@ -124,6 +124,24 @@ function stepPhoto(delta){const visible=visibleIndices();index=visible[(visible.
 document.querySelectorAll('[data-photo]').forEach(b=>b.addEventListener('click',()=>{index=Number(b.dataset.photo);returnFocus=b;renderPhoto();viewer.showModal();$('#photo-close').focus();}));
 $('#photo-close').addEventListener('click',()=>viewer.close());viewer.addEventListener('close',()=>returnFocus?.focus());$('#photo-prev').addEventListener('click',()=>stepPhoto(-1));$('#photo-next').addEventListener('click',()=>stepPhoto(1));viewer.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')stepPhoto(-1);if(e.key==='ArrowRight')stepPhoto(1);});
 document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-filter]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-pressed',String(x===b));});document.querySelectorAll('[data-photo]').forEach(x=>{x.closest('figure').hidden=b.dataset.filter!=='All'&&site.images[Number(x.dataset.photo)].category!==b.dataset.filter;});$('[data-gallery-status]').textContent=`Showing ${visibleIndices().length} images`;}));
+$('#review-form')?.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const form=event.currentTarget;
+  if(!form.reportValidity())return;
+  const submit=form.querySelector('button[type="submit"]');
+  const status=$('#review-form-status');
+  const data=new FormData(form);
+  submit.disabled=true;
+  status.textContent='Sending your review…';
+  try{
+    const response=await fetch('/api/reviews',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({author:data.get('author'),text:data.get('text'),language:data.get('language'),consent:data.get('consent')==='yes',website:data.get('website')}),signal:AbortSignal.timeout(12000)});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||'Could not send the review. Please try again.');
+    form.reset();
+    status.textContent='Thank you! Your review was submitted for approval. It will not appear publicly until approved.';
+  }catch(error){status.textContent=error.message||'Could not submit the review.';}
+  finally{submit.disabled=false;}
+});
 $('#enquiry')?.addEventListener('submit',async e=>{e.preventDefault();const d=new FormData(e.target);const text=`Hello witness_lema_,\n\nName: ${d.get('name')}\nEmail: ${d.get('email')}\nProject: ${d.get('type')}\nPreferred date: ${d.get('date')||'Flexible'}\n\n${d.get('message')}`;try{await navigator.clipboard.writeText(text);$('#form-status').textContent='Enquiry copied. Nothing has been sent. Paste it into WhatsApp or your preferred contact channel.';$('#copy-fallback').hidden=true;}catch{$('#copy-fallback').value=text;$('#copy-fallback').hidden=false;$('#copy-fallback').focus();$('#copy-fallback').select();$('#form-status').textContent='Your browser blocked automatic copying. Select and copy the prepared enquiry below. Nothing has been sent.';}});
 // Hero rotation pauses on request, hidden tabs, focus, hover and reduced motion.
 const slides=[...document.querySelectorAll('.hero-slide')];
