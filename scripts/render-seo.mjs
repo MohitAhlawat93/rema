@@ -3,7 +3,6 @@ import path from 'node:path';
 import { site } from '../data/site.js';
 import config from '../seo/site.config.mjs';
 import editorial from '../seo/editorial.config.mjs';
-import editorial from '../seo/editorial.config.mjs';
 
 function escapeHTML(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
