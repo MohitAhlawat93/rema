@@ -33,3 +33,21 @@ test('owner can see pending reviews and approve into unpublished draft',async()=
   assert.match(admin,/async function loadPendingReviews/);
   assert.match(html,/data-review-submissions/);
 });
+
+test('public endpoint rejects incomplete submissions and returns no honeypot error',async()=>{
+  const {default:handler}=await import('../api/reviews.js');
+  const request=body=>({method:'POST',body,headers:{}});
+  const reply=()=>({
+    statusCode:0,headers:{},setHeader(k,v){this.headers[k]=v;},
+    end(value){this.body=JSON.parse(value);}
+  });
+  const noConsent=reply();
+  await handler(request({author:'Guest',text:'I had a meaningful meeting and wanted to share my experience.',language:'en',consent:false}),noConsent);
+  assert.equal(noConsent.statusCode,400);
+  const tooShort=reply();
+  await handler(request({author:'Guest',text:'Nice',language:'en',consent:true}),tooShort);
+  assert.equal(tooShort.statusCode,400);
+  const honeypot=reply();
+  await handler(request({author:'Guest',text:'I had a meaningful meeting and wanted to share my experience.',language:'en',consent:true,website:'spam'}),honeypot);
+  assert.equal(honeypot.statusCode,200);
+});
