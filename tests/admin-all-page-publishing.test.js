@@ -34,7 +34,8 @@ test('private preview follows internal page links but never external, admin, or 
  const context=vm.createContext({URL,location:new URL(url+'/?admin_preview=1'),previewAuthorized:true});
  const fn=new vm.Script(source+'\npreviewHref').runInContext(context);
  for(const route of [...CONTENT_ROUTES,'/gallery/?category=Portraits#photos']){
-  assert.equal(fn(route),route.includes('?')?route.replace('?','?admin_preview=1&'):route+'?admin_preview=1',route);
+  const expected=new URL(route,url);expected.searchParams.set('admin_preview','1');
+  assert.equal(fn(route),expected.pathname+expected.search+expected.hash,route);
  }
  assert.equal(fn('/admin'),null);
  assert.equal(fn('/api/site-content'),null);
