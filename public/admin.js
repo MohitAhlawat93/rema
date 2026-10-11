@@ -32,7 +32,7 @@ function renderBusiness(){
      choice.onchange=()=>{b.logoUrl=choice.value;const field=$('[data-business-field="logoUrl"]');if(field)field.value=b.logoUrl;setDirty();};
    }
  }
- $('[data-business-field]').forEach(input=>{
+ $$('[data-business-field]').forEach(input=>{
    input.disabled=!b;
    if(!b)return;
    input.value=b[input.dataset.businessField]??'';
