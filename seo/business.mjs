@@ -9,7 +9,6 @@ export const DEFAULT_BUSINESS=Object.freeze({
  logoUrl:'/assets/mark.svg',
  requestedDomain:''
 });
-const plain=(value,max)=>typeof value==='string'?value.trim().slice(0,max):'';
 const validLogo=(value,supabaseUrl='')=>{
  if(value==='/assets/mark.svg')return true;
  if(/^\/images\/[a-z0-9/_-]+\.(?:png|jpe?g|webp)$/i.test(value)&&!value.includes('..'))return true;
@@ -45,5 +44,5 @@ export function resolveBusiness(raw,supabaseUrl=''){
 // The owner should review all six SEO pages in /admin before publishing.
 export function seoIdentityText(value,business){
  const text=String(value??'');
- return business.name===DEFAULT_BUSINESS.name?text:text.replaceAll(DEFAULT_BUSINESS.name,business.name);
+ return text.replaceAll(DEFAULT_BUSINESS.name,business.name).replaceAll(DEFAULT_BUSINESS.city,business.city);
 }
