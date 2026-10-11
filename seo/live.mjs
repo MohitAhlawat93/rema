@@ -66,7 +66,19 @@ function updateHead(html,page,route,origin,production,business){
    const person=data['@graph']?.find(n=>n['@type']==='Person');
    if(person){person.name=business.name;person.url=origin+'/';person['@id']=origin+'/#person';}
    const node=data['@graph']?.find(n=>n['@type']==='WebPage');
-   if(node){node.name=title;node.description=description;node.url=url;node['@id']=url+'#webpage';node.isPartOf={'@id':origin+'/#website'};node.primaryImageOfPage={'@type':'ImageObject',url:socialImage};}
+   if(node){
+    node.name=title;node.description=description;node.url=url;node['@id']=url+'#webpage';
+    node.isPartOf={'@id':origin+'/#website'};node.primaryImageOfPage={'@type':'ImageObject',url:socialImage};
+    if(node.about?.['@id'])node.about={'@id':origin+'/#person'};
+   }
+   const breadcrumbs=data['@graph']?.find(n=>n['@type']==='BreadcrumbList');
+   if(breadcrumbs){
+    breadcrumbs['@id']=url+'#breadcrumb';
+    if(Array.isArray(breadcrumbs.itemListElement))for(const item of breadcrumbs.itemListElement){
+      if(item.position===1)item.item=origin+'/';
+      if(item.position===2)item.item=url;
+    }
+   }
    return '<script type="application/ld+json">'+JSON.stringify(data).replace(/</g,'\\u003c')+'</script>';
   }catch{return match;}
  });
