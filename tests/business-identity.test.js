@@ -33,7 +33,7 @@ const template=`<!doctype html><html><head><title>Previous website</title>
 test('business identity defaults are safe and keep legacy published versions working',()=>{
  assert.equal(resolveBusiness(null).name,DEFAULT_BUSINESS.name);
  assert.deepEqual(businessErrors(DEFAULT_BUSINESS),[]);
- assert.equal(resolveBusiness({name:'Bad<script>'}).name,DEFAULT_BUSINESS.name);
+ assert.equal(resolveBusiness({name:'Bad<script>',logoUrl:'javascript:bad'}).name,DEFAULT_BUSINESS.name);
  assert.equal(seoIdentityText('About Witness Lema',DEFAULT_BUSINESS),'About Witness Lema');
 });
 test('bad domains, emails and logo URLs cannot be published',()=>{
