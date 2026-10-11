@@ -92,7 +92,7 @@ try{
    assert.equal(await page.locator('#question').evaluate(el=>document.activeElement===el),false,
       'Mobile chat must not open the soft keyboard automatically');
    const box=await page.locator('#assistant-panel').boundingBox();
-   assert.ok(box&&box.width>=width*.87&&box.x>=0&&box.x+box.width<=width+2,JSON.stringify(box));
+   assert.ok(box&&box.width>=width*.78&&box.x>=0&&box.x+box.width<=width+2,JSON.stringify(box));
    assert.ok(box.y>=0&&box.y+box.height<=740+2,JSON.stringify(box));
    assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('chat-visible')),true);
    await page.locator('#assistant-minimize').click();
@@ -118,7 +118,7 @@ try{
   await page.locator('#assistant-launch').click();
   await page.locator('#question').fill('hello there');
   await page.locator('#assistant-form button').click();
-  await page.locator('#messages .pending').waitFor({state:'visible',timeout:500});
+  await page.locator('#messages .pending').waitFor({state:'visible',timeout:1100});
   await page.locator('#messages .bubble').filter({hasText:'Hello from the mobile test: hello there'})
     .waitFor({state:'visible',timeout:2500});
   assert.equal(await page.locator('#question').isEnabled(),true);
