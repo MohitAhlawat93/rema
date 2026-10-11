@@ -99,3 +99,15 @@ test('Reviews publishes real SEO metadata, index flags and sitemap presence',()=
  assert.match(renderLivePage(template,'/reviews/',pages['/reviews/'],{},origin,true),/noindex, nofollow/);
  assert.doesNotMatch(html,/"@type":"AggregateRating"/);
 });
+
+test('published Reviews SEO never invents structured ratings or fake testimonials',()=>{
+ const base=defaults['/reviews/'];
+ const entry=cleanSEOPage({title:'Verified title for actual reader reviews',
+ description:'Review the genuine, visitor-submitted feedback shown by this website, and submit your own experience in either English or Hindi.',
+ heading:'Read reviews from visitors to the website',
+ paragraphs:['This page shows the real entries published by visitors and lets anyone submit feedback they wrote themselves.'],
+ links:[{href:'/about/',label:'Read about Lema'}],index:false},'/reviews/',base);
+ assert.equal(entry.index,false);
+ const sitemap=xmlSitemap(Object.fromEntries(SEO_ROUTES.map(r=>[r,r==='/reviews/'?entry:defaults[r]])),origin);
+ assert.ok(!sitemap.includes('/reviews/</loc>'));
+});
