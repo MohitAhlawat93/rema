@@ -21,7 +21,7 @@ function hydrateAfterhours(){
   const config=site.afterhours||{};
   const launch=$('#afterhours-launch');
   launch.hidden=config.enabled===false;
-  $('#afterhours-title').textContent=config.title||'Lema Afterhours';
+  $('#afterhours-title').textContent=config.title||((site.business?.name||'Website')+' Afterhours');
   $('#afterhours-intro').textContent=config.intro||'Stay close through the official channels.';
   const links=linkItems(Array.isArray(config.links)?config.links:(site.contactLinks?.length?site.contactLinks:site.social));
   $('[data-afterhours-links]').innerHTML=links.map(({label,url})=>`<a href="${html(url)}" target="_blank" rel="noopener noreferrer"><span>${html(label)}</span><span aria-hidden="true">↗</span></a>`).join('')||'<p>No channels are listed at the moment. Please visit Contact for updates.</p>';
@@ -42,6 +42,9 @@ function hydrateBusiness(){
   document.querySelectorAll('[data-business-tagline]').forEach(el=>{el.textContent=b.tagline||'';});
   document.querySelectorAll('[data-business-home-link]').forEach(el=>{el.setAttribute('aria-label',name+' home');});
   document.querySelectorAll('[data-business-copyright]').forEach(el=>{el.textContent='© '+new Date().getUTCFullYear()+' · '+name;});
+  document.querySelectorAll('[data-business-orbit]').forEach(el=>{el.textContent=(b.wordmark||name)+' · '+(b.tagline||'')+' · ';});
+  document.querySelectorAll('[data-business-statement]').forEach(el=>{el.textContent=b.wordmark||name;});
+  document.querySelectorAll('[data-business-about-label]').forEach(el=>{el.textContent='Meet '+name;});
   const logo=String(b.logoUrl||'');
   if(logo==='/assets/mark.svg'||/^\/images\/[a-z0-9/_-]+\.(?:jpe?g|png|webp)$/i.test(logo)||(
     logo.includes('/storage/v1/object/public/witness-lema-gallery/')&&permittedUrl(logo)
@@ -161,7 +164,7 @@ async function ask(text){
   const history=chatHistory.slice(-6);
   bubble(clean,true);chatHistory.push({role:'user',content:clean});
   question.value='';question.disabled=true;
-  const pending=bubble('Lema Concierge is composing a reply…');
+  const pending=bubble((site.assistant?.name||'Website assistant')+' is composing a reply…');
   try{
     const response=await fetch('/api/assistant',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:clean,language:$('#assistant-language').value,history}),signal:AbortSignal.timeout(17000)});
     const data=await response.json().catch(()=>({}));
