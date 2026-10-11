@@ -1,3 +1,5 @@
+import { site } from '../data/site.js';
+
 const requests = globalThis.__WL_ASSISTANT_REQUESTS__ || (globalThis.__WL_ASSISTANT_REQUESTS__ = new Map());
 
 const json = (response, status, body) => {
@@ -9,6 +11,19 @@ const json = (response, status, body) => {
 
 const clientIp = request => String(request.headers['x-forwarded-for'] || request.socket?.remoteAddress || 'unknown').split(',')[0].trim();
 const casualQuestion = question => /^(hi|hello|hey|hiya|good morning|good afternoon|good evening|how are you(?: doing)?|how's it going|what's up|thanks|thank you|who are you|what can you do)\b[!.? ]*$/i.test(question);
+const withTimeout = (promise, milliseconds, fallback) => Promise.race([promise, new Promise(resolve => setTimeout(() => resolve(fallback), milliseconds))]);
+
+function localKnowledgeMatch(question) {
+  const terms = question.toLowerCase().split(/[^a-z0-9]+/).filter(word => word.length > 2);
+  return (site.faqs || []).map(item => {
+    const haystack = `${item.question} ${(item.keywords || []).join(' ')}`.toLowerCase();
+    const score = terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0);
+    return { item, score };
+  }).sort((a, b) => b.score - a.score)[0]?.score ? (site.faqs || []).map(item => {
+    const haystack = `${item.question} ${(item.keywords || []).join(' ')}`.toLowerCase();
+    return { item, score: terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0) };
+  }).sort((a, b) => b.score - a.score)[0].item : null;
+}
 
 function withinLimit(request) {
   const key = clientIp(request), now = Date.now(), previous = requests.get(key);
@@ -92,15 +107,16 @@ export default async function handler(request, response) {
 
   try {
     if (casualQuestion(question)) return json(response, 200, { answer: fallbackConversation(question), href: '' });
-    const matches = await searchKnowledge(question);
-    const best = matches[0];
+    const retrieved = await withTimeout(searchKnowledge(question), 4000, []);
+    const matches = Array.isArray(retrieved) && retrieved.length ? retrieved : [];
+    const best = matches[0] || localKnowledgeMatch(question);
     if (!best) {
       let answer = '';
-      try { answer = process.env.GROQ_API_KEY ? await askGroq(question, []) : await askXai(question, []); } catch { /* Contact guidance remains the safe fallback. */ }
+      try { answer = await withTimeout(process.env.GROQ_API_KEY ? askGroq(question, []) : askXai(question, []), 2500, ''); } catch { /* Contact guidance remains the safe fallback. */ }
       return json(response, 200, { answer: answer || 'I do not have a clear answer for that yet. Please use the contact page for help.', href: '/contact/' });
     }
     let answer = '';
-    try { answer = process.env.GROQ_API_KEY ? await askGroq(question, matches) : await askXai(question, matches); } catch { /* Approved knowledge remains the safe fallback. */ }
+    try { answer = await withTimeout(process.env.GROQ_API_KEY ? askGroq(question, matches) : askXai(question, matches), 2500, ''); } catch { /* Approved knowledge remains the safe fallback. */ }
     return json(response, 200, { answer: answer || best.answer, href: best.href || '' });
   } catch {
     return json(response, 503, { error: 'Assistant search is temporarily unavailable.' });
