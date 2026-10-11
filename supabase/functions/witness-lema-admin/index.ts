@@ -55,6 +55,28 @@ Deno.serve(async(req)=>{
       if(!payload.aboutImages.every(src=>payload.images.some(x=>x.src===src)))return json({error:'About photos must exist in gallery'},400);
       if(!payload.social||!Object.values(payload.social).every(validLink))return json({error:'Invalid social link'},400);
       if(!payload.assistant||typeof payload.assistant.name!=='string'||!payload.assistant.name.trim()||typeof payload.assistant.greeting!=='string'||!payload.assistant.greeting.trim())return json({error:'Invalid assistant settings'},400);
+      // Owner-edited SEO must have a known public route and safe, truthful data.
+      if(payload.seo!==undefined){
+        const pages=payload.seo?.pages;
+        const routes=new Set(['/','/about/','/gallery/','/services/','/contact/']);
+        if(!pages||typeof pages!=='object'||Array.isArray(pages)||Object.keys(pages).length!==5)return json({error:'SEO must contain the five public pages.'},400);
+        const allowedImage=(image)=>typeof image==='string'&&image.length<=2048&&(
+          (/^\/images\/[a-z0-9_./-]+\.(?:jpe?g|png|webp)$/i.test(image)&&!image.includes('..'))||
+          image.startsWith(SUPABASE_URL+'/storage/v1/object/public/witness-lema-gallery/')
+        );
+        for(const [route,page] of Object.entries(pages)){
+          if(!routes.has(route)||!page||typeof page!=='object'||Array.isArray(page)||
+            typeof page.title!=='string'||page.title.trim().length<10||page.title.length>70||
+            typeof page.description!=='string'||page.description.trim().length<40||page.description.length>170||
+            typeof page.heading!=='string'||page.heading.trim().length<12||page.heading.length>110||
+            !allowedImage(page.image)||typeof page.index!=='boolean'||
+            !Array.isArray(page.paragraphs)||page.paragraphs.length<1||page.paragraphs.length>4||
+            !page.paragraphs.every((s)=>typeof s==='string'&&s.trim().length>=60&&s.length<=850)||
+            !Array.isArray(page.links)||page.links.length<1||page.links.length>5||
+            !page.links.every((l)=>l&&routes.has(l.href)&&l.href!==route&&typeof l.label==='string'&&l.label.trim().length>=4&&l.label.length<=85)
+          )return json({error:'Invalid SEO information for '+route},400);
+        }
+      }
     }
     const allowedActions=new Set(['read','save','publish','restore','knowledge-read','knowledge-save']);
     if(!allowedActions.has(action))return json({error:'Unknown action.'},400);

@@ -1,6 +1,6 @@
 const $=selector=>document.querySelector(selector);
 const $$=selector=>[...document.querySelectorAll(selector)];
-let state=null,knowledge=[],dirty=false;
+let state=null,knowledge=[],dirty=false,seoDefaults=null,seoCurrent='/';
 const clone=value=>JSON.parse(JSON.stringify(value));
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const notice=(text,type='')=>{const el=$('[data-notice]');if(!el)return;el.textContent=text;el.className='notice '+type;};
@@ -19,10 +19,77 @@ function renderPhotos(){const holder=$('[data-photos]');holder.innerHTML=(state.
 function answerCard(item,index){return `<article class="repeat-card"><span class="number">${String(index+1).padStart(2,'0')}</span><div class="repeat-fields"><label class="wide">Question<input data-answer-field="question" data-index="${index}" value="${esc(item.question)}"></label><label class="wide">Answer<textarea rows="4" data-answer-field="answer" data-index="${index}">${esc(item.answer)}</textarea></label><label>Keywords, separated by commas<input data-answer-field="keywords" data-index="${index}" value="${esc((item.keywords||[]).join(', '))}"></label><label>Related page<input data-answer-field="href" data-index="${index}" value="${esc(item.href)}"></label></div><div class="card-actions"><button class="danger" data-answer-remove data-index="${index}" aria-label="Remove">×</button></div></article>`;}
 function renderAnswers(){const holder=$('[data-answers]');holder.innerHTML=knowledge.map(answerCard).join('');holder.querySelectorAll('[data-answer-field]').forEach(input=>input.oninput=()=>{const value=input.dataset.answerField==='keywords'?input.value.split(',').map(x=>x.trim()).filter(Boolean):input.value;knowledge[+input.dataset.index][input.dataset.answerField]=value;notice('Assistant changes are not saved yet.','');});holder.querySelectorAll('[data-answer-remove]').forEach(button=>button.onclick=()=>{knowledge.splice(+button.dataset.index,1);renderAnswers();});}
 function renderHistory(){const holder=$('[data-history]');holder.innerHTML=(state.history||[]).slice().reverse().map(item=>`<article><span>Version ${item.version} · ${new Date(item.publishedAt).toLocaleString()}</span><button class="secondary" data-restore="${item.version}">Restore to draft</button></article>`).join('')||'<p>No earlier published versions yet.</p>';holder.querySelectorAll('[data-restore]').forEach(button=>button.onclick=()=>restoreVersion(+button.dataset.restore));}
-function renderAll(){populateProfile();renderServices();renderPhotos();renderAnswers();renderHistory();$('[data-version]').textContent=state.version;$('[data-published-version]').textContent=state.publishedVersion;$('[data-photo-count]').textContent=state.draft.images?.length||0;$('[data-answer-count]').textContent=knowledge.length;}
+const seoNames={'/':'Home','/about/':'About','/gallery/':'Gallery','/services/':'Services','/contact/':'Contact'};
+function initializeSeo(){
+  if(!seoDefaults?.pages||!state?.draft)return;
+  if(!state.draft.seo||typeof state.draft.seo!=='object')state.draft.seo={pages:{}};
+  if(!state.draft.seo.pages||typeof state.draft.seo.pages!=='object')state.draft.seo.pages={};
+  for(const [route,values] of Object.entries(seoDefaults.pages)){
+    if(!state.draft.seo.pages[route])state.draft.seo.pages[route]=clone(values);
+  }
+}
+function seoEntry(){return state?.draft?.seo?.pages?.[seoCurrent];}
+function updateSeoPreview(){
+  const e=seoEntry();if(!e)return;
+  $('[data-seo-preview-title]').textContent=e.title||'(Title needed)';
+  $('[data-seo-preview-description]').textContent=e.description||'(Description needed)';
+  $('[data-seo-preview-url]').textContent='rema-ruby.vercel.app'+seoCurrent;
+  const photo=$('[data-seo-preview-image]');
+  if(photo){photo.src=e.image||'';photo.hidden=!e.image;}
+  $('[data-seo-count="title"]').textContent=String((e.title||'').length)+'/70';
+  $('[data-seo-count="description"]').textContent=String((e.description||'').length)+'/170';
+}
+function renderSeoEditor(){
+  if(!seoDefaults?.pages)return;
+  initializeSeo();
+  const e=seoEntry();if(!e)return;
+  $('[data-seo-page]').value=seoCurrent;
+  $('[data-seo-field]').forEach(input=>{
+    if(input.dataset.seoField==='image')return;
+    input.value=e[input.dataset.seoField]||'';
+    input.oninput=()=>{e[input.dataset.seoField]=input.value;setDirty();updateSeoPreview();};
+  });
+  $('[data-seo-paragraph]').forEach(input=>{
+    const index=Number(input.dataset.seoParagraph);
+    input.value=e.paragraphs?.[index]||'';
+    input.oninput=()=>{
+      if(!Array.isArray(e.paragraphs))e.paragraphs=['',''];
+      e.paragraphs[index]=input.value;
+      setDirty();updateSeoPreview();
+    };
+  });
+  const image=$('[data-seo-images]'),pictures=state.draft.images||[];
+  const opts=[...new Map(pictures.filter(im=>im&&im.src).map((im,i)=>[im.src,im.title||'Photo '+(i+1)])).entries()];
+  if(e.image&&!opts.some(([src])=>src===e.image))opts.unshift([e.image,'Current sharing image']);
+  image.innerHTML=opts.map(([src,name])=>'<option value="'+esc(src)+'">'+esc(name)+'</option>').join('');
+  image.value=e.image||opts[0]?.[0]||'';
+  image.onchange=()=>{e.image=image.value;setDirty();updateSeoPreview();};
+  const indexer=$('[data-seo-index]');indexer.checked=e.index!==false;
+  indexer.onchange=()=>{e.index=indexer.checked;setDirty();updateSeoPreview();};
+  const related=$('[data-seo-related]');
+  related.innerHTML=Object.entries(seoNames).filter(([r])=>r!==seoCurrent).map(([route,name])=>
+    '<label><input type="checkbox" data-seo-link="'+esc(route)+'" '+(e.links||[]).some(x=>x.href===route?'checked':'')+'>'+esc(name)+'</label>').join('');
+  related.querySelectorAll('[data-seo-link]').forEach(input=>input.onchange=()=>{
+    e.links=[...related.querySelectorAll('[data-seo-link]:checked')].map(node=>({href:node.dataset.seoLink,label:'Explore '+seoNames[node.dataset.seoLink]}));
+    setDirty();updateSeoPreview();
+  });
+  updateSeoPreview();
+}
+function validateSeoDraft(){
+  if(!state?.draft?.seo)return;
+  for(const [route,e] of Object.entries(state.draft.seo.pages||{})){
+    if(!seoNames[route])throw new Error('Unknown SEO page.');
+    if(!e.title||e.title.trim().length<10||e.title.length>70)throw new Error('SEO title for '+seoNames[route]+' must be 10–70 characters.');
+    if(!e.description||e.description.trim().length<40||e.description.length>170)throw new Error('SEO description for '+seoNames[route]+' must be 40–170 characters.');
+    if(!e.heading||e.heading.trim().length<12||e.heading.length>110)throw new Error('SEO section heading for '+seoNames[route]+' must be 12–110 characters.');
+    if(!Array.isArray(e.paragraphs)||e.paragraphs.length<1||e.paragraphs.length>4||!e.paragraphs.every(p=>typeof p==='string'&&p.trim().length>=60&&p.length<=850))throw new Error('Write 2 helpful paragraphs of at least 60 characters on '+seoNames[route]+'.');
+    if(!Array.isArray(e.links)||e.links.length<1||e.links.length>4)throw new Error('Choose at least one related page on '+seoNames[route]+'.');
+  }
+}
+function renderAll(){populateProfile();renderServices();renderPhotos();renderAnswers();renderHistory();renderSeoEditor();$('[data-version]').textContent=state.version;$('[data-published-version]').textContent=state.publishedVersion;$('[data-photo-count]').textContent=state.draft.images?.length||0;$('[data-answer-count]').textContent=knowledge.length;}
 async function loadAiStatus(){try{const status=await api('ai-status');$('[data-ai-status]').textContent=status.configured?status.provider+' connected':'Knowledge-only mode';$('[data-ai-detail]').textContent=status.configured?`${status.model} · API key is stored securely on the server.`:'Add a server-side Groq or xAI key to enable conversational answers.';}catch{$('[data-ai-status]').textContent='Status unavailable';}}
-async function loadWorkspace(){const session=await api('session');state=session.state;const answers=await api('knowledge');knowledge=answers.items||[];showDashboard();renderAll();void loadAiStatus();dirty=false;notice('Private workspace connected. Live website version '+state.publishedVersion+'.','success');}
-function validateDraft(){if(!(state.draft.images||[]).some(image=>image.hero))throw new Error('Choose at least one Home hero photograph.');if((state.draft.aboutImages||[]).length!==3)throw new Error('Choose exactly three About photographs.');if(!(state.draft.services||[]).every(item=>item.title&&item.text))throw new Error('Every service needs a title and description.');if(!state.draft.assistant?.name?.trim())throw new Error('The assistant needs a public name.');if(!state.draft.assistant?.greeting?.trim())throw new Error('The assistant needs a welcome message.');}
+async function loadWorkspace(){const session=await api('session');state=session.state;const [answers,defaultsResponse]=await Promise.all([api('knowledge'),fetch('/seo-defaults.json',{cache:'no-store'})]);knowledge=answers.items||[];if(!defaultsResponse.ok)throw new Error('Search settings could not load. Refresh the dashboard.');seoDefaults=await defaultsResponse.json();initializeSeo();showDashboard();renderAll();void loadAiStatus();dirty=false;notice('Private workspace connected. Live website version '+state.publishedVersion+'.','success');}
+function validateDraft(){validateSeoDraft();if(!(state.draft.images||[]).some(image=>image.hero))throw new Error('Choose at least one Home hero photograph.');if((state.draft.aboutImages||[]).length!==3)throw new Error('Choose exactly three About photographs.');if(!(state.draft.services||[]).every(item=>item.title&&item.text))throw new Error('Every service needs a title and description.');if(!state.draft.assistant?.name?.trim())throw new Error('The assistant needs a public name.');if(!state.draft.assistant?.greeting?.trim())throw new Error('The assistant needs a welcome message.');}
 async function saveDraft(){try{validateDraft();notice('Saving private draft…');state=await api('state',{method:'PUT',body:JSON.stringify({state:state.draft,expectedVersion:state.version})});dirty=false;renderAll();notice('Draft saved privately. Nothing was published.','success');}catch(error){notice(error.message,'error');}}
 async function publish(){try{if(dirty)await saveDraft();if(dirty)return;if(!confirm('Publish the saved draft to the live website now?'))return;notice('Publishing website…');state=await api('state',{method:'POST',body:JSON.stringify({action:'publish',expectedVersion:state.version})});renderAll();notice('Published successfully. Visitors now see version '+state.publishedVersion+'.','success');}catch(error){notice(error.message,'error');}}
 async function restoreVersion(version){try{if(!confirm('Restore version '+version+' to Draft? The live website will stay unchanged.'))return;state=await api('state',{method:'POST',body:JSON.stringify({action:'restore',version})});renderAll();notice('Older version restored to Draft. Preview it before publishing.','success');}catch(error){notice(error.message,'error');}}
@@ -31,7 +98,9 @@ async function optimise(file){const image=await createImageBitmap(file);const ma
 async function uploadPhoto(){const input=$('[data-photo-file]'),status=$('[data-upload-status]'),file=input.files?.[0];if(!file)return status.textContent='Choose a photograph first.';try{status.textContent='Optimising and uploading…';const dataUrl=await optimise(file);const result=await api('upload',{method:'POST',body:JSON.stringify({name:file.name,dataUrl})});state.draft.images.push({src:result.url,storagePath:result.path,alt:'Portrait of witness_lema_',title:file.name.replace(/\.[^.]+$/,''),category:'Portrait',hero:false,reference:false});renderPhotos();setDirty();status.textContent='Uploaded and added to Draft. Save the draft when ready.';input.value='';}catch(error){status.textContent=error.message;notice(error.message,'error');}}
 $('[data-login-form]').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget;const data=new FormData(form);const message=$('[data-login-message]');message.textContent='Signing in…';try{await api('login',{method:'POST',body:JSON.stringify({loginId:data.get('loginId'),password:data.get('password')})});form.reset();await loadWorkspace();}catch(error){message.textContent=error.message;}});
 $('[data-password-toggle]').onclick=()=>{const input=$('[name="password"]'),show=input.type==='password';input.type=show?'text':'password';$('[data-password-toggle]').textContent=show?'Hide':'Show';$('[data-password-toggle]').setAttribute('aria-label',show?'Hide password':'Show password');input.focus();};
-$$('[data-tab]').forEach(button=>button.onclick=()=>switchTab(button.dataset.tab));
+$('[data-tab]').forEach(button=>button.onclick=()=>switchTab(button.dataset.tab));
+$('[data-seo-page]').onchange=event=>{seoCurrent=event.target.value;renderSeoEditor();};
+$('[data-publish-seo]').onclick=publish;
 $$('[data-save]').forEach(button=>button.onclick=saveDraft);
 $('[data-publish]').onclick=publish;
 $('[data-preview]').onclick=()=>window.open('/?admin_preview=1','_blank','noopener');

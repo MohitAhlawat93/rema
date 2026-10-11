@@ -14,19 +14,76 @@
     <section class="panel" data-panel="services"><div class="section-head"><div><p class="eyebrow">Offerings</p><h2>Services shown publicly.</h2><p>Reorder, add or remove cards. Save to Draft before publishing.</p></div><div><button class="secondary" data-add-service>+ Add service</button><button class="primary" data-save>Save draft</button></div></div><div class="repeat-list" data-services></div></section>
     <section class="panel" data-panel="photos"><div class="section-head"><div><p class="eyebrow">Media library</p><h2>Photographs and placements.</h2><p>Hero images rotate on Home. Select exactly three About images.</p></div><button class="primary" data-save>Save draft</button></div><div class="upload-box"><input type="file" accept="image/jpeg,image/png,image/webp" data-photo-file><button class="secondary" data-upload>Upload photograph</button><span data-upload-status>JPEG, PNG or WebP. Large images are optimised before upload.</span></div><div class="photo-grid" data-photos></div></section>
     <section class="panel" data-panel="seo">
-      <div class="section-head"><div><p class="eyebrow">Search visibility</p><h2>Make your website easier to find.</h2><p>SEO settings are built into the website files. Edit everything you want, then commit ONCE in GitHub to save Vercel deployments.</p></div></div>
-      <div class="workflow"><h3>What can you edit yourself?</h3>
-        <ol>
-          <li><a href="https://github.com/MohitAhlawat93/rema/blob/main/seo/site.config.mjs" target="_blank" rel="noopener noreferrer">Google titles, descriptions and social previews ↗</a></li>
-          <li><a href="https://github.com/MohitAhlawat93/rema/blob/main/seo/editorial.config.mjs" target="_blank" rel="noopener noreferrer">Helpful visible page text and internal links ↗</a></li>
-          <li><a href="https://github.com/MohitAhlawat93/rema/blob/main/docs/SEO_GUIDE.md" target="_blank" rel="noopener noreferrer">Simple step-by-step SEO guide ↗</a></li>
-          <li><a href="https://github.com/MohitAhlawat93/rema/blob/main/docs/SEARCH_GROWTH_PLAYBOOK.md" target="_blank" rel="noopener noreferrer">Competitor review and weekly ranking checklist ↗</a></li>
-        </ol>
-      </div>
-      <div class="workflow"><h3>Check how Google sees your website</h3>
-        <p><a href="https://search.google.com/search-console/" target="_blank" rel="noopener noreferrer">Google Search Console ↗</a> — verify ownership, submit sitemap.xml, check searches and indexing.</p>
-        <p><a href="https://pagespeed.web.dev/" target="_blank" rel="noopener noreferrer">PageSpeed Insights ↗</a> — measure mobile loading performance.</p>
-        <p>The owner dashboard changes your published website content; build-generated Google metadata is updated on the next GitHub deployment. Do not expect search rankings immediately.</p>
+      <div class="section-head"><div><p class="eyebrow">Google and social search</p><h2>Search appearance — no code needed.</h2>
+        <p>Choose a page and edit how it appears in Google, messaging apps and the page itself. Save privately, preview, then publish when ready.</p>
+      </div><button class="primary" data-save>Save SEO draft</button></div>
+      <div class="seo-editor-grid">
+        <div class="seo-editor-fields">
+          <label>Choose website page
+            <select data-seo-page>
+              <option value="/">Homepage</option>
+              <option value="/about/">About Lema</option>
+              <option value="/gallery/">Photo gallery</option>
+              <option value="/services/">Services</option>
+              <option value="/contact/">Contact</option>
+            </select>
+          </label>
+          <fieldset><legend>Google search result</legend>
+            <label>Search title <span class="seo-character-count" data-seo-count="title"></span>
+              <input data-seo-field="title" maxlength="70" placeholder="A clear title describing the page">
+            </label>
+            <label>Search description <span class="seo-character-count" data-seo-count="description"></span>
+              <textarea data-seo-field="description" maxlength="170" rows="3" placeholder="Explain what someone will find on this page"></textarea>
+            </label>
+            <label>Photo for link sharing
+              <select data-seo-field="image" data-seo-images></select>
+            </label>
+          </fieldset>
+          <fieldset><legend>Useful text visitors and Google can read</legend>
+            <label>Section heading
+              <input data-seo-field="heading" maxlength="110" placeholder="A short informative heading">
+            </label>
+            <label>First paragraph
+              <textarea data-seo-paragraph="0" maxlength="850" rows="4" placeholder="Describe what visitors will find"></textarea>
+            </label>
+            <label>Second paragraph
+              <textarea data-seo-paragraph="1" maxlength="850" rows="4" placeholder="Add helpful details, not repeated keywords"></textarea>
+            </label>
+            <p class="fine">Write honest, original information. No invented reviews, qualifications, or repeated lists of nearby cities.</p>
+          </fieldset>
+          <fieldset><legend>Related pages</legend><p class="fine">Pick helpful internal links to show below the page.</p>
+            <div data-seo-related class="seo-related-list"></div>
+          </fieldset>
+          <fieldset><legend>Advanced visibility</legend>
+            <label class="seo-index-toggle"><input type="checkbox" data-seo-index> Allow Google to index this page</label>
+            <p class="fine">Turn this off only when a page must be hidden from search. This does not guarantee removal from existing search results immediately.</p>
+          </fieldset>
+          <div class="header-actions">
+            <button class="primary" data-save>Save private draft</button>
+            <button class="secondary" data-publish-seo>Publish saved changes</button>
+          </div>
+        </div>
+        <aside class="seo-editor-preview">
+          <h3>Google result preview</h3>
+          <p class="fine">A demonstration only; Google may show different text.</p>
+          <div class="seo-serp">
+            <p class="seo-preview-address" data-seo-preview-url></p>
+            <strong data-seo-preview-title></strong>
+            <p data-seo-preview-description></p>
+          </div>
+          <div class="seo-share-preview"><h3>Social sharing image</h3>
+            <img data-seo-preview-image alt="Selected sharing image" loading="lazy">
+          </div>
+          <div class="workflow"><h3>Publishing</h3>
+            <p>1. Edit this page.</p><p>2. Save private draft.</p><p>3. Use Preview draft at the top of the dashboard if you want to review the site.</p><p>4. Publish to update Google's HTML, without GitHub access or another Vercel build.</p>
+            <p class="fine">Search engines may take days or longer to revisit a page. Publishing does not guarantee rankings.</p>
+          </div>
+          <div class="workflow"><h3>After your email and domain are ready</h3>
+            <p><a href="https://search.google.com/search-console/" target="_blank" rel="noopener noreferrer">Google Search Console ↗</a> — verify the client-owned website and submit its sitemap.</p>
+            <p><a href="https://pagespeed.web.dev/" target="_blank" rel="noopener noreferrer">PageSpeed Insights ↗</a> — check mobile performance.</p>
+            <p class="fine">You never need to share GitHub or server credentials to edit these SEO fields.</p>
+          </div>
+        </aside>
       </div>
     </section>
     <section class="panel" data-panel="assistant"><div class="section-head"><div><p class="eyebrow">Assistant</p><h2>Your website concierge.</h2><p>Change its public name and welcome text here. Knowledge answers update immediately.</p></div><div><button class="primary" data-save>Save assistant settings</button></div></div><div class="assistant-settings"><fieldset><legend>Public identity</legend><label>Assistant name<input data-path="assistant.name" maxlength="80"></label><label>Welcome message<textarea data-path="assistant.greeting" rows="3" maxlength="500"></textarea></label><div class="repeat-fields"><label>First suggestion label<input data-path="assistant.suggestionOneLabel" maxlength="40"></label><label>First suggested question<input data-path="assistant.suggestionOne" maxlength="160"></label><label>Second suggestion label<input data-path="assistant.suggestionTwoLabel" maxlength="40"></label><label>Second suggested question<input data-path="assistant.suggestionTwo" maxlength="160"></label></div></fieldset><aside class="ai-status"><p class="eyebrow">AI connection</p><strong data-ai-status>Checking…</strong><span data-ai-detail>The API key remains server-only.</span></aside></div><div class="section-head knowledge-heading"><div><p class="eyebrow">Knowledge</p><h3>Approved answers.</h3><p>Groq is grounded in these answers. Keep them accurate and discreet.</p></div><div><button class="secondary" data-add-answer>+ Add answer</button><button class="primary" data-save-answers>Save answers</button></div></div><div class="repeat-list knowledge-list" data-answers></div></section>

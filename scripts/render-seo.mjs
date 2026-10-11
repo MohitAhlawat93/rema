@@ -1,7 +1,8 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, cp } from 'node:fs/promises';
 import path from 'node:path';
 import { site } from '../data/site.js';
 import config from '../seo/site.config.mjs';
+import editorial from '../seo/editorial.config.mjs';
 import editorial from '../seo/editorial.config.mjs';
 
 function escapeHTML(value) {
@@ -106,6 +107,7 @@ const robots=config.indexingEnabled?[
  'User-agent: *',
  'Disallow: /admin',
  'Disallow: /api/',
+ 'Disallow: /_seo_templates/',
  'Disallow: /*?admin_preview=',
  'Sitemap: '+origin+'/sitemap.xml',
  'Sitemap: '+origin+'/image-sitemap.xml',
@@ -124,4 +126,26 @@ for (const route of ['/', '/about/', '/gallery/']) {
   imageRows.push('  <url><loc>'+escapeXML(absolute(route))+'</loc>'+urls.map(src=>'<image:image><image:loc>'+escapeXML(absolute(src))+'</image:loc></image:image>').join('')+'</url>');
 }
 await writeFile(path.join(root,'image-sitemap.xml'),'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n'+imageRows.join('\n')+'\n</urlset>\n');
+const editableRoutes=['/','/about/','/gallery/','/services/','/contact/'];
+const defaults=Object.fromEntries(editableRoutes.map(route=>[route,{
+  title:config.pages[route].title,
+  description:config.pages[route].description,
+  image:config.pages[route].image,
+  index:config.pages[route].index,
+  heading:editorial[route].heading,
+  paragraphs:editorial[route].paragraphs,
+  links:editorial[route].links
+}]));
+await writeFile(path.join(root,'seo-defaults.json'),JSON.stringify({pages:defaults},null,2));
+// Private-to-the-build template URLs. They have explicit noindex headers and
+// are never linked in navigation or sitemaps. Middleware uses them as a safe
+// fallback when the published SEO store is temporarily unavailable.
+for(const route of editableRoutes){
+  const folder=path.join(root,'_seo_templates',route==='/'?'home':route.slice(1,-1));
+  await mkdir(folder,{recursive:true});
+  await cp(path.join(root,route==='/'?'index.html':route.slice(1)+'index.html'),path.join(folder,'index.html'));
+}
+const templateDir=path.join(root,'_seo_templates');
+await cp(path.join(root,'sitemap.xml'),path.join(templateDir,'sitemap.xml'));
+await cp(path.join(root,'image-sitemap.xml'),path.join(templateDir,'image-sitemap.xml'));
 console.log('SEO generated: '+indexable.length+' indexable pages; origin '+origin+'; indexing '+(config.indexingEnabled?'enabled':'disabled')+'.');

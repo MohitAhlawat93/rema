@@ -1,3 +1,21 @@
+# SEO changes are now available in the owner dashboard (no code access)
+
+**Use https://rema-ruby.vercel.app/admin → Google SEO.** Log in with the private owner credentials.
+
+1. Select Home, About, Gallery, Services or Contact.
+2. Write the Google search title and description, choose a social sharing image and write useful public text.
+3. Choose related pages; keep **Allow Google to index this page** on when the page is ready.
+4. Click **Save SEO draft**. Visitors continue seeing the currently published version.
+5. Use **Preview draft** to examine the website (the search preview in the SEO editor also shows the proposed search text).
+6. Click **Publish saved changes**. Changes are stored in Supabase, and the production HTML middleware uses the published SEO on new requests. No new GitHub commit or Vercel deployment is required.
+7. Open the page and view the HTML source to check the published title, description and social metadata. Search Console indexing and Google rankings still depend on Google's crawl and processing.
+
+The GitHub configuration `seo/site.config.mjs` and `seo/editorial.config.mjs` are **developer fallbacks**, not links to share with an owner. SEO changes should be made in the private dashboard. Server-side publication requires a live Supabase connection; it keeps a safe static fallback if the SEO database is unavailable.
+
+**Ownership:** Lema has no existing email or domain yet. During development, use temporary developer infrastructure. When her email and permanent domain are ready, make her the Google Search Console/domain owner, grant the developer delegated access and migrate Lema's Supabase records to an independent project before handover.
+
+---
+
 # Witness Lema SEO — simple editing guide
 
 The SEO code is adapted from Rebecca but uses Lema's own pages, location, images and descriptions.
