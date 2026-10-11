@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
+import {site} from '../data/site.js';
+import {renderLivePage,cleanSEOPage} from '../seo/live.mjs';
 const root=process.env.BROWSER_QA_SITE||'http://127.0.0.1:3000';
 const browser=await chromium.launch({headless:true});
 const results=[];
@@ -81,6 +83,54 @@ try{
   await page.goto(root+'/contact/');
   assert.equal(await page.locator('[data-whatsapp-send]').isHidden(),true);
   assert.equal(await page.locator('[data-copy-enquiry]').isVisible(),true);
+  await context.close();
+ });
+ await run('owner edits Reviews SEO, saves and publishes a simulated version',async()=>{
+  const context=await browser.newContext({viewport:{width:1350,height:950}});
+  const simulated={version:2,publishedVersion:1,history:[],draft:structuredClone(site)};
+  let saveCount=0,publishCount=0;
+  const page=await context.newPage();
+  await page.route('**/api/admin/**',async route=>{
+    const req=route.request(),path=new URL(req.url()).pathname,method=req.method();
+    let body={};
+    if(path.endsWith('/session'))body={authenticated:true,state:simulated};
+    else if(path.endsWith('/knowledge'))body={items:[]};
+    else if(path.endsWith('/ai-status'))body={configured:false};
+    else if(path.endsWith('/review-inbox'))body={items:[]};
+    else if(path.endsWith('/state')&&method==='PUT'){
+      const request=req.postDataJSON();
+      assert.equal(request.expectedVersion,simulated.version);
+      simulated.draft=request.state;simulated.version++;saveCount++;body=simulated;
+    }else if(path.endsWith('/state')&&method==='POST'){
+      const request=req.postDataJSON();
+      assert.equal(request.expectedVersion,simulated.version);
+      simulated.published=structuredClone(simulated.draft);
+      simulated.publishedVersion++;publishCount++;body=simulated;
+    }else body={};
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
+  });
+  page.on('dialog',dialog=>dialog.accept());
+  await page.goto(root+'/admin.html');
+  await page.locator('[data-dashboard]').waitFor({state:'visible'});
+  await page.locator('[data-tab="seo"]').click();
+  await page.locator('[data-seo-page]').selectOption('/reviews/');
+  const title='Guest experiences and Reviews | Witness Lema';
+  await page.locator('[data-seo-field="title"]').fill(title);
+  await page.locator('[data-panel="seo"] [data-save]').first().click();
+  assert.equal(saveCount,1);
+  assert.equal(simulated.draft.seo.pages['/reviews/'].title,title);
+  await page.locator('[data-publish]').click();
+  assert.equal(publishCount,1);
+  assert.equal(simulated.published.seo.pages['/reviews/'].title,title);
+  const html='<html><head><title>Old</title><meta name="description" content="old">'+
+   '<meta name="robots" content="noindex"><meta property="og:title" content="old">'+
+   '<meta property="og:description" content="old"><meta property="og:image" content="old">'+
+   '<meta name="twitter:title" content="old"><meta name="twitter:description" content="old">'+
+   '<meta name="twitter:image" content="old"></head><body><main></main></body></html>';
+  const pageSEO=simulated.published.seo.pages['/reviews/'];
+  const result=renderLivePage(html,'/reviews/',cleanSEOPage(pageSEO,'/reviews/',pageSEO),simulated.published,'https://rema-ruby.vercel.app',true);
+  assert.match(result,/<title>Guest experiences and Reviews \| Witness Lema<\/title>/);
+  assert.match(result,/index, follow/);
   await context.close();
  });
  console.log('Browser QA: '+results.length+' checks passed');
