@@ -1,0 +1,63 @@
+const SUPABASE_URL=Deno.env.get('SUPABASE_URL')!;
+const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json','cache-control':'no-store'}});
+const sha256=async(value:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))).map(x=>x.toString(16).padStart(2,'0')).join('');
+async function rpc(name:string,body:unknown){
+  const response=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:{apikey:SERVICE_KEY,authorization:'Bearer '+SERVICE_KEY,'content-type':'application/json'},body:JSON.stringify(body)});
+  const data=await response.json().catch(()=>null);
+  if(!response.ok)throw new Error(data?.message||'Database request failed');
+  return data;
+}
+Deno.serve(async(req)=>{
+  if(req.method!=='POST')return json({error:'Use POST.'},405);
+  try{
+    const secret=req.headers.get('x-admin-secret')||'';
+    if(secret.length<32)return json({error:'Unauthorized'},401);
+    const allowed=await rpc('witness_lema_admin_auth',{candidate_sha256:await sha256(secret)});
+    if(allowed!==true)return json({error:'Unauthorized'},401);
+    const input=await req.json();
+    const action=String(input?.action||'');
+    if(action==='rate-limit'){
+      const scope=String(input.body?.scope||'');
+      const subjectHash=String(input.body?.subjectHash||'');
+      const maxAttempts=Number(input.body?.maxAttempts);
+      const windowSeconds=Number(input.body?.windowSeconds);
+      return json(await rpc('witness_lema_consume_rate_limit',{p_scope:scope,p_subject_hash:subjectHash,p_max_attempts:maxAttempts,p_window_seconds:windowSeconds}));
+    }
+    if(action==='upload'){
+      const match=String(input.dataUrl||'').match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
+      if(!match)return json({error:'Use a JPEG, PNG or WebP image.'},400);
+      const bytes=Uint8Array.from(atob(match[2]),c=>c.charCodeAt(0));
+      if(bytes.length>3*1024*1024)return json({error:'Image must be under 3 MB after optimisation.'},413);
+      const ext={ 'image/jpeg':'jpg','image/png':'png','image/webp':'webp' }[match[1]];
+      const clean=String(input.name||'portrait').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)||'portrait';
+      const path='uploads/'+new Date().toISOString().slice(0,10)+'/'+crypto.randomUUID()+'-'+clean+'.'+ext;
+      const uploaded=await fetch(SUPABASE_URL+'/storage/v1/object/witness-lema-gallery/'+path,{method:'POST',headers:{apikey:SERVICE_KEY,authorization:'Bearer '+SERVICE_KEY,'content-type':match[1],'x-upsert':'false'},body:bytes});
+      if(!uploaded.ok)throw new Error((await uploaded.json().catch(()=>null))?.message||'Upload failed');
+      return json({path,url:SUPABASE_URL+'/storage/v1/object/public/witness-lema-gallery/'+path});
+    }
+    if(action==='remove-upload'){
+      const path=String(input.path||'');
+      if(!/^uploads\/[a-z0-9_./-]+$/i.test(path))return json({error:'Invalid photo path.'},400);
+      const removed=await fetch(SUPABASE_URL+'/storage/v1/object/witness-lema-gallery/'+path,{method:'DELETE',headers:{apikey:SERVICE_KEY,authorization:'Bearer '+SERVICE_KEY}});
+      if(!removed.ok)throw new Error('Could not remove photo');
+      return json({ok:true});
+    }
+    if(action==='save'){
+      const payload=input.body?.draft??input.body;
+      if(!payload||typeof payload!=='object'||Array.isArray(payload))return json({error:'Invalid draft'},400);
+      const validLink=(value)=>typeof value==='string'&&value.length<=2048&&(value===''||/^https:\/\/[^\s]+$/i.test(value));
+      const safePath=(value)=>typeof value==='string'&&value.length<=300&&/^\/(?:[a-z0-9/_-]*|)$/i.test(value);
+      const s=payload.services;
+      if(!Array.isArray(s)||s.length>40||!s.every(x=>x&&typeof x.title==='string'&&x.title.trim()&&x.title.length<=200&&typeof x.text==='string'&&x.text.trim()&&x.text.length<=3000))return json({error:'Invalid service data'},400);
+      if(!Array.isArray(payload.images)||payload.images.length>250||!payload.images.some(x=>x.hero)||!Array.isArray(payload.aboutImages)||payload.aboutImages.length!==3)return json({error:'Invalid photo selection'},400);
+      if(!payload.images.every(x=>x&&typeof x.src==='string'&&x.src.length<=2048&&(x.src.startsWith('/images/')||x.src.startsWith(SUPABASE_URL+'/storage/v1/object/public/witness-lema-gallery/'))))return json({error:'Invalid image source'},400);
+      if(!payload.aboutImages.every(src=>payload.images.some(x=>x.src===src)))return json({error:'About photos must exist in gallery'},400);
+      if(!payload.social||!Object.values(payload.social).every(validLink))return json({error:'Invalid social link'},400);
+      if(!payload.assistant||typeof payload.assistant.name!=='string'||!payload.assistant.name.trim()||typeof payload.assistant.greeting!=='string'||!payload.assistant.greeting.trim())return json({error:'Invalid assistant settings'},400);
+    }
+    const allowedActions=new Set(['read','save','publish','restore','knowledge-read','knowledge-save']);
+    if(!allowedActions.has(action))return json({error:'Unknown action.'},400);
+    return json(await rpc('witness_lema_admin_state',{action,body:input.body??{}}));
+  }catch(error){return json({error:error instanceof Error?error.message:'Request failed'},500);}
+});

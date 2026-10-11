@@ -1,6 +1,6 @@
 import { site } from '../data/site.js';
+import { consumeRateLimit } from '../lib/rate-limit.js';
 
-const requests = globalThis.__WL_ASSISTANT_REQUESTS__ || (globalThis.__WL_ASSISTANT_REQUESTS__ = new Map());
 
 const json = (response, status, body) => {
   response.statusCode = status;
@@ -9,7 +9,6 @@ const json = (response, status, body) => {
   response.end(JSON.stringify(body));
 };
 
-const clientIp = request => String(request.headers['x-forwarded-for'] || request.socket?.remoteAddress || 'unknown').split(',')[0].trim();
 const casualQuestion = question => /^(hi|hello|hey|hiya|good morning|good afternoon|good evening|how are you(?: doing)?|how's it going|what's up|thanks|thank you|who are you|what can you do)\b[!.? ]*$/i.test(question);
 const lightConversation = question => /^(tell me something interesting|tell me a fact|what do you think|can you help me|are you real|are you an ai|how does this work|nice to meet you|good night|goodbye)\b/i.test(question);
 const withTimeout = (promise, milliseconds, fallback) => Promise.race([promise, new Promise(resolve => setTimeout(() => resolve(fallback), milliseconds))]);
@@ -23,14 +22,6 @@ function localKnowledgeMatch(question) {
   }).sort((a, b) => b.score - a.score)[0];
   const minimumScore = terms.length === 1 ? 1 : 2;
   return best && best.score >= minimumScore ? best.item : null;
-}
-
-function withinLimit(request) {
-  const key = clientIp(request), now = Date.now(), previous = requests.get(key);
-  const bucket = !previous || now >= previous.resetAt ? { count: 0, resetAt: now + 10 * 60 * 1000 } : previous;
-  bucket.count += 1;
-  requests.set(key, bucket);
-  return bucket.count <= 20;
 }
 
 async function searchKnowledge(question) {
@@ -105,21 +96,17 @@ const fallbackLightConversation = question => {
 
 export default async function handler(request, response) {
   if (request.method !== 'POST') return json(response, 405, { error: 'Method not allowed' });
-  if (!withinLimit(request)) {
-    response.setHeader('retry-after', '600');
-    return json(response, 429, { error: 'Please wait a few minutes before asking another question.' });
-  }
   const question = typeof request.body?.question === 'string' ? request.body.question.trim() : '';
   if (!question || question.length > 400) return json(response, 400, { error: 'Enter a question of up to 400 characters.' });
 
   try {
+    const limit=await consumeRateLimit(request,'assistant',20,600);
+    if(!limit.allowed){response.setHeader('retry-after',String(limit.retryAfterSeconds));return json(response,429,{error:'Please wait before asking another question.'});}
     if (casualQuestion(question)) return json(response, 200, { answer: fallbackConversation(question), href: '' });
     if (lightConversation(question)) return json(response, 200, { answer: fallbackLightConversation(question), href: '' });
-    const local = localKnowledgeMatch(question);
-    if (local) return json(response, 200, { answer: local.answer, href: local.href || '' });
     const retrieved = await withTimeout(searchKnowledge(question), 1800, []);
     const matches = Array.isArray(retrieved) && retrieved.length ? retrieved : [];
-    const best = matches[0] || localKnowledgeMatch(question);
+    const best = matches[0] || null;
     if (!best) {
       let answer = '';
       try { answer = await withTimeout(process.env.GROQ_API_KEY ? askGroq(question, []) : askXai(question, []), 2500, ''); } catch { /* Contact guidance remains the safe fallback. */ }

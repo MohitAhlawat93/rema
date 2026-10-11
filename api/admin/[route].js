@@ -1,12 +1,12 @@
 import {
   ADMIN_COOKIE_NAME, adminAuthConfigured, constantTimeTextEqual, createSessionToken,
-  getAdminSession, getClientIp, makeExpiredSessionCookie, makeSessionCookie,
+  getAdminSession, makeExpiredSessionCookie, makeSessionCookie,
   parseCookies, verifyPasswordHash
 } from '../../lib/admin-auth.js';
 import { validateOwnerWriteOrigin } from '../../lib/admin-origin-guard.js';
 import { callAdminBackend } from '../../lib/admin-backend.js';
+import { consumeRateLimit } from '../../lib/rate-limit.js';
 
-const attempts = globalThis.__WL_ADMIN_ATTEMPTS__ || (globalThis.__WL_ADMIN_ATTEMPTS__ = new Map());
 const readBody = req => typeof req.body === 'string' ? (()=>{try{return JSON.parse(req.body)}catch{return {}}})() : (req.body || {});
 const send = (res,status,data) => { res.statusCode=status;res.setHeader('content-type','application/json; charset=utf-8');res.end(JSON.stringify(data)); };
 const protectedRoute = (req,res) => {
@@ -25,15 +25,13 @@ export default async function handler(req,res){
     if(route==='login'){
       if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
       if(!adminAuthConfigured())return send(res,503,{error:'Owner access is not configured.'});
-      const ip=getClientIp(req),now=Date.now(),old=attempts.get(ip);
-      const bucket=!old||now>=old.resetAt?{count:0,resetAt:now+15*60*1000}:old;
-      bucket.count+=1;attempts.set(ip,bucket);
-      if(bucket.count>5){res.setHeader('retry-after',String(Math.ceil((bucket.resetAt-now)/1000)));return send(res,429,{error:'Too many attempts. Try again later.'});}
+      const limit=await consumeRateLimit(req,'login',5,900);
+      if(!limit.allowed){res.setHeader('retry-after',String(limit.retryAfterSeconds));return send(res,429,{error:'Too many attempts. Try again later.'});}
       const body=readBody(req);
       const login=String(body.loginId||'').trim().slice(0,120),password=String(body.password||'').slice(0,256);
       const expected=String(process.env.SIGNATURE_ADMIN_LOGIN_ID||'').trim();
       if(!constantTimeTextEqual(login,expected)||!verifyPasswordHash(password,process.env.SIGNATURE_ADMIN_PASSWORD_HASH||''))return send(res,401,{error:'That owner ID or password is not correct.'});
-      attempts.delete(ip);res.setHeader('set-cookie',makeSessionCookie(createSessionToken(expected)));
+      res.setHeader('set-cookie',makeSessionCookie(createSessionToken(expected)));
       return send(res,200,{ok:true});
     }
     if(route==='logout'){
@@ -55,11 +53,11 @@ export default async function handler(req,res){
     }
     if(route==='state'){
       if(req.method==='GET')return send(res,200,await callAdminBackend('read'));
-      if(req.method==='PUT')return send(res,200,await callAdminBackend('save',{body:readBody(req).state}));
+      if(req.method==='PUT')return send(res,200,await callAdminBackend('save',{draft:readBody(req).state,expectedVersion:readBody(req).expectedVersion}));
       if(req.method==='POST'){
         const body=readBody(req),action=body.action;
         if(!['publish','restore'].includes(action))return send(res,400,{error:'Unknown state action.'});
-        return send(res,200,await callAdminBackend(action,{body:action==='restore'?{version:Number(body.version)}:{}}));
+        return send(res,200,await callAdminBackend(action,{body:action==='restore'?{version:Number(body.version)}:{expectedVersion:body.expectedVersion}}));
       }
       return send(res,405,{error:'Unsupported method.'});
     }
@@ -78,5 +76,5 @@ export default async function handler(req,res){
       return send(res,405,{error:'Unsupported method.'});
     }
     return send(res,404,{error:'Unknown admin route.'});
-  }catch(error){return send(res,500,{error:error instanceof Error?error.message:'Request failed.'});}
+  }catch(error){return send(res,500,{error:'Request could not be completed. Please refresh and retry.'});}
 }
