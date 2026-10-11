@@ -12,6 +12,50 @@ function setDirty(value=true){dirty=value;notice(value?'Unpublished changes in t
 function showLogin(message=''){ $('[data-login]').hidden=false;$('[data-dashboard]').hidden=true;$('[data-login-message]').textContent=message; }
 function showDashboard(){ $('[data-login]').hidden=true;$('[data-dashboard]').hidden=false; }
 function switchTab(name){$$('[data-tab]').forEach(button=>button.classList.toggle('active',button.dataset.tab===name));$$('[data-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.panel===name));}
+function initializeBusiness(){
+ if(!state?.draft)return;
+ if(!state.draft.business&&seoDefaults?.business)state.draft.business=clone(seoDefaults.business);
+}
+function renderBusiness(){
+ const b=state?.draft?.business;
+ const warn=$('[data-business-warning]');
+ if(warn)warn.hidden=Boolean(b);
+ const choice=$('[data-business-logo-choice]');
+ if(choice){
+   choice.disabled=!b;
+   if(b){
+     const imageOptions=[['/assets/mark.svg','Default website mark'],...(state.draft.images||[])
+       .filter(x=>typeof x.src==='string'&&x.src).map((x,i)=>[x.src,x.title||'Photograph '+(i+1)])];
+     if(b.logoUrl&&!imageOptions.some(([src])=>src===b.logoUrl))imageOptions.unshift([b.logoUrl,'Current uploaded image']);
+     choice.innerHTML=imageOptions.map(([src,label])=>'<option value="'+esc(src)+'">'+esc(label)+'</option>').join('');
+     choice.value=b.logoUrl;
+     choice.onchange=()=>{b.logoUrl=choice.value;const field=$('[data-business-field="logoUrl"]');if(field)field.value=b.logoUrl;setDirty();};
+   }
+ }
+ $$('[data-business-field]').forEach(input=>{
+   input.disabled=!b;
+   if(!b)return;
+   input.value=b[input.dataset.businessField]??'';
+   input.oninput=()=>{b[input.dataset.businessField]=input.value;setDirty();updateSeoPreview();if(input.dataset.businessField==='logoUrl'&&choice)choice.value=input.value;};
+ });
+}
+function validateBusinessDraft(){
+ const b=state?.draft?.business;
+ if(!b)return; // Older drafts remain backward compatible if defaults could not load.
+ for(const [key,min,max] of [['name',2,80],['wordmark',2,70],['tagline',0,90],['city',2,90]]){
+  if(typeof b[key]!=='string'||b[key].trim().length<min||b[key].length>max)
+    throw new Error('Business identity: check '+key+'.');
+ }
+ if(typeof b.email!=='string'||b.email.length>254||
+   (b.email!==''&&!/^[^\s@<>]+@[^\s@<>]+\.[a-zA-Z]{2,}$/.test(b.email)))
+  throw new Error('Business identity: enter a valid email address.');
+ if(!((b.logoUrl==='/assets/mark.svg')||
+   (/^\/images\/[a-z0-9/_-]+\.(?:png|jpe?g|webp)$/i.test(b.logoUrl)&&!b.logoUrl.includes('..'))||
+   /^https:\/\/[^\s<>"']+\/storage\/v1\/object\/public\/witness-lema-gallery\//.test(b.logoUrl)))
+  throw new Error('Business identity: use an existing local image or approved uploaded logo URL.');
+ if(typeof b.requestedDomain!=='string'||(b.requestedDomain&&!/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(b.requestedDomain)))
+  throw new Error('Business identity: enter a domain only (example.com), without https://.');
+}
 function populateProfile(){$$('[data-path]').forEach(input=>{input.value=getPath(state.draft,input.dataset.path)||'';input.oninput=()=>{setPath(state.draft,input.dataset.path,input.value);setDirty();};});}
 function serviceCard(service,index){return `<article class="repeat-card"><span class="number">${String(index+1).padStart(2,'0')}</span><div class="repeat-fields"><label>Title<input data-service-field="title" data-index="${index}" value="${esc(service.title)}"></label><label>Price / label<input data-service-field="tag" data-index="${index}" value="${esc(service.tag)}"></label><label class="wide">Description<textarea rows="3" data-service-field="text" data-index="${index}">${esc(service.text)}</textarea></label><label class="wide">Image path or URL<input data-service-field="image" data-index="${index}" value="${esc(service.image)}"></label></div><div class="card-actions"><button data-service-move="-1" data-index="${index}" aria-label="Move up">↑</button><button data-service-move="1" data-index="${index}" aria-label="Move down">↓</button><button class="danger" data-service-remove data-index="${index}" aria-label="Remove">×</button></div></article>`;}
 function renderServices(){const holder=$('[data-services]');holder.innerHTML=(state.draft.services||[]).map(serviceCard).join('')||'<p>No services yet.</p>';holder.querySelectorAll('[data-service-field]').forEach(input=>input.oninput=()=>{state.draft.services[+input.dataset.index][input.dataset.serviceField]=input.value;setDirty();});holder.querySelectorAll('[data-service-move]').forEach(button=>button.onclick=()=>{const i=+button.dataset.index,j=i+(+button.dataset.serviceMove);if(j<0||j>=state.draft.services.length)return;[state.draft.services[i],state.draft.services[j]]=[state.draft.services[j],state.draft.services[i]];renderServices();setDirty();});holder.querySelectorAll('[data-service-remove]').forEach(button=>button.onclick=()=>{state.draft.services.splice(+button.dataset.index,1);renderServices();setDirty();});}
@@ -32,9 +76,11 @@ function initializeSeo(){
 function seoEntry(){return state?.draft?.seo?.pages?.[seoCurrent];}
 function updateSeoPreview(){
   const e=seoEntry();if(!e)return;
-  $('[data-seo-preview-title]').textContent=e.title||'(Title needed)';
-  $('[data-seo-preview-description]').textContent=e.description||'(Description needed)';
-  $('[data-seo-preview-url]').textContent='rema-ruby.vercel.app'+seoCurrent;
+  const b=state?.draft?.business,oldName=seoDefaults?.business?.name||'Witness Lema',oldCity=seoDefaults?.business?.city||'Gurgaon';
+  const branding=text=>String(text||'').replaceAll(oldName,b?.name||oldName).replaceAll(oldCity,b?.city||oldCity);
+  $('[data-seo-preview-title]').textContent=branding(e.title)||( '(Title needed)');
+  $('[data-seo-preview-description]').textContent=branding(e.description)||'(Description needed)';
+  $('[data-seo-preview-url]').textContent=(window.location?.host||'Current website')+seoCurrent;
   const photo=$('[data-seo-preview-image]');
   if(photo){photo.src=e.image||'';photo.hidden=!e.image;}
   $('[data-seo-count="title"]').textContent=String((e.title||'').length)+'/70';
@@ -81,6 +127,7 @@ function validateSeoDraft(){
   for(const [route,e] of Object.entries(state.draft.seo.pages||{})){
     if(!seoNames[route])throw new Error('Unknown SEO page.');
     if(!e.title||e.title.trim().length<10||e.title.length>70)throw new Error('SEO title for '+seoNames[route]+' must be 10–70 characters.');
+    const b=state.draft.business;if(b&&e.title.replaceAll('Witness Lema',b.name).replaceAll('Gurgaon',b.city).length>70)throw new Error('SEO title for '+seoNames[route]+' becomes too long after applying the business identity.');
     if(!e.description||e.description.trim().length<40||e.description.length>170)throw new Error('SEO description for '+seoNames[route]+' must be 40–170 characters.');
     if(!e.heading||e.heading.trim().length<12||e.heading.length>110)throw new Error('SEO section heading for '+seoNames[route]+' must be 12–110 characters.');
     if(!Array.isArray(e.paragraphs)||e.paragraphs.length<1||e.paragraphs.length>4||!e.paragraphs.every(p=>typeof p==='string'&&p.trim().length>=60&&p.length<=850))throw new Error('Write 2 helpful paragraphs of at least 60 characters on '+seoNames[route]+'.');
@@ -171,7 +218,7 @@ function validateEditorialControls(){
     if(item.published&&!item.consent)throw new Error('Before publishing a review, confirm the reviewer gave permission.');
   }
 }
-function renderAll(){renderLinks();renderReviews();populateProfile();renderServices();renderPhotos();renderAnswers();renderHistory();renderSeoEditor();$('[data-version]').textContent=state.version;$('[data-published-version]').textContent=state.publishedVersion;$('[data-photo-count]').textContent=state.draft.images?.length||0;$('[data-answer-count]').textContent=knowledge.length;}
+function renderAll(){renderBusiness();renderLinks();renderReviews();populateProfile();renderServices();renderPhotos();renderAnswers();renderHistory();renderSeoEditor();$('[data-version]').textContent=state.version;$('[data-published-version]').textContent=state.publishedVersion;$('[data-photo-count]').textContent=state.draft.images?.length||0;$('[data-answer-count]').textContent=knowledge.length;}
 async function loadAiStatus(){try{const status=await api('ai-status');$('[data-ai-status]').textContent=status.configured?status.provider+' connected':'Knowledge-only mode';$('[data-ai-detail]').textContent=status.configured?`${status.model} · API key is stored securely on the server.`:'Add a server-side Groq or xAI key to enable conversational answers.';}catch{$('[data-ai-status]').textContent='Status unavailable';}}
 async function loadWorkspace(){
   const session=await api('session');
@@ -194,6 +241,7 @@ async function loadWorkspace(){
   knowledgeDirty=false;
   seoDefaults=defaults.status==='fulfilled'&&defaults.value?.pages?defaults.value:null;
   initializeSeo();
+  initializeBusiness();
   renderAll();
   const seoWarning=$('[data-seo-loading-error]');
   if(seoWarning)seoWarning.hidden=Boolean(seoDefaults);
@@ -206,7 +254,7 @@ async function loadWorkspace(){
     notice(dirty?'Workspace ready. Save draft to keep newly initialized settings.':'Private workspace connected. Live website version '+state.publishedVersion+'.',dirty?'':'success');
   }
 }
-function validateDraft(){validateSeoDraft();validateEditorialControls();if(!(state.draft.images||[]).some(image=>image.hero))throw new Error('Choose at least one Home hero photograph.');if((state.draft.aboutImages||[]).length!==3)throw new Error('Choose exactly three About photographs.');if(!(state.draft.services||[]).every(item=>item.title&&item.text))throw new Error('Every service needs a title and description.');if(!state.draft.assistant?.name?.trim())throw new Error('The assistant needs a public name.');if(!state.draft.assistant?.greeting?.trim())throw new Error('The assistant needs a welcome message.');}
+function validateDraft(){validateBusinessDraft();validateSeoDraft();validateEditorialControls();if(!(state.draft.images||[]).some(image=>image.hero))throw new Error('Choose at least one Home hero photograph.');if((state.draft.aboutImages||[]).length!==3)throw new Error('Choose exactly three About photographs.');if(!(state.draft.services||[]).every(item=>item.title&&item.text))throw new Error('Every service needs a title and description.');if(!state.draft.assistant?.name?.trim())throw new Error('The assistant needs a public name.');if(!state.draft.assistant?.greeting?.trim())throw new Error('The assistant needs a welcome message.');}
 async function saveDraft(){
   if(savingDraft)return savingDraft;
   savingDraft=(async()=>{
@@ -250,10 +298,11 @@ async function publish(){
     else if(/review|permission/i.test(message))switchTab('reviews');
     else if(/social|channel|Afterhours|contact link/i.test(message))switchTab('links');
     else if(/assistant/i.test(message))switchTab('assistant');
+     else if(/business|logo path|domain only/i.test(message))switchTab('business');
     notice(message,'error');
   }
 }
-async function restoreVersion(version){try{if(!confirm('Restore version '+version+' to Draft? The live website will stay unchanged.'))return;state=await api('state',{method:'POST',body:JSON.stringify({action:'restore',version})});savedDraftSnapshot=JSON.stringify(state.draft);dirty=false;initializeEditableSections();initializeSeo();dirty=hasUnsavedDraft();renderAll();notice('Older version restored to Draft. Save draft to keep any missing default settings.','success');}catch(error){notice(error.message,'error');}}
+async function restoreVersion(version){try{if(!confirm('Restore version '+version+' to Draft? The live website will stay unchanged.'))return;state=await api('state',{method:'POST',body:JSON.stringify({action:'restore',version})});savedDraftSnapshot=JSON.stringify(state.draft);dirty=false;initializeEditableSections();initializeSeo();initializeBusiness();dirty=hasUnsavedDraft();renderAll();notice('Older version restored to Draft. Save draft to keep any missing default settings.','success');}catch(error){notice(error.message,'error');}}
 async function saveAnswers(){
   try{
     const incomplete=knowledge.findIndex(item=>!item.question?.trim()||!item.answer?.trim());

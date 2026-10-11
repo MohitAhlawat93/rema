@@ -30,7 +30,7 @@ function hydrateAfterhours(){
   const config=site.afterhours||{};
   const launch=$('#afterhours-launch');
   launch.hidden=config.enabled===false;
-  $('#afterhours-title').textContent=config.title||'Lema Afterhours';
+  $('#afterhours-title').textContent=config.title||((site.business?.name||'Website')+' Afterhours');
   $('#afterhours-intro').textContent=config.intro||'Stay close through the official channels.';
   const links=linkItems(Array.isArray(config.links)?config.links:(site.contactLinks?.length?site.contactLinks:site.social));
   $('[data-afterhours-links]').innerHTML=links.map(({label,url})=>`<a href="${html(url)}" target="_blank" rel="noopener noreferrer"><span>${html(label)}</span><span aria-hidden="true">↗</span></a>`).join('')||'<p>No channels are listed at the moment. Please visit Contact for updates.</p>';
@@ -44,7 +44,34 @@ function hydrateReviews(){
   }
   holders.forEach(holder=>{const section=holder.closest('.reviews-section');if(section)section.hidden=false;holder.innerHTML=reviews.map(item=>`<article class="review-quote"><span class="review-language">Guest feedback · अतिथि के शब्द</span>${item.textEn?`<blockquote lang="en">${html(item.textEn)}</blockquote>`:''}${item.textHi?`<blockquote lang="hi">${html(item.textHi)}</blockquote>`:''}<p>— ${html(item.author||'Guest')}</p></article>`).join('');});
 }
+function hydrateBusiness(){
+  const b=site.business||{},name=String(b.name||'').trim();
+  if(!name)return;
+  document.querySelectorAll('[data-business-wordmark]').forEach(el=>{el.firstChild.textContent=b.wordmark||name;});
+  document.querySelectorAll('[data-business-tagline]').forEach(el=>{el.textContent=b.tagline||'';});
+  document.querySelectorAll('[data-business-home-link]').forEach(el=>{el.setAttribute('aria-label',name+' home');});
+  document.querySelectorAll('[data-business-copyright]').forEach(el=>{el.textContent='© '+new Date().getUTCFullYear()+' · '+name;});
+  document.querySelectorAll('[data-business-orbit]').forEach(el=>{el.textContent=(b.wordmark||name)+' · '+(b.tagline||'')+' · ';});
+  document.querySelectorAll('[data-business-statement]').forEach(el=>{el.textContent=b.wordmark||name;});
+  document.querySelectorAll('[data-business-about-label]').forEach(el=>{el.textContent='Meet '+name;});
+  const logo=String(b.logoUrl||'');
+  if(logo==='/assets/mark.svg'||/^\/images\/[a-z0-9/_-]+\.(?:jpe?g|png|webp)$/i.test(logo)||(
+    logo.includes('/storage/v1/object/public/witness-lema-gallery/')&&permittedUrl(logo)
+  )){
+    document.querySelectorAll('[data-business-logo]').forEach(el=>{el.src=logo;el.alt=name+' logo';});
+    const icon=document.querySelector('[data-business-icon]');if(icon)icon.href=logo;
+  }
+  document.querySelectorAll('[data-business-city]').forEach(el=>{el.textContent='Service location: '+(b.city||'');});
+  const slot=document.querySelector('[data-business-email-slot]');
+  if(slot){
+    slot.replaceChildren();
+    if(typeof b.email==='string'&&/^[^\s@<>]+@[^\s@<>]+\.[a-zA-Z]{2,}$/.test(b.email)){
+      const link=document.createElement('a');link.href='mailto:'+b.email;link.textContent=b.email;slot.appendChild(link);
+    }
+  }
+}
 function hydratePublishedContent(){
+  hydrateBusiness();
   document.querySelectorAll('.social-links').forEach(el=>el.innerHTML=socialMarkup());
   hydrateAfterhours();
   hydrateReviews();
@@ -63,7 +90,7 @@ function hydratePublishedContent(){
     const title=$('.page-heading h1');if(title)title.innerHTML=html(site.about?.title||'').replaceAll('\n','<br>');
     const heading=$('.about-layout .editorial h2');if(heading)heading.textContent=site.about?.heading||'';
     const biography=$('.about-layout .editorial .intro');if(biography)biography.textContent=site.about?.text||'';
-    const rotator=$('.about-rotator');if(rotator)rotator.innerHTML=(site.aboutImages||[]).slice(0,3).map((src,index)=>`<img class="about-slide ${index?'':'active'}" src="${html(src)}" alt="Portrait of witness_lema_" width="900" height="1100" aria-hidden="${index?'true':'false'}">`).join('');
+    const rotator=$('.about-rotator');if(rotator)rotator.innerHTML=(site.aboutImages||[]).slice(0,3).map((src,index)=>`<img class="about-slide ${index?'':'active'}" src="${html(src)}" alt="Portrait of ${html(site.business?.name||'the owner')}" width="900" height="1100" aria-hidden="${index?'true':'false'}">`).join('');
   }
   const serviceGrid=$('.service-grid');if(serviceGrid)serviceGrid.innerHTML=(site.services||[]).map(serviceMarkup).join('');
   if((location.pathname==='/services/'||location.pathname==='/services')&&$('.page-heading .intro'))$('.page-heading .intro').textContent=site.servicesIntro||'';
