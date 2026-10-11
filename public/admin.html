@@ -15,7 +15,7 @@
  <p>Edit the public business name, wordmark, logo, location and contact email in one place. Preview your draft before publishing.</p></div>
  <button class="primary" type="button" data-save>Save private draft</button></div>
  <p class="notice" data-business-warning hidden>Business defaults are not available. Refresh the dashboard to edit identity.</p>
- <form class="editor-form" data-business-form onsubmit="return false">
+ <form class="editor-form" data-business-form>
  <fieldset><legend>Business identity</legend>
  <label>Public business name<input data-business-field="name" maxlength="80" required placeholder="Example: Studio Lema"></label>
  <label>Header and footer wordmark<input data-business-field="wordmark" maxlength="70" required placeholder="Your public logo text"></label>
@@ -25,7 +25,8 @@
  </fieldset>
  <fieldset><legend>Public contact &amp; images</legend>
  <label>Public business email (optional)<input data-business-field="email" type="email" maxlength="254" placeholder="hello@example.com"></label>
- <label>Brand logo path / uploaded photo URL<input data-business-field="logoUrl" maxlength="2048" placeholder="/assets/mark.svg"></label>
+ <label>Choose an existing logo image<select data-business-logo-choice><option value="/assets/mark.svg">Default website mark</option></select></label>
+ <label>Logo path / uploaded photo URL (advanced)<input data-business-field="logoUrl" maxlength="2048" placeholder="/assets/mark.svg"></label>
  <p class="fine">Use /assets/mark.svg, an existing /images/ file, or an image URL from your approved Photographs uploads. Logo and browser icon update after publishing.</p>
  <label>Requested custom domain (optional)<input data-business-field="requestedDomain" maxlength="253" placeholder="example.com" autocapitalize="off" spellcheck="false"></label>
  <p class="fine"><strong>Entering a domain does not activate it.</strong> A developer must confirm domain ownership, hosting, DNS and HTTPS before changing the canonical website address. Google Search Console still requires owner verification.</p>
