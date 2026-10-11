@@ -1,9 +1,9 @@
 // Pure renderer used by Vercel Routing Middleware; no secret keys or DOM APIs.
 // Only authenticated owner publishing can write the public source data.
 // Every value is escaped or passed through explicit route/image allowlists.
-export const SEO_ROUTES=['/','/about/','/gallery/','/services/','/contact/'];
-export const CONTENT_ROUTES=[...SEO_ROUTES,'/reviews/','/privacy/'];
-export const SEO_NAMES={'/':'Home','/about/':'About','/gallery/':'Gallery','/services/':'Services','/contact/':'Contact'};
+export const SEO_ROUTES=['/','/about/','/gallery/','/services/','/contact/','/reviews/'];
+export const CONTENT_ROUTES=[...SEO_ROUTES,'/privacy/'];
+export const SEO_NAMES={'/':'Home','/about/':'About','/gallery/':'Gallery','/services/':'Services','/contact/':'Contact','/reviews/':'Reviews'};
 const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const xml=esc;
 export function validImage(image,supabaseUrl=''){
