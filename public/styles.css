@@ -96,3 +96,9 @@
 .reviews-page .review-quote{min-height:200px}
 .review-disclaimer{margin-top:24px}
 @media(max-width:640px){#assistant-panel,#assistant-panel.expanded{left:auto;right:8px;bottom:8px;width:min(330px,calc(100vw - 16px));height:min(420px,calc(100dvh - 70px));max-height:none;border-radius:15px}#assistant-launch{right:8px;bottom:8px}}
+
+/* No sample testimonials: hide unused homepage section, show only a short
+   empty state on the dedicated page until actual reviews are approved. */
+.reviews-section[hidden]{display:none!important}
+.reviews-page{min-height:180px}
+.review-empty{grid-column:1/-1;font:17px/1.6 var(--serif);color:var(--soft);margin:0}
