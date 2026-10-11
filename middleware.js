@@ -11,7 +11,7 @@ const siteOrigin=()=>{
  return /^https:\/\/[a-z0-9.-]+(?::[0-9]{2,5})?$/i.test(v)?v:origin;
 };
 const active=()=>process.env.VERCEL_ENV==='production'&&process.env.SEO_INDEXING_ENABLED!=='false';
-const cacheHeaders=type=>({'content-type':type,'cache-control':'public, s-maxage=60, stale-while-revalidate=180','x-content-type-options':'nosniff'});
+const cacheHeaders=type=>({'content-type':type,'cache-control':'no-store','x-content-type-options':'nosniff'});
 async function getJson(url,headers={}){
  const r=await fetch(url,{headers,signal:AbortSignal.timeout(2600),cache:'no-store'});
  if(!r.ok)throw new Error('SEO data unavailable');
@@ -37,7 +37,7 @@ export default async function middleware(req){
  if(!template.ok)return new Response('Website temporarily unavailable',{status:503,headers:{'content-type':'text/plain','cache-control':'no-store'}});
  const raw=await template.text();
  if(!payload||!defaults?.pages){
-   const h=new Headers(template.headers);h.set('cache-control','public, s-maxage=30, stale-while-revalidate=60');
+   const h=new Headers(template.headers);h.set('cache-control','no-store');
    if(!active())h.set('x-robots-tag','noindex, nofollow');
    return new Response(req.method==='HEAD'?null:raw,{status:200,headers:h});
  }
@@ -52,6 +52,7 @@ export default async function middleware(req){
  }
  const html=renderLivePage(raw,pathname,pages[pathname],payload,canonical,production);
  const h=cacheHeaders('text/html; charset=utf-8');
+ if(new URL(req.url).searchParams.get('admin_preview')==='1')h['x-robots-tag']='noindex, nofollow';
  if(!production||!pages[pathname].index)h['x-robots-tag']='noindex, nofollow';
  return new Response(req.method==='HEAD'?null:html,{status:200,headers:h});
 }
