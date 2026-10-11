@@ -20,7 +20,13 @@ test('review API enforces owner moderation and spam limits',async()=>{
   ]);
   assert.match(api,/raw\.consent!==true/);
   assert.match(api,/consumeRateLimit\(req,'review-submit',3,3600\)/);
-  assert.match(moderation,/createHash\('sha256'\)/);
+  assert.ok(moderation.includes("callAdminBackend('review-inbox'"));
+  const edge=await read('../supabase/functions/witness-lema-admin/index.ts');
+  const migration=await read('../supabase/migrations/20261011100000_review_inbox_service_only.sql');
+  assert.match(edge,/action==='review-inbox'/);
+  assert.ok(edge.includes("rpc('witness_lema_review_inbox'"));
+  assert.ok(migration.includes('from public, anon, authenticated;'));
+  assert.ok(migration.includes('revoke execute on function public.witness_lema_review_inbox'));
   assert.match(sql,/enable row level security/);
   assert.match(sql,/revoke all on table witness_lema_private\.review_submissions from public, anon, authenticated/);
   assert.match(sql,/c\.secret_sha256=p_secret_sha256/);
@@ -50,4 +56,32 @@ test('public endpoint rejects incomplete submissions and returns no honeypot err
   const honeypot=reply();
   await handler(request({author:'Guest',text:'I had a meaningful meeting and wanted to share my experience.',language:'en',consent:true,website:'spam'}),honeypot);
   assert.equal(honeypot.statusCode,200);
+});
+
+test('review moderation is routed through authenticated server-side Edge Function',async()=>{
+  const {reviewInbox}=await import('../lib/review-inbox.js');
+  const prevUrl=process.env.SUPABASE_URL,prevSecret=process.env.WITNESS_LEMA_INTERNAL_SECRET,originalFetch=globalThis.fetch;
+  process.env.SUPABASE_URL='https://example.supabase.co';
+  process.env.WITNESS_LEMA_INTERNAL_SECRET='example-test-secret-is-long-enough-1234';
+  const calls=[];
+  globalThis.fetch=async(url,options)=>{
+    calls.push({url,options});
+    return {ok:true,json:async()=>({items:[]})};
+  };
+  try{
+    const result=await reviewInbox('list');
+    assert.deepEqual(result,{items:[]});
+    assert.equal(calls.length,1);
+    assert.equal(calls[0].url,'https://example.supabase.co/functions/v1/witness-lema-admin');
+    assert.equal(calls[0].options.headers['x-admin-secret'],process.env.WITNESS_LEMA_INTERNAL_SECRET);
+    assert.deepEqual(JSON.parse(calls[0].options.body),{
+      action:'review-inbox',body:{reviewAction:'list',payload:{}},reviewAction:'list',payload:{}
+    });
+    await assert.rejects(()=>reviewInbox('unapproved-action'),/Unknown review action/);
+    assert.equal(calls.length,1);
+  }finally{
+    globalThis.fetch=originalFetch;
+    if(prevUrl===undefined)delete process.env.SUPABASE_URL;else process.env.SUPABASE_URL=prevUrl;
+    if(prevSecret===undefined)delete process.env.WITNESS_LEMA_INTERNAL_SECRET;else process.env.WITNESS_LEMA_INTERNAL_SECRET=prevSecret;
+  }
 });
