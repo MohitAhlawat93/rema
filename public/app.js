@@ -3,9 +3,10 @@ import { site } from './data/site.js';
 const $ = s => document.querySelector(s);
 const html = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const previewMode=new URLSearchParams(location.search).get('admin_preview')==='1';
+let previewAuthorized=false;
 try{
   const response=await fetch('/api/site-content'+(previewMode?'?preview=1':''));
-  if(response.ok){const data=await response.json();Object.assign(site,data.payload||{});if(data.preview)document.documentElement.classList.add('admin-preview');}
+  if(response.ok){const data=await response.json();Object.assign(site,data.payload||{});if(data.preview){previewAuthorized=true;document.documentElement.classList.add('admin-preview');}}
 }catch{/* Bundled content remains a reliable fallback. */}
 function serviceMarkup(item,index){return `<article class="service-card">${item.image?`<img src="${html(item.image)}" alt="" width="900" height="1100" loading="lazy" decoding="async">`:''}<div class="service-card-copy"><span class="index">${html(item.number||String(index+1).padStart(2,'0'))}</span><h2>${html(item.title)}</h2><p>${html(item.text)}</p><span class="tag">${html(item.tag||'')}</span></div></article>`;}
 function tileMarkup(image,index){return `<figure class="gallery-tile"><button class="photo" data-photo="${index}" aria-label="View ${html(image.title)}"><img src="${html(image.src)}" alt="${html(image.alt)}" width="900" height="1100" loading="lazy" decoding="async"></button><figcaption><span>${html(image.title)}</span><span class="caption-kind">${html(image.category)}</span></figcaption></figure>`;}
@@ -68,6 +69,35 @@ function hydratePublishedContent(){
   if(previewMode&&document.documentElement.classList.contains('admin-preview'))document.body.insertAdjacentHTML('afterbegin','<div class="admin-preview-bar">Private Draft Preview · <a href="/admin">Return to Control</a></div>');
 }
 hydratePublishedContent();
+// A private preview must remain a private preview when navigating from Home
+// to About, Services, Gallery, Reviews or Contact. Never leak preview data to
+// unauthenticated browsers, and never modify external/contact links.
+function previewHref(raw){
+  if(!previewAuthorized||!raw||raw.startsWith('#'))return null;
+  try{
+    const destination=new URL(raw,location.href);
+    if(destination.origin!==location.origin||/^\/(?:admin|api)(?:\/|$)/.test(destination.pathname))return null;
+    destination.searchParams.set('admin_preview','1');
+    return destination.pathname+destination.search+destination.hash;
+  }catch{return null;}
+}
+if(previewMode){
+  if(previewAuthorized){
+    document.querySelectorAll('a[href]').forEach(a=>{
+      const href=previewHref(a.getAttribute('href'));
+      if(href)a.setAttribute('href',href);
+    });
+    // Also handle navigation added dynamically after initial hydration.
+    document.addEventListener('click',event=>{
+      const a=event.target?.closest?.('a[href]');
+      if(!a)return;
+      const href=previewHref(a.getAttribute('href'));
+      if(href)a.setAttribute('href',href);
+    },true);
+  }else{
+    document.body.insertAdjacentHTML('afterbegin','<div class="admin-preview-bar">Private preview unavailable. <a href="/admin">Sign in to view your saved draft</a>.</div>');
+  }
+}
 const menu = $('.menu-toggle'), nav = $('#navigation');
 function setMenu(open) { nav.classList.toggle('open',open);menu.setAttribute('aria-expanded',String(open)); }
 menu.addEventListener('click',()=>setMenu(menu.getAttribute('aria-expanded')!=='true'));
