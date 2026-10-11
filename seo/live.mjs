@@ -1,3 +1,4 @@
+import { resolveBusiness, seoIdentityText } from './business.mjs';
 // Pure renderer used by Vercel Routing Middleware; no secret keys or DOM APIs.
 // Only authenticated owner publishing can write the public source data.
 // Every value is escaped or passed through explicit route/image allowlists.
@@ -37,17 +38,22 @@ function imageUrl(image,origin){
  if(image.startsWith('https://'))return image;
  return origin+image;
 }
-function updateHead(html,page,route,origin,production){
+function updateHead(html,page,route,origin,production,business){
+ const title=seoIdentityText(page.title,business),description=seoIdentityText(page.description,business);
  const url=origin+route, socialImage=imageUrl(page.image,origin);
  const tags=[
-  [/<title>[\s\S]*?<\/title>/i,'<title>'+esc(page.title)+'</title>'],
-  [/<meta name="description"[^>]*>/i,'<meta name="description" content="'+esc(page.description)+'">'],
+  [/<link rel="canonical"[^>]*>/i,'<link rel="canonical" href="'+esc(url)+'">'],
+  [/<meta property="og:url"[^>]*>/i,'<meta property="og:url" content="'+esc(url)+'">'],
+  [/<meta property="og:site_name"[^>]*>/i,'<meta property="og:site_name" content="'+esc(business.name)+'">'],
+  [/<meta property="og:image:alt"[^>]*>/i,'<meta property="og:image:alt" content="'+esc(business.name)+' portrait photograph">'],
+  [/<title>[\s\S]*?<\/title>/i,'<title>'+esc(title)+'</title>'],
+  [/<meta name="description"[^>]*>/i,'<meta name="description" content="'+esc(description)+'">'],
   [/<meta name="robots"[^>]*>/i,'<meta name="robots" content="'+(production&&page.index?'index, follow, max-image-preview:large':'noindex, nofollow')+'">'],
-  [/<meta property="og:title"[^>]*>/i,'<meta property="og:title" content="'+esc(page.title)+'">'],
-  [/<meta property="og:description"[^>]*>/i,'<meta property="og:description" content="'+esc(page.description)+'">'],
+  [/<meta property="og:title"[^>]*>/i,'<meta property="og:title" content="'+esc(title)+'">'],
+  [/<meta property="og:description"[^>]*>/i,'<meta property="og:description" content="'+esc(description)+'">'],
   [/<meta property="og:image"[^>]*>/i,'<meta property="og:image" content="'+esc(socialImage)+'">'],
-  [/<meta name="twitter:title"[^>]*>/i,'<meta name="twitter:title" content="'+esc(page.title)+'">'],
-  [/<meta name="twitter:description"[^>]*>/i,'<meta name="twitter:description" content="'+esc(page.description)+'">'],
+  [/<meta name="twitter:title"[^>]*>/i,'<meta name="twitter:title" content="'+esc(title)+'">'],
+  [/<meta name="twitter:description"[^>]*>/i,'<meta name="twitter:description" content="'+esc(description)+'">'],
   [/<meta name="twitter:image"[^>]*>/i,'<meta name="twitter:image" content="'+esc(socialImage)+'">']
  ];
  for(const [pattern,replacement] of tags)html=replaceTag(html,pattern,replacement);
@@ -55,8 +61,24 @@ function updateHead(html,page,route,origin,production){
  html=html.replace(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/i,(match,json)=>{
   try{
    const data=JSON.parse(json);
+   const website=data['@graph']?.find(n=>n['@type']==='WebSite');
+   if(website){website.name=business.name;website.url=origin+'/';website['@id']=origin+'/#website';}
+   const person=data['@graph']?.find(n=>n['@type']==='Person');
+   if(person){person.name=business.name;person.url=origin+'/';person['@id']=origin+'/#person';}
    const node=data['@graph']?.find(n=>n['@type']==='WebPage');
-   if(node){node.name=page.title;node.description=page.description;node.primaryImageOfPage={'@type':'ImageObject',url:socialImage};}
+   if(node){
+    node.name=title;node.description=description;node.url=url;node['@id']=url+'#webpage';
+    node.isPartOf={'@id':origin+'/#website'};node.primaryImageOfPage={'@type':'ImageObject',url:socialImage};
+    if(node.about?.['@id'])node.about={'@id':origin+'/#person'};
+   }
+   const breadcrumbs=data['@graph']?.find(n=>n['@type']==='BreadcrumbList');
+   if(breadcrumbs){
+    breadcrumbs['@id']=url+'#breadcrumb';
+    if(Array.isArray(breadcrumbs.itemListElement))for(const item of breadcrumbs.itemListElement){
+      if(item.position===1)item.item=origin+'/';
+      if(item.position===2)item.item=url;
+    }
+   }
    return '<script type="application/ld+json">'+JSON.stringify(data).replace(/</g,'\\u003c')+'</script>';
   }catch{return match;}
  });
@@ -101,12 +123,31 @@ const serviceMarkup=(service,i,supabaseUrl)=>{
 };
 export function renderLivePage(html,route,page,published,origin,production=true,supabaseUrl=''){
  if(!CONTENT_ROUTES.includes(route))return html;
+ const site=published&&typeof published==='object'?published:{};
+ const business=resolveBusiness(site.business,supabaseUrl);
  if(SEO_ROUTES.includes(route)&&page){
-   html=updateHead(html,page,route,origin,production);
+   html=updateHead(html,page,route,origin,production,business);
    const editorial=seoEditorial(page);
    if(editorial)html=replaceTag(html,/<section class="seo-editorial" aria-label="Further information">[\s\S]*?<\/section>/i,editorial);
  }
- const site=published&&typeof published==='object'?published:{};
+ // Target explicit template elements. Freeform prose and SEO editorial remain owner-editable.
+ html=html.replace(/<span class="brand-name" data-business-wordmark>[\s\S]*?<\/small><\/span>/g,
+   '<span class="brand-name" data-business-wordmark>'+esc(business.wordmark)+'<small data-business-tagline>'+esc(business.tagline)+'</small></span>');
+ html=html.replace(/(<img class="brand-symbol" data-business-logo src=")[^"]*(")/g,(_,a,b)=>a+esc(business.logoUrl)+b);
+ html=html.replace(/(<link rel="icon" data-business-icon href=")[^"]*(")/i,(_,a,b)=>a+esc(business.logoUrl)+b);
+ html=html.replace(/(<a class="wordmark" href="\/" data-business-home-link aria-label=")[^"]*(")/i,(_,a,b)=>a+esc(business.name)+' home'+b);
+ html=html.replace(/<span class="fine" data-business-copyright>[\s\S]*?<\/span>/g,
+   '<span class="fine" data-business-copyright>© '+new Date().getUTCFullYear()+' · '+esc(business.name)+'</span>');
+ html=html.replace(/<div data-business-email-slot><\/div>/g,business.email?
+   '<div data-business-email-slot><a href="mailto:'+esc(business.email)+'">'+esc(business.email)+'</a></div>':'<div data-business-email-slot></div>');
+ html=html.replace(/<p data-business-city>[\s\S]*?<\/p>/g,
+   '<p data-business-city>Service location: '+esc(business.city)+'</p>');
+ html=html.replace(/(<textPath data-business-orbit[^>]*>)[\s\S]*?(<\/textPath>)/g,
+   (_,a,b)=>a+esc(business.wordmark)+' · '+esc(business.tagline)+' · '+b);
+ html=html.replace(/<span data-business-statement>[\s\S]*?<\/span>/g,
+   '<span data-business-statement>'+esc(business.wordmark)+'</span>');
+ html=html.replace(/<p class="eyebrow" data-business-about-label>[\s\S]*?<\/p>/g,
+   '<p class="eyebrow" data-business-about-label>Meet '+esc(business.name)+'</p>');
  // Shared owner-managed controls are server-rendered on every public page
  // rather than depending on JavaScript hydration or a stale build artifact.
  if(Array.isArray(site.contactLinks)||site.social){
@@ -156,7 +197,7 @@ export function renderLivePage(html,route,page,published,origin,production=true,
   const imgs=site.aboutImages.filter(src=>safePublishedImage(src,supabaseUrl)).slice(0,3);
   if(imgs.length)html=html.replace(/<figure class="about-rotator"[^>]*>[\s\S]*?<\/figure>/,
     '<figure class="about-rotator" aria-label="Portrait slideshow">'+imgs.map((src,i)=>
-      '<img class="about-slide '+(i?'':'active')+'" src="'+esc(src)+'" alt="Portrait of Lema" width="900" height="1100" decoding="async" aria-hidden="'+Boolean(i)+'">').join('')+'</figure>');
+      '<img class="about-slide '+(i?'':'active')+'" src="'+esc(src)+'" alt="Portrait of '+esc(business.name)+'" width="900" height="1100" decoding="async" aria-hidden="'+Boolean(i)+'">').join('')+'</figure>');
  }
  if(route==='/services/'){
   if(typeof site.servicesIntro==='string')html=html.replace(/(<section class="page-heading">[\s\S]*?<p class="intro">)[\s\S]*?(<\/p>)/i,(_,head,tail)=>head+esc(site.servicesIntro)+tail);

@@ -12,6 +12,9 @@ Open /admin on the deployed website and sign in with the private owner credentia
 
 ## Sections
 
+- **Business identity:** set the owner-approved public name, visible wordmark, tagline, city, optional email, logo (select a previously uploaded image), and requested branded domain. Save the draft, preview, then publish. The public header/footer, Contact email/location, social metadata and structured identity use these values. Existing default references to Witness Lema/Gurgaon in SEO titles and descriptions adapt automatically; review each SEO page before publication. Custom biography, gallery captions, art copy and assistant knowledge are **not** silently rewritten.
+- **Requested domain is not a live domain connection.** DNS, SSL, hosting and `SEO_SITE_ORIGIN` require owner verification and a developer-approved deploy. An entered domain cannot change canonical URLs.
+
 - **Profile & links:** homepage hero text, About biography, Services introduction and public links.
 - **Services:** add, reorder, edit or remove service cards.
 - **Photographs:** upload optimized photos, select Home hero images and choose exactly three About images.
