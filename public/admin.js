@@ -141,15 +141,20 @@ function renderPendingReviews(){
       setDirty();
     }
     button.disabled=true;
+    let saved=false;
     try{
       validateDraft();
       const updated=await api('state',{method:'PUT',body:JSON.stringify({state:state.draft,expectedVersion:state.version})});
-      state=updated;dirty=false;
+      state=updated;dirty=false;saved=true;
       renderAll();
-      await api('review-inbox',{method:'POST',body:JSON.stringify({action:'resolve',id,status:'approved'})});
+      const decision=await api('review-inbox',{method:'POST',body:JSON.stringify({action:'resolve',id,status:'approved'})});
+      if(decision.ok!==true)throw new Error('Draft saved, but the review queue was not updated. Refresh and try again.');
       pendingReviews=pendingReviews.filter(x=>Number(x.id)!==id);renderPendingReviews();
       notice('Review added to the saved draft. Click Publish website to show it publicly.','success');
-    }catch(error){if(!existing){state.draft.reviews=state.draft.reviews.filter(x=>!(x.author===item.author&&(x.textEn===item.text||x.textHi===item.text)));renderReviews();}notice(error.message||'Could not approve review.','error');button.disabled=false;}
+    }catch(error){
+      if(!saved&&!existing){state.draft.reviews=state.draft.reviews.filter(x=>!(x.author===item.author&&(x.textEn===item.text||x.textHi===item.text)));renderReviews();}
+      notice(error.message||'Could not approve review.','error');button.disabled=false;
+    }
   });
   holder.querySelectorAll('[data-review-reject]').forEach(button=>button.onclick=async()=>{
     const id=Number(button.closest('[data-review-submission]').dataset.reviewSubmission);
