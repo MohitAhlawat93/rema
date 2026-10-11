@@ -12,6 +12,15 @@ export const site = {
   announcement: '',
   announcementExpiresAt: '',
 
+  assistant: {
+    name: 'Lema Concierge',
+    greeting: 'Welcome. I can help with services, availability and the best way to get in touch.',
+    suggestionOne: 'How can I get in touch?',
+    suggestionOneLabel: 'Get in touch',
+    suggestionTwo: 'Which services are available?',
+    suggestionTwoLabel: 'Services'
+  },
+
   description: 'Elegant Kenyan companion in Gurgaon. Warm girlfriend experiences and passionate encounters for discerning gentlemen.',
 
   hero: {

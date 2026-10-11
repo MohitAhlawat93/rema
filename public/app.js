@@ -12,6 +12,12 @@ function tileMarkup(image,index){return `<figure class="gallery-tile"><button cl
 function socialMarkup(){return Object.entries(site.social||{}).filter(([,url])=>url).map(([name,url])=>`<a href="${html(url)}" target="_blank" rel="noopener noreferrer">${name==='instagram'?'Instagram':name[0].toUpperCase()+name.slice(1)} <span aria-hidden="true">↗</span></a>`).join('');}
 function hydratePublishedContent(){
   document.querySelectorAll('.social-links').forEach(el=>el.innerHTML=socialMarkup());
+  const assistant=site.assistant||{};
+  if($('.assistant-head strong'))$('.assistant-head strong').textContent=assistant.name||'Website assistant';
+  if($('#messages .bubble'))$('#messages .bubble').textContent=assistant.greeting||'Welcome. I can help you explore the website.';
+  const suggestionButtons=[...document.querySelectorAll('.suggestions [data-question]')];
+  if(suggestionButtons[0]){suggestionButtons[0].textContent=assistant.suggestionOneLabel||'Get in touch';suggestionButtons[0].dataset.question=assistant.suggestionOne||'How can I get in touch?';}
+  if(suggestionButtons[1]){suggestionButtons[1].textContent=assistant.suggestionTwoLabel||'Services';suggestionButtons[1].dataset.question=assistant.suggestionTwo||'Which services are available?';}
   const heroImages=(site.images||[]).filter(image=>image.hero);
   if($('.hero-background')&&heroImages.length)$('.hero-background').innerHTML=heroImages.map((image,index)=>`<img src="${html(image.src)}" alt="" class="hero-slide ${index?'':'active'}" ${index?'loading="eager"':'fetchpriority="high"'}>`).join('');
   if($('.hero-copy .eyebrow'))$('.hero-copy .eyebrow').textContent=site.hero?.eyebrow||'';

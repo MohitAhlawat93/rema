@@ -48,6 +48,11 @@ export default async function handler(req,res){
       return send(res,200,{authenticated:true,owner:{name:'witness_lema_',role:'Owner'},state});
     }
     if(!protectedRoute(req,res))return;
+    if(route==='ai-status'){
+      if(req.method!=='GET')return send(res,405,{error:'Use GET.'});
+      const groq=Boolean(process.env.GROQ_API_KEY),xai=Boolean(process.env.XAI_API_KEY);
+      return send(res,200,{configured:groq||xai,provider:groq?'Groq':'xAI Grok',model:process.env.AI_MODEL||(groq?'llama-3.3-70b-versatile':'grok-4.7')});
+    }
     if(route==='state'){
       if(req.method==='GET')return send(res,200,await callAdminBackend('read'));
       if(req.method==='PUT')return send(res,200,await callAdminBackend('save',{body:readBody(req).state}));
