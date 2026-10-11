@@ -5,10 +5,19 @@ const $ = s => document.querySelector(s);
 const html = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const previewMode=new URLSearchParams(location.search).get('admin_preview')==='1';
 let previewAuthorized=false;
-try{
-  const response=await fetch('/api/site-content'+(previewMode?'?preview=1':''));
-  if(response.ok){const data=await response.json();Object.assign(site,data.payload||{});if(data.preview){previewAuthorized=true;document.documentElement.classList.add('admin-preview');}}
-}catch{/* Bundled content remains a reliable fallback. */}
+// Public visitor controls must not wait for live site content on slow mobile networks.
+let liveSiteContent=null;
+if(previewMode){
+  // Preserve authorization before displaying any private admin draft.
+  try{
+    const response=await fetch('/api/site-content?preview=1');
+    if(response.ok){const data=await response.json();Object.assign(site,data.payload||{});if(data.preview){previewAuthorized=true;document.documentElement.classList.add('admin-preview');}}
+  }catch{/* Keep bundled content as fallback. */}
+}else{
+  liveSiteContent=fetch('/api/site-content')
+    .then(async response=>response.ok?(await response.json()).payload||null:null)
+    .catch(()=>null);
+}
 function serviceMarkup(item,index){return `<article class="service-card">${item.image?`<img src="${html(item.image)}" alt="" width="900" height="1100" loading="lazy" decoding="async">`:''}<div class="service-card-copy"><span class="index">${html(item.number||String(index+1).padStart(2,'0'))}</span><h2>${html(item.title)}</h2><p>${html(item.text)}</p><span class="tag">${html(item.tag||'')}</span></div></article>`;}
 function tileMarkup(image,index){return `<figure class="gallery-tile"><button class="photo" data-photo="${index}" aria-label="View ${html(image.title)}"><img src="${html(image.src)}" alt="${html(image.alt)}" width="900" height="1100" loading="lazy" decoding="async"></button><figcaption><span>${html(image.title)}</span><span class="caption-kind">${html(image.category)}</span></figcaption></figure>`;}
 function permittedUrl(value){try{const u=new URL(String(value));return u.protocol==='https:'?u.href:'';}catch{return '';}}
@@ -70,6 +79,12 @@ function hydratePublishedContent(){
   if(previewMode&&document.documentElement.classList.contains('admin-preview'))document.body.insertAdjacentHTML('afterbegin','<div class="admin-preview-bar">Private Draft Preview · <a href="/admin">Return to Control</a></div>');
 }
 hydratePublishedContent();
+if(liveSiteContent)void liveSiteContent.then(payload=>{
+  if(!payload)return;
+  Object.assign(site,payload);
+  hydratePublishedContent();
+  refreshContactAction();
+});
 // Published guest reviews are managed independently of site draft versions.
 if(document.querySelector('[data-public-reviews]')){
   void fetch('/api/reviews',{cache:'no-store'}).then(async response=>{
@@ -114,7 +129,18 @@ menu.addEventListener('click',()=>setMenu(menu.getAttribute('aria-expanded')!=='
 nav.addEventListener('click',()=>setMenu(false));
 const launcher=$('#assistant-launch'),panel=$('#assistant-panel'),question=$('#question'),messages=$('#messages');
 const chatHistory=[];
-function setAssistant(open,focus=true){panel.hidden=!open;launcher.hidden=open;launcher.setAttribute('aria-expanded',String(open));panel.setAttribute('aria-hidden',String(!open));panel.classList.toggle('open',open);if(focus)(open?question:launcher).focus();}
+const mobileChat=()=>window.matchMedia('(max-width:640px)').matches;
+function setAssistant(open,focus=true){
+  if(!open&&document.activeElement===question)question.blur();
+  panel.hidden=!open;
+  launcher.hidden=open;
+  launcher.setAttribute('aria-expanded',String(open));
+  panel.setAttribute('aria-hidden',String(!open));
+  panel.classList.toggle('open',open);
+  document.body.classList.toggle('chat-visible',open);
+  // Avoid the keyboard abruptly resizing the chat as soon as it opens on mobile.
+  if(focus)(open?(mobileChat()?$('#assistant-minimize'):question):launcher).focus();
+}
 const autoChatKey='lema-concierge-first-visit-v3';
 const chatSeen=()=>{try{return sessionStorage.getItem(autoChatKey)==='1';}catch{return false;}};
 const markChatSeen=()=>{try{sessionStorage.setItem(autoChatKey,'1');}catch{}};
@@ -129,7 +155,7 @@ launcher.addEventListener('click',()=>{markChatSeen();setAssistant(true);});
 if(!chatSeen())window.setTimeout(()=>{autoChatReady=true;attemptAutoChat();},1500);
 document.addEventListener('visibilitychange',attemptAutoChat);
 $('#assistant-minimize').addEventListener('click',()=>setAssistant(false));
-$('#assistant-expand').addEventListener('click',()=>{const expanded=panel.classList.toggle('expanded');$('#assistant-expand').setAttribute('aria-pressed',String(expanded));$('#assistant-expand').setAttribute('aria-label',expanded?'Shrink chat':'Expand chat');question.focus();});
+$('#assistant-expand').addEventListener('click',()=>{const expanded=panel.classList.toggle('expanded');$('#assistant-expand').setAttribute('aria-pressed',String(expanded));$('#assistant-expand').setAttribute('aria-label',expanded?'Shrink chat':'Expand chat');if(!mobileChat())question.focus();});
 function bubble(text,user=false,href=''){const p=document.createElement('p');p.className='bubble'+(user?' user':'');p.textContent=String(text||'');if(href&&/^\/(?:[\w/-]*)$/.test(href)){const a=document.createElement('a');a.href=href;a.textContent='Explore this page ↗';p.append(a);}messages.append(p);while(messages.children.length>40)messages.firstElementChild.remove();messages.scrollTop=messages.scrollHeight;return p;}
 async function ask(text){
   const clean=String(text||'').trim();if(!clean||question.disabled)return;
@@ -137,9 +163,12 @@ async function ask(text){
   const history=chatHistory.slice(-6);
   bubble(clean,true);chatHistory.push({role:'user',content:clean});
   question.value='';question.disabled=true;
-  const pending=bubble('Lema Concierge is composing a reply…');
+  if(mobileChat()&&document.activeElement===question)question.blur();
+  const pending=bubble('Thinking');
+  pending.classList.add('pending');
+  pending.setAttribute('role','status');
   try{
-    const response=await fetch('/api/assistant',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:clean,language:$('#assistant-language').value,history}),signal:AbortSignal.timeout(17000)});
+    const response=await fetch('/api/assistant',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:clean,language:$('#assistant-language').value,history}),signal:AbortSignal.timeout(14000)});
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(data.error||'Assistant temporarily unavailable.');
     pending.remove();bubble(data.answer||'Please ask again in a different way.',false,data.href);
@@ -149,7 +178,7 @@ async function ask(text){
     const message='Sorry, the chat connection is having a moment. Please try again, or ask in another way. You can also reach Lema from the Contact page.';
     bubble(message,false,'/contact/');
     chatHistory.push({role:'assistant',content:message});
-  }finally{question.disabled=false;question.focus();}
+  }finally{question.disabled=false;if(!mobileChat()&&!panel.hidden)question.focus();}
 }
 $('#assistant-form').addEventListener('submit',e=>{e.preventDefault();void ask(question.value);});
 document.querySelectorAll('[data-question]').forEach(b=>b.addEventListener('click',()=>ask(b.dataset.question)));
@@ -164,9 +193,20 @@ const viewer=$('#photo-viewer');let index=0,returnFocus=null;
 function visibleIndices(){return [...document.querySelectorAll('[data-photo]')].filter(b=>!b.closest('figure').hidden).map(b=>Number(b.dataset.photo));}
 function renderPhoto(){const im=site.images[index];$('#photo-image').src=im.src;$('#photo-image').alt=im.alt;const visible=visibleIndices();$('#photo-caption').textContent=`${im.title} · ${visible.indexOf(index)+1} / ${visible.length}`;}
 function stepPhoto(delta){const visible=visibleIndices();index=visible[(visible.indexOf(index)+delta+visible.length)%visible.length];renderPhoto();}
-document.querySelectorAll('[data-photo]').forEach(b=>b.addEventListener('click',()=>{index=Number(b.dataset.photo);returnFocus=b;renderPhoto();viewer.showModal();$('#photo-close').focus();}));
+// Delegated listeners survive gallery tiles replaced by published site content.
+document.addEventListener('click',event=>{
+ const b=event.target.closest?.('[data-photo]');
+ if(!b)return;
+ index=Number(b.dataset.photo);returnFocus=b;renderPhoto();viewer.showModal();$('#photo-close').focus();
+});
 $('#photo-close').addEventListener('click',()=>viewer.close());viewer.addEventListener('close',()=>returnFocus?.focus());$('#photo-prev').addEventListener('click',()=>stepPhoto(-1));$('#photo-next').addEventListener('click',()=>stepPhoto(1));viewer.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')stepPhoto(-1);if(e.key==='ArrowRight')stepPhoto(1);});
-document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-filter]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-pressed',String(x===b));});document.querySelectorAll('[data-photo]').forEach(x=>{x.closest('figure').hidden=b.dataset.filter!=='All'&&site.images[Number(x.dataset.photo)].category!==b.dataset.filter;});$('[data-gallery-status]').textContent=`Showing ${visibleIndices().length} images`;}));
+document.addEventListener('click',event=>{
+ const b=event.target.closest?.('.filters [data-filter]');
+ if(!b)return;
+ document.querySelectorAll('[data-filter]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-pressed',String(x===b));});
+ document.querySelectorAll('[data-photo]').forEach(x=>{x.closest('figure').hidden=b.dataset.filter!=='All'&&site.images[Number(x.dataset.photo)].category!==b.dataset.filter;});
+ $('[data-gallery-status]').textContent=`Showing ${visibleIndices().length} images`;
+});
 $('#review-form')?.addEventListener('submit',async event=>{
   event.preventDefault();
   const form=event.currentTarget;
