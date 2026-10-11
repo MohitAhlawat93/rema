@@ -125,3 +125,28 @@ test('missing SEO defaults cannot disable the rest of the admin dashboard',async
 test('do not invoke forEach on a single DOM element',()=>{
  assert.doesNotMatch(code,/(?<!\$)\$\('\[data-(?:tab|seo-field|seo-paragraph)\]'\)\.forEach/);
 });
+
+test('Save Draft keeps unfinished SEO and Publish still rejects it',async()=>{
+ const ui=dashboard();
+ await initialized(ui);
+ ui.fields[0].value='';
+ ui.fields[0].oninput();
+ await ui.saves[0].onclick();
+ assert.match(ui.element('[data-notice]').textContent,/Draft saved privately/);
+ const puts=ui.calls.filter(x=>x.url==='/api/admin/state'&&x.method==='PUT').length;
+ assert.equal(puts,1,'incomplete draft must be saved');
+ await ui.element('[data-publish]').onclick();
+ assert.match(ui.element('[data-notice]').textContent,/SEO title for Home/);
+ assert.equal(ui.calls.filter(x=>x.url==='/api/admin/state'&&x.method==='POST').length,0,'invalid draft must not publish');
+});
+test('backend distinguishes save from publish and gives precise client-safe errors',async()=>{
+ const [edge,backend,route]=await Promise.all([
+   readFile(new URL('../supabase/functions/witness-lema-admin/index.ts',import.meta.url),'utf8'),
+   readFile(new URL('../lib/admin-backend.js',import.meta.url),'utf8'),
+   readFile(new URL('../api/admin/[route].js',import.meta.url),'utf8')
+ ]);
+ assert.match(edge,/if\(action==='save'\)\{[\s\S]*?Drafts are private/);
+ assert.match(edge,/if\(action==='publish'\)\{[\s\S]*?const current=await rpc\('witness_lema_admin_state'/);
+ assert.match(backend,/statusCode: 409/);
+ assert.match(route,/\[400,409,413\]/);
+});

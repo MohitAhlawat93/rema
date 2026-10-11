@@ -54,7 +54,17 @@ Deno.serve(async(req)=>{
       return json({ok:true});
     }
     if(action==='save'){
-      const payload=input.body?.draft??input.body;
+      // Drafts are private, so incomplete fields may be safely saved for later.
+      // Publication performs the full, strict website safety validation below.
+      const payload=input.body?.draft;
+      if(!payload||typeof payload!=='object'||Array.isArray(payload))
+        return json({error:'Invalid draft. Please reload your workspace.'},400);
+      if(JSON.stringify(payload).length>500000)
+        return json({error:'Draft is too large. Remove some content before saving.'},413);
+    }
+    if(action==='publish'){
+      const current=await rpc('witness_lema_admin_state',{action:'read',body:{}});
+      const payload=current?.draft;
       if(!payload||typeof payload!=='object'||Array.isArray(payload))return json({error:'Invalid draft'},400);
       const validLink=(value)=>typeof value==='string'&&value.length<=2048&&(value===''||/^https:\/\/[^\s]+$/i.test(value));
       const safePath=(value)=>typeof value==='string'&&value.length<=300&&/^\/(?:[a-z0-9/_-]*|)$/i.test(value);

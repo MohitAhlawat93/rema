@@ -143,7 +143,7 @@ function renderPendingReviews(){
     button.disabled=true;
     let saved=false;
     try{
-      validateDraft();
+      // Approval saves to a private draft; full validation happens on Publish.
       const updated=await api('state',{method:'PUT',body:JSON.stringify({state:state.draft,expectedVersion:state.version})});
       state=updated;dirty=false;saved=true;
       renderAll();
@@ -211,8 +211,8 @@ async function loadWorkspace(){
   }
 }
 function validateDraft(){validateSeoDraft();validateEditorialControls();if(!(state.draft.images||[]).some(image=>image.hero))throw new Error('Choose at least one Home hero photograph.');if((state.draft.aboutImages||[]).length!==3)throw new Error('Choose exactly three About photographs.');if(!(state.draft.services||[]).every(item=>item.title&&item.text))throw new Error('Every service needs a title and description.');if(!state.draft.assistant?.name?.trim())throw new Error('The assistant needs a public name.');if(!state.draft.assistant?.greeting?.trim())throw new Error('The assistant needs a welcome message.');}
-async function saveDraft(){try{validateDraft();notice('Saving private draft…');state=await api('state',{method:'PUT',body:JSON.stringify({state:state.draft,expectedVersion:state.version})});dirty=false;renderAll();notice('Draft saved privately. Nothing was published.','success');}catch(error){notice(error.message,'error');}}
-async function publish(){try{if(dirty)await saveDraft();if(dirty)return;if(!confirm('Publish the saved draft to the live website now?'))return;notice('Publishing website…');state=await api('state',{method:'POST',body:JSON.stringify({action:'publish',expectedVersion:state.version})});renderAll();notice('Published successfully. Visitors now see version '+state.publishedVersion+'.','success');}catch(error){notice(error.message,'error');}}
+async function saveDraft(){try{notice('Saving private draft…');state=await api('state',{method:'PUT',body:JSON.stringify({state:state.draft,expectedVersion:state.version})});dirty=false;renderAll();notice('Draft saved privately. Nothing was published.','success');}catch(error){notice(error.message,'error');}}
+async function publish(){try{if(dirty)await saveDraft();if(dirty)return;validateDraft();if(!confirm('Publish the saved draft to the live website now?'))return;notice('Publishing website…');state=await api('state',{method:'POST',body:JSON.stringify({action:'publish',expectedVersion:state.version})});renderAll();notice('Published successfully. Visitors now see version '+state.publishedVersion+'.','success');}catch(error){notice(error.message,'error');}}
 async function restoreVersion(version){try{if(!confirm('Restore version '+version+' to Draft? The live website will stay unchanged.'))return;state=await api('state',{method:'POST',body:JSON.stringify({action:'restore',version})});renderAll();notice('Older version restored to Draft. Preview it before publishing.','success');}catch(error){notice(error.message,'error');}}
 async function saveAnswers(){try{notice('Saving assistant answers…');const result=await api('knowledge',{method:'PUT',body:JSON.stringify({items:knowledge})});notice('Saved '+result.saved+' assistant answers. They are live now.','success');}catch(error){notice(error.message,'error');}}
 async function optimise(file){const image=await createImageBitmap(file);const max=1600,scale=Math.min(1,max/Math.max(image.width,image.height));const canvas=document.createElement('canvas');canvas.width=Math.round(image.width*scale);canvas.height=Math.round(image.height*scale);canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);image.close();return canvas.toDataURL('image/jpeg',.86);}
