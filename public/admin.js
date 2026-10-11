@@ -1,6 +1,7 @@
 const $=selector=>document.querySelector(selector);
 const $$=selector=>[...document.querySelectorAll(selector)];
-let state=null,knowledge=[],pendingReviews=[],dirty=false,seoDefaults=null,seoCurrent='/';
+let state=null,knowledge=[],pendingReviews=[],dirty=false,seoDefaults=null,seoCurrent='/',savedDraftSnapshot='',savingDraft=null;
+const hasUnsavedDraft=()=>Boolean(state)&&(dirty||JSON.stringify(state.draft)!==savedDraftSnapshot);
 const clone=value=>JSON.parse(JSON.stringify(value));
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const notice=(text,type='')=>{const el=$('[data-notice]');if(!el)return;el.textContent=text;el.className='notice '+type;};
@@ -184,6 +185,7 @@ async function loadWorkspace(){
   const session=await api('session');
   if(!session?.state?.draft)throw new Error('Your private workspace is unavailable.');
   state=session.state;
+  savedDraftSnapshot=JSON.stringify(state.draft);
   initializeEditableSections();
   showDashboard();
   // Neither optional assistant knowledge nor SEO defaults should prevent
@@ -203,16 +205,60 @@ async function loadWorkspace(){
   if(seoWarning)seoWarning.hidden=Boolean(seoDefaults);
   void loadAiStatus();
   void loadPendingReviews();
-  dirty=false;
+  dirty=hasUnsavedDraft();
   if(!seoDefaults||answers.status!=='fulfilled'){
     notice('Dashboard ready. Some optional settings did not load; refresh before editing those sections.','');
   }else{
-    notice('Private workspace connected. Live website version '+state.publishedVersion+'.','success');
+    notice(dirty?'Workspace ready. Save draft to keep newly initialized settings.':'Private workspace connected. Live website version '+state.publishedVersion+'.',dirty?'':'success');
   }
 }
 function validateDraft(){validateSeoDraft();validateEditorialControls();if(!(state.draft.images||[]).some(image=>image.hero))throw new Error('Choose at least one Home hero photograph.');if((state.draft.aboutImages||[]).length!==3)throw new Error('Choose exactly three About photographs.');if(!(state.draft.services||[]).every(item=>item.title&&item.text))throw new Error('Every service needs a title and description.');if(!state.draft.assistant?.name?.trim())throw new Error('The assistant needs a public name.');if(!state.draft.assistant?.greeting?.trim())throw new Error('The assistant needs a welcome message.');}
-async function saveDraft(){try{notice('Saving private draft…');state=await api('state',{method:'PUT',body:JSON.stringify({state:state.draft,expectedVersion:state.version})});dirty=false;renderAll();notice('Draft saved privately. Nothing was published.','success');}catch(error){notice(error.message,'error');}}
-async function publish(){try{if(dirty)await saveDraft();if(dirty)return;validateDraft();if(!confirm('Publish the saved draft to the live website now?'))return;notice('Publishing website…');state=await api('state',{method:'POST',body:JSON.stringify({action:'publish',expectedVersion:state.version})});renderAll();notice('Published successfully. Visitors now see version '+state.publishedVersion+'.','success');}catch(error){notice(error.message,'error');}}
+async function saveDraft(){
+  if(savingDraft)return savingDraft;
+  savingDraft=(async()=>{
+    try{
+      notice('Saving private draft…');
+      const snapshot=JSON.stringify(state.draft);
+      const stored=await api('state',{method:'PUT',body:JSON.stringify({state:JSON.parse(snapshot),expectedVersion:state.version})});
+      const laterEdits=JSON.stringify(state.draft)!==snapshot;
+      const latestDraft=state.draft;
+      state=stored;
+      savedDraftSnapshot=JSON.stringify(stored.draft);
+      if(laterEdits)state.draft=latestDraft;
+      dirty=laterEdits;
+      renderAll();
+      notice(laterEdits?'Earlier changes saved. Save again to keep the latest edits.':'Draft saved privately. Nothing was published.',laterEdits?'':'success');
+      return !laterEdits;
+    }catch(error){
+      if(/SEO |search|related page/i.test(error.message))switchTab('seo');
+      notice(error.message||'Could not save draft. Your edits remain in this browser.','error');
+      return false;
+    }
+  })();
+  try{return await savingDraft;}finally{savingDraft=null;}
+}
+async function publish(){
+  if(hasUnsavedDraft()&&!(await saveDraft()))return;
+  try{
+    validateDraft();
+    if(!confirm('Publish the saved draft to the live website now?'))return;
+    notice('Publishing website…');
+    state=await api('state',{method:'POST',body:JSON.stringify({action:'publish',expectedVersion:state.version})});
+    savedDraftSnapshot=JSON.stringify(state.draft);
+    dirty=false;
+    renderAll();
+    notice('Published successfully. Visitors now see version '+state.publishedVersion+'.','success');
+  }catch(error){
+    const message=error.message||'Could not publish.';
+    if(/SEO |paragraph|related page|search/i.test(message))switchTab('seo');
+    else if(/photo|hero|image/i.test(message))switchTab('photos');
+    else if(/service/i.test(message))switchTab('services');
+    else if(/review|permission/i.test(message))switchTab('reviews');
+    else if(/social|channel|Afterhours|contact link/i.test(message))switchTab('links');
+    else if(/assistant/i.test(message))switchTab('assistant');
+    notice(message,'error');
+  }
+}
 async function restoreVersion(version){try{if(!confirm('Restore version '+version+' to Draft? The live website will stay unchanged.'))return;state=await api('state',{method:'POST',body:JSON.stringify({action:'restore',version})});renderAll();notice('Older version restored to Draft. Preview it before publishing.','success');}catch(error){notice(error.message,'error');}}
 async function saveAnswers(){try{notice('Saving assistant answers…');const result=await api('knowledge',{method:'PUT',body:JSON.stringify({items:knowledge})});notice('Saved '+result.saved+' assistant answers. They are live now.','success');}catch(error){notice(error.message,'error');}}
 async function optimise(file){const image=await createImageBitmap(file);const max=1600,scale=Math.min(1,max/Math.max(image.width,image.height));const canvas=document.createElement('canvas');canvas.width=Math.round(image.width*scale);canvas.height=Math.round(image.height*scale);canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);image.close();return canvas.toDataURL('image/jpeg',.86);}
@@ -224,8 +270,11 @@ $('[data-seo-page]').onchange=event=>{seoCurrent=event.target.value;renderSeoEdi
 $('[data-publish-seo]').onclick=publish;
 $$('[data-save]').forEach(button=>button.onclick=saveDraft);
 $('[data-publish]').onclick=publish;
-$('[data-preview]').onclick=()=>window.open('/?admin_preview=1','_blank','noopener');
-$('[data-refresh]').onclick=async()=>{try{await loadWorkspace();}catch(error){notice(error.message,'error');}};
+$('[data-preview]').onclick=()=>{
+  if(hasUnsavedDraft()){notice('Save draft before previewing. Your changes are still in this browser.','error');return;}
+  window.open('/?admin_preview=1','_blank','noopener');
+};
+$('[data-refresh]').onclick=async()=>{if(hasUnsavedDraft()&&!confirm('Discard unsaved changes and reload the workspace?'))return;try{await loadWorkspace();}catch(error){notice(error.message,'error');}};
 $$('[data-add-link]').forEach(button=>button.onclick=()=>{editableLinks(button.dataset.addLink).push({label:'',url:''});renderLinks();setDirty();});
 $('[data-review-queue-refresh]').onclick=loadPendingReviews;
 $('[data-add-review]').onclick=()=>{state.draft.reviews.unshift({author:'',textEn:'',textHi:'',consent:false,published:false});renderReviews();setDirty();};
@@ -234,5 +283,5 @@ $('[data-add-answer]').onclick=()=>{knowledge.unshift({question:'',answer:'',key
 $('[data-save-answers]').onclick=saveAnswers;
 $('[data-upload]').onclick=uploadPhoto;
 $('[data-logout]').onclick=async()=>{await api('logout',{method:'POST',body:'{}'});state=null;showLogin('You have been signed out.');};
-window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
+window.addEventListener('beforeunload',event=>{if(hasUnsavedDraft()){event.preventDefault();event.returnValue='';}});
 loadWorkspace().catch(()=>showLogin());
