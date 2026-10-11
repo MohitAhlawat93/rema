@@ -40,6 +40,19 @@ try{
   await page.locator('#assistant-panel').waitFor({state:'visible',timeout:3000});
   await ctx.close();
  });
+ await run('Reviews SEO is visible in page source, metadata and sitemap',async()=>{
+  const context=await browser.newContext({viewport:{width:1300,height:850}});
+  const page=await context.newPage();
+  await page.goto(root+'/reviews/');
+  assert.match(await page.title(),/Guest Reviews/);
+  assert.equal(await page.locator('link[rel="canonical"]').getAttribute('href'),'https://rema-ruby.vercel.app/reviews/');
+  assert.match(await page.locator('meta[name="description"]').getAttribute('content'),/visitor-submitted reviews/);
+  assert.match(await page.locator('meta[name="robots"]').getAttribute('content'),/index, follow/);
+  assert.equal(await page.locator('.seo-editorial h2').count(),1);
+  const xml=await page.evaluate(async()=>await (await fetch('/sitemap.xml')).text());
+  assert.ok(xml.includes('https://rema-ruby.vercel.app/reviews/'));
+  await context.close();
+ });
  await run('WhatsApp contact link and enquiry message work on desktop',async()=>{
   const context=await browser.newContext({viewport:{width:1200,height:850}});
   await context.addInitScript(()=>{window.__whatsappOpened='';window.open=(url)=>{window.__whatsappOpened=url;return null;};});
