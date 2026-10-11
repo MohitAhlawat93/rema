@@ -87,5 +87,5 @@ export default async function handler(req,res){
       return send(res,405,{error:'Unsupported method.'});
     }
     return send(res,404,{error:'Unknown admin route.'});
-  }catch(error){return send(res,500,{error:'Request could not be completed. Please refresh and retry.'});}
+  }catch(error){const status=[400,409,413].includes(error?.statusCode)?error.statusCode:500;return send(res,status,{error:status===500?'Request could not be completed. Please refresh and retry.':error.message});}
 }
