@@ -1,39 +1,40 @@
-// Witness Lema SEO settings, adapted from Rebecca's config-first design.
-// Edit titles/descriptions here, then commit once to trigger a single Vercel build.
+// Witness Lema SEO settings (developer fallbacks).
+// Prefer editing titles, descriptions and images through the private /admin
+// Google SEO dashboard — no code or redeploy required for published changes.
 const pages = {
   '/': {
-    title: 'Witness Lema | Kenyan Companion in Gurgaon',
-    description: 'Explore Witness Lema’s official Gurgaon website, including her introduction, portrait gallery, available services and contact options.',
+    title: 'Witness Lema | Independent Kenyan Companion in Gurgaon',
+    description: 'Independent Kenyan companion in Gurgaon. Private incalls, outcalls, overnight stays and personal experiences. Discreet, warm and direct.',
     index: true, image: '/images/gallery/portrait-01.jpg'
   },
   '/about/': {
-    title: 'About Witness Lema | Kenyan Companion in Gurgaon',
-    description: 'Read Witness Lema’s introduction, learn about her Kenyan background and explore her profile and curated photographs.',
+    title: 'About Witness Lema | Black Kenyan Companion Gurgaon',
+    description: 'Meet Witness Lema — a warm Black Kenyan companion based in Gurgaon. Genuine connection, private meetings and complete discretion.',
     index: true, image: '/images/gallery/portrait-17.jpg'
   },
   '/gallery/': {
-    title: 'Witness Lema Photo Gallery | Portraits and Lifestyle',
-    description: 'Browse the Witness Lema gallery, with selected portraits and lifestyle photographs presented in an easy-to-explore collection.',
+    title: 'Witness Lema Gallery | Kenyan Companion Photos Gurgaon',
+    description: 'Official portraits and lifestyle photographs of Witness Lema, independent Kenyan companion in Gurgaon.',
     index: true, image: '/images/gallery/portrait-02.jpg'
   },
   '/services/': {
-    title: 'Witness Lema Services | Gurgaon Companion Experiences',
-    description: 'Read the currently published Witness Lema service options, descriptions and starting prices, and find out how to confirm the details.',
+    title: 'Witness Lema Services | Incall Outcall Overnight Gurgaon',
+    description: 'Private incall, outcall, overnight, dinner date, video call and custom experiences with Witness Lema in Gurgaon. Clear starting rates.',
     index: true, image: '/images/gallery/portrait-06.jpg'
   },
   '/contact/': {
-    title: 'Contact Witness Lema | Official Contact Options',
-    description: 'Find Witness Lema’s published contact links and prepare an enquiry to copy and send using your preferred contact channel.',
+    title: 'Contact Witness Lema | Independent Companion Gurgaon',
+    description: 'Contact Witness Lema directly on WhatsApp for private meetings in Gurgaon. Independent Kenyan companion — discreet and responsive.',
     index: true, image: '/images/gallery/portrait-03.jpg'
   },
   '/privacy/': {
     title: 'Privacy Notice | Witness Lema',
-    description: 'Read how the Witness Lema website handles enquiries, assistant questions and third-party hosting.',
+    description: 'How the Witness Lema website handles enquiries and third-party services.',
     index: false, image: '/images/gallery/portrait-01.jpg'
   },
   '/404/': {
     title: 'Page Not Found | Witness Lema',
-    description: 'This page is not available. Explore the Witness Lema website using the main navigation.',
+    description: 'This page is not available. Use the main navigation to continue.',
     index: false, image: '/images/gallery/portrait-01.jpg'
   }
 };
