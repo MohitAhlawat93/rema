@@ -44,12 +44,12 @@ function renderSeoEditor(){
   initializeSeo();
   const e=seoEntry();if(!e)return;
   $('[data-seo-page]').value=seoCurrent;
-  $('[data-seo-field]').forEach(input=>{
+  $$('[data-seo-field]').forEach(input=>{
     if(input.dataset.seoField==='image')return;
     input.value=e[input.dataset.seoField]||'';
     input.oninput=()=>{e[input.dataset.seoField]=input.value;setDirty();updateSeoPreview();};
   });
-  $('[data-seo-paragraph]').forEach(input=>{
+  $$('[data-seo-paragraph]').forEach(input=>{
     const index=Number(input.dataset.seoParagraph);
     input.value=e.paragraphs?.[index]||'';
     input.oninput=()=>{
@@ -68,7 +68,7 @@ function renderSeoEditor(){
   indexer.onchange=()=>{e.index=indexer.checked;setDirty();updateSeoPreview();};
   const related=$('[data-seo-related]');
   related.innerHTML=Object.entries(seoNames).filter(([r])=>r!==seoCurrent).map(([route,name])=>
-    '<label><input type="checkbox" data-seo-link="'+esc(route)+'" '+(e.links||[]).some(x=>x.href===route?'checked':'')+'>'+esc(name)+'</label>').join('');
+    '<label><input type="checkbox" data-seo-link="'+esc(route)+'" '+((e.links||[]).some(x=>x.href===route)?'checked':'')+'>'+esc(name)+'</label>').join('');
   related.querySelectorAll('[data-seo-link]').forEach(input=>input.onchange=()=>{
     e.links=[...related.querySelectorAll('[data-seo-link]:checked')].map(node=>({href:node.dataset.seoLink,label:'Explore '+seoNames[node.dataset.seoLink]}));
     setDirty();updateSeoPreview();
@@ -88,7 +88,34 @@ function validateSeoDraft(){
 }
 function renderAll(){populateProfile();renderServices();renderPhotos();renderAnswers();renderHistory();renderSeoEditor();$('[data-version]').textContent=state.version;$('[data-published-version]').textContent=state.publishedVersion;$('[data-photo-count]').textContent=state.draft.images?.length||0;$('[data-answer-count]').textContent=knowledge.length;}
 async function loadAiStatus(){try{const status=await api('ai-status');$('[data-ai-status]').textContent=status.configured?status.provider+' connected':'Knowledge-only mode';$('[data-ai-detail]').textContent=status.configured?`${status.model} · API key is stored securely on the server.`:'Add a server-side Groq or xAI key to enable conversational answers.';}catch{$('[data-ai-status]').textContent='Status unavailable';}}
-async function loadWorkspace(){const session=await api('session');state=session.state;const [answers,defaultsResponse]=await Promise.all([api('knowledge'),fetch('/seo-defaults.json',{cache:'no-store'})]);knowledge=answers.items||[];if(!defaultsResponse.ok)throw new Error('Search settings could not load. Refresh the dashboard.');seoDefaults=await defaultsResponse.json();initializeSeo();showDashboard();renderAll();void loadAiStatus();dirty=false;notice('Private workspace connected. Live website version '+state.publishedVersion+'.','success');}
+async function loadWorkspace(){
+  const session=await api('session');
+  if(!session?.state?.draft)throw new Error('Your private workspace is unavailable.');
+  state=session.state;
+  showDashboard();
+  // Neither optional assistant knowledge nor SEO defaults should prevent
+  // the entire owner dashboard from opening if one request fails.
+  const [answers,defaults]=await Promise.allSettled([
+    api('knowledge'),
+    fetch('/seo-defaults.json',{cache:'no-store'}).then(response=>{
+      if(!response.ok)throw new Error('Search settings are unavailable.');
+      return response.json();
+    })
+  ]);
+  knowledge=answers.status==='fulfilled'?(answers.value.items||[]):[];
+  seoDefaults=defaults.status==='fulfilled'&&defaults.value?.pages?defaults.value:null;
+  initializeSeo();
+  renderAll();
+  const seoWarning=$('[data-seo-loading-error]');
+  if(seoWarning)seoWarning.hidden=Boolean(seoDefaults);
+  void loadAiStatus();
+  dirty=false;
+  if(!seoDefaults||answers.status!=='fulfilled'){
+    notice('Dashboard ready. Some optional settings did not load; refresh before editing those sections.','');
+  }else{
+    notice('Private workspace connected. Live website version '+state.publishedVersion+'.','success');
+  }
+}
 function validateDraft(){validateSeoDraft();if(!(state.draft.images||[]).some(image=>image.hero))throw new Error('Choose at least one Home hero photograph.');if((state.draft.aboutImages||[]).length!==3)throw new Error('Choose exactly three About photographs.');if(!(state.draft.services||[]).every(item=>item.title&&item.text))throw new Error('Every service needs a title and description.');if(!state.draft.assistant?.name?.trim())throw new Error('The assistant needs a public name.');if(!state.draft.assistant?.greeting?.trim())throw new Error('The assistant needs a welcome message.');}
 async function saveDraft(){try{validateDraft();notice('Saving private draft…');state=await api('state',{method:'PUT',body:JSON.stringify({state:state.draft,expectedVersion:state.version})});dirty=false;renderAll();notice('Draft saved privately. Nothing was published.','success');}catch(error){notice(error.message,'error');}}
 async function publish(){try{if(dirty)await saveDraft();if(dirty)return;if(!confirm('Publish the saved draft to the live website now?'))return;notice('Publishing website…');state=await api('state',{method:'POST',body:JSON.stringify({action:'publish',expectedVersion:state.version})});renderAll();notice('Published successfully. Visitors now see version '+state.publishedVersion+'.','success');}catch(error){notice(error.message,'error');}}
@@ -98,7 +125,7 @@ async function optimise(file){const image=await createImageBitmap(file);const ma
 async function uploadPhoto(){const input=$('[data-photo-file]'),status=$('[data-upload-status]'),file=input.files?.[0];if(!file)return status.textContent='Choose a photograph first.';try{status.textContent='Optimising and uploading…';const dataUrl=await optimise(file);const result=await api('upload',{method:'POST',body:JSON.stringify({name:file.name,dataUrl})});state.draft.images.push({src:result.url,storagePath:result.path,alt:'Portrait of witness_lema_',title:file.name.replace(/\.[^.]+$/,''),category:'Portrait',hero:false,reference:false});renderPhotos();setDirty();status.textContent='Uploaded and added to Draft. Save the draft when ready.';input.value='';}catch(error){status.textContent=error.message;notice(error.message,'error');}}
 $('[data-login-form]').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget;const data=new FormData(form);const message=$('[data-login-message]');message.textContent='Signing in…';try{await api('login',{method:'POST',body:JSON.stringify({loginId:data.get('loginId'),password:data.get('password')})});form.reset();await loadWorkspace();}catch(error){message.textContent=error.message;}});
 $('[data-password-toggle]').onclick=()=>{const input=$('[name="password"]'),show=input.type==='password';input.type=show?'text':'password';$('[data-password-toggle]').textContent=show?'Hide':'Show';$('[data-password-toggle]').setAttribute('aria-label',show?'Hide password':'Show password');input.focus();};
-$('[data-tab]').forEach(button=>button.onclick=()=>switchTab(button.dataset.tab));
+$$('[data-tab]').forEach(button=>button.onclick=()=>switchTab(button.dataset.tab));
 $('[data-seo-page]').onchange=event=>{seoCurrent=event.target.value;renderSeoEditor();};
 $('[data-publish-seo]').onclick=publish;
 $$('[data-save]').forEach(button=>button.onclick=saveDraft);
