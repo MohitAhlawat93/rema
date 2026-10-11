@@ -17,8 +17,8 @@ try{
     await page.goto(root+'/');
     await page.locator('#assistant-panel').waitFor({state:'visible',timeout:10000});
     const bounds=await page.locator('#assistant-panel').boundingBox();
-    assert.ok(bounds&&bounds.width<= (profile.isMobile?288:308),JSON.stringify(bounds));
-    assert.ok(bounds.height<= (profile.isMobile?347:361),JSON.stringify(bounds));
+    assert.ok(bounds&&bounds.width<= (profile.isMobile?344:308),JSON.stringify(bounds));
+    assert.ok(bounds.height<= (profile.isMobile?412:361),JSON.stringify(bounds));
     assert.ok(bounds.x>=0&&bounds.x+bounds.width<=profile.viewport.width+1,'chat must fit viewport');
     await page.click('#assistant-minimize');
     assert.equal(await page.locator('#assistant-panel').isHidden(),true);
@@ -73,6 +73,63 @@ try{
      }
      await context.close();
    }
+ });
+
+ await run('mobile chat opens before a slow site-content API finishes and does not summon keyboard',async()=>{
+  for(const width of [320,390,430]){
+   const context=await browser.newContext({viewport:{width,height:740},isMobile:true,hasTouch:true});
+   const page=await context.newPage();
+   await page.addInitScript(()=>sessionStorage.setItem('lema-concierge-first-visit-v3','1'));
+   await page.route('**/api/site-content',async route=>{
+     await new Promise(resolve=>setTimeout(resolve,2300));
+     try{await route.fulfill({status:200,contentType:'application/json',body:'{"payload":{}}'});}catch{}
+   });
+   await page.goto(root+'/',{waitUntil:'domcontentloaded'});
+   const start=Date.now();
+   await page.locator('#assistant-launch').click({timeout:2000});
+   await page.locator('#assistant-panel').waitFor({state:'visible',timeout:2000});
+   assert.ok(Date.now()-start<2100,'Chat waited for slow content request');
+   assert.equal(await page.locator('#question').evaluate(el=>document.activeElement===el),false,
+      'Mobile chat must not open the soft keyboard automatically');
+   const box=await page.locator('#assistant-panel').boundingBox();
+   assert.ok(box&&box.width>=width*.87&&box.x>=0&&box.x+box.width<=width+2,JSON.stringify(box));
+   assert.ok(box.y>=0&&box.y+box.height<=740+2,JSON.stringify(box));
+   assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('chat-visible')),true);
+   await page.locator('#assistant-minimize').click();
+   assert.equal(await page.locator('#assistant-panel').isHidden(),true);
+   await page.close();await context.close();
+  }
+ });
+ await run('mobile messages show prompt feedback quickly and remain usable after published data refresh',async()=>{
+  const context=await browser.newContext({viewport:{width:390,height:740},isMobile:true,hasTouch:true});
+  const page=await context.newPage();
+  await page.addInitScript(()=>sessionStorage.setItem('lema-concierge-first-visit-v3','1'));
+  await page.route('**/api/assistant',async route=>{
+   const data=route.request().postDataJSON();
+   await new Promise(resolve=>setTimeout(resolve,600));
+   await route.fulfill({status:200,contentType:'application/json',
+     body:JSON.stringify({answer:'Hello from the mobile test: '+data.question,href:''})});
+  });
+  await page.route('**/api/site-content',async route=>{
+    await new Promise(resolve=>setTimeout(resolve,450));
+    await route.fulfill({status:200,contentType:'application/json',body:'{"payload":{}}'});
+  });
+  await page.goto(root+'/',{waitUntil:'domcontentloaded'});
+  await page.locator('#assistant-launch').click();
+  await page.locator('#question').fill('hello there');
+  await page.locator('#assistant-form button').click();
+  await page.locator('#messages .pending').waitFor({state:'visible',timeout:500});
+  await page.locator('#messages .bubble').filter({hasText:'Hello from the mobile test: hello there'})
+    .waitFor({state:'visible',timeout:2500});
+  assert.equal(await page.locator('#question').isEnabled(),true);
+  assert.equal(await page.locator('#question').evaluate(el=>document.activeElement===el),false,
+    'Reply should not reopen mobile keyboard');
+  await page.locator('#assistant-expand').click();
+  const box=await page.locator('#assistant-panel').boundingBox();
+  assert.ok(box&&box.x>=0&&box.y>=0&&box.x+box.width<=391&&box.y+box.height<=741,JSON.stringify(box));
+  await page.locator('#assistant-minimize').click();
+  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('chat-visible')),false);
+  await page.close();await context.close();
  });
  await run('automatic chat waits for Afterhours dialog then opens after closure',async()=>{
   const ctx=await browser.newContext({viewport:{width:1280,height:720}});
