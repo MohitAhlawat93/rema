@@ -104,23 +104,23 @@ export function renderLivePage(html,route,page,published,origin,production=true,
  if(SEO_ROUTES.includes(route)&&page){
    html=updateHead(html,page,route,origin,production);
    const editorial=seoEditorial(page);
-   if(editorial)html=replaceTag(html,/<section class="seo-editorial" aria-label="Further information">[\\s\\S]*?<\\/section>/i,editorial);
+   if(editorial)html=replaceTag(html,/<section class="seo-editorial" aria-label="Further information">[\s\S]*?<\/section>/i,editorial);
  }
  const site=published&&typeof published==='object'?published:{};
  // Shared owner-managed controls are server-rendered on every public page
  // rather than depending on JavaScript hydration or a stale build artifact.
  if(Array.isArray(site.contactLinks)||site.social){
    const links=contactLinks(site);
-   html=html.replace(/<div class="social-links">[\\s\\S]*?<\\/div>/g,
+   html=html.replace(/<div class="social-links">[\s\S]*?<\/div>/g,
      '<div class="social-links">'+linkMarkup(links)+'</div>');
-   html=html.replace(/<div class="contact-social">[\\s\\S]*?<\\/div>/g,
+   html=html.replace(/<div class="contact-social">[\s\S]*?<\/div>/g,
      '<div class="contact-social">'+linkMarkup(links)+'</div>');
  }
  if(site.afterhours&&typeof site.afterhours==='object'){
    const cfg=site.afterhours;
    if(cfg.enabled===false)html=html.replace('<button id="afterhours-launch"','<button hidden id="afterhours-launch"');
-   if(typeof cfg.title==='string')html=html.replace(/<h2 id="afterhours-title">[\\s\\S]*?<\\/h2>/,'<h2 id="afterhours-title">'+esc(cfg.title)+'</h2>');
-   if(typeof cfg.intro==='string')html=html.replace(/<p id="afterhours-intro">[\\s\\S]*?<\\/p>/,'<p id="afterhours-intro">'+esc(cfg.intro)+'</p>');
+   if(typeof cfg.title==='string')html=html.replace(/<h2 id="afterhours-title">[\s\S]*?<\/h2>/,'<h2 id="afterhours-title">'+esc(cfg.title)+'</h2>');
+   if(typeof cfg.intro==='string')html=html.replace(/<p id="afterhours-intro">[\s\S]*?<\/p>/,'<p id="afterhours-intro">'+esc(cfg.intro)+'</p>');
    if(Array.isArray(cfg.links)){
      const links=cfg.links.filter(v=>v&&typeof v.label==='string'&&v.label.length<=60&&safeExternalLink(v.url)).slice(0,24)
        .map(v=>({label:v.label,url:safeExternalLink(v.url)}));
@@ -130,53 +130,53 @@ export function renderLivePage(html,route,page,published,origin,production=true,
  }
  if(site.assistant&&typeof site.assistant==='object'){
    if(typeof site.assistant.name==='string'&&site.assistant.name.length<=80)
-     html=html.replace(/(<div class="assistant-head"><div><strong>)[\\s\\S]*?(<\\/strong>)/,(_,start,end)=>start+esc(site.assistant.name)+end);
+     html=html.replace(/(<div class="assistant-head"><div><strong>)[\s\S]*?(<\/strong>)/,(_,start,end)=>start+esc(site.assistant.name)+end);
    if(typeof site.assistant.greeting==='string'&&site.assistant.greeting.length<=500)
-     html=html.replace(/(<div id="messages"[^>]*><p class="bubble">)[\\s\\S]*?(<\\/p>)/,(_,start,end)=>start+esc(site.assistant.greeting)+end);
+     html=html.replace(/(<div id="messages"[^>]*><p class="bubble">)[\s\S]*?(<\/p>)/,(_,start,end)=>start+esc(site.assistant.greeting)+end);
  }
  if(route==='/'&&site.hero){
-  if(typeof site.hero.title==='string')html=html.replace(/(<div class="hero-copy">[\\s\\S]*?<h1>)[\\s\\S]*?(<\\/h1>)/i,(_,head,tail)=>head+esc(site.hero.title).replaceAll('\\n','<br>')+tail);
-  if(typeof site.hero.intro==='string')html=html.replace(/(<div class="hero-copy">[\\s\\S]*?<p class="intro">)[\\s\\S]*?(<\\/p>)/i,(_,head,tail)=>head+esc(site.hero.intro)+tail);
-  if(typeof site.hero.eyebrow==='string')html=html.replace(/(<div class="hero-copy">[\\s\\S]*?<p class="eyebrow">)[\\s\\S]*?(<\\/p>)/i,(_,head,tail)=>head+esc(site.hero.eyebrow)+tail);
+  if(typeof site.hero.title==='string')html=html.replace(/(<div class="hero-copy">[\s\S]*?<h1>)[\s\S]*?(<\/h1>)/i,(_,head,tail)=>head+esc(site.hero.title).replaceAll('\n','<br>')+tail);
+  if(typeof site.hero.intro==='string')html=html.replace(/(<div class="hero-copy">[\s\S]*?<p class="intro">)[\s\S]*?(<\/p>)/i,(_,head,tail)=>head+esc(site.hero.intro)+tail);
+  if(typeof site.hero.eyebrow==='string')html=html.replace(/(<div class="hero-copy">[\s\S]*?<p class="eyebrow">)[\s\S]*?(<\/p>)/i,(_,head,tail)=>head+esc(site.hero.eyebrow)+tail);
  }
  if(route==='/'&&Array.isArray(site.images)){
   const heroes=site.images.filter(x=>x&&x.hero&&safePublishedImage(x.src,supabaseUrl)).slice(0,250);
   if(heroes.length){
-   html=html.replace(/<div class="hero-background" aria-hidden="true">[\\s\\S]*?<\\/div>/,
+   html=html.replace(/<div class="hero-background" aria-hidden="true">[\s\S]*?<\/div>/,
     '<div class="hero-background" aria-hidden="true">'+heroes.map((im,i)=>
      '<img src="'+esc(im.src)+'" alt="" width="900" height="1100" decoding="async" class="hero-slide '+(i?'':'active')+'" '+(i?'loading="lazy" fetchpriority="low"':'loading="eager" fetchpriority="high"')+'>').join('')+'</div>');
   }
  }
  if(route==='/about/'&&site.about){
-  if(typeof site.about.title==='string')html=html.replace(/(<section class="page-heading">[\\s\\S]*?<h1>)[\\s\\S]*?(<\\/h1>)/i,(_,head,tail)=>head+esc(site.about.title).replaceAll('\\n','<br>')+tail);
-  if(typeof site.about.heading==='string')html=html.replace(/(<div class="editorial">[\\s\\S]*?<h2>)[\\s\\S]*?(<\\/h2>)/i,(_,head,tail)=>head+esc(site.about.heading)+tail);
-  if(typeof site.about.text==='string')html=html.replace(/(<div class="editorial">[\\s\\S]*?<p class="intro">)[\\s\\S]*?(<\\/p>)/i,(_,head,tail)=>head+esc(site.about.text)+tail);
+  if(typeof site.about.title==='string')html=html.replace(/(<section class="page-heading">[\s\S]*?<h1>)[\s\S]*?(<\/h1>)/i,(_,head,tail)=>head+esc(site.about.title).replaceAll('\n','<br>')+tail);
+  if(typeof site.about.heading==='string')html=html.replace(/(<div class="editorial">[\s\S]*?<h2>)[\s\S]*?(<\/h2>)/i,(_,head,tail)=>head+esc(site.about.heading)+tail);
+  if(typeof site.about.text==='string')html=html.replace(/(<div class="editorial">[\s\S]*?<p class="intro">)[\s\S]*?(<\/p>)/i,(_,head,tail)=>head+esc(site.about.text)+tail);
  }
  if(route==='/about/'&&Array.isArray(site.aboutImages)){
   const imgs=site.aboutImages.filter(src=>safePublishedImage(src,supabaseUrl)).slice(0,3);
-  if(imgs.length)html=html.replace(/<figure class="about-rotator"[^>]*>[\\s\\S]*?<\\/figure>/,
+  if(imgs.length)html=html.replace(/<figure class="about-rotator"[^>]*>[\s\S]*?<\/figure>/,
     '<figure class="about-rotator" aria-label="Portrait slideshow">'+imgs.map((src,i)=>
       '<img class="about-slide '+(i?'':'active')+'" src="'+esc(src)+'" alt="Portrait of Lema" width="900" height="1100" decoding="async" aria-hidden="'+Boolean(i)+'">').join('')+'</figure>');
  }
  if(route==='/services/'){
-  if(typeof site.servicesIntro==='string')html=html.replace(/(<section class="page-heading">[\\s\\S]*?<p class="intro">)[\\s\\S]*?(<\\/p>)/i,(_,head,tail)=>head+esc(site.servicesIntro)+tail);
+  if(typeof site.servicesIntro==='string')html=html.replace(/(<section class="page-heading">[\s\S]*?<p class="intro">)[\s\S]*?(<\/p>)/i,(_,head,tail)=>head+esc(site.servicesIntro)+tail);
   if(Array.isArray(site.services)&&site.services.length<=40)
-    html=html.replace(/<section class="work-page service-grid">[\\s\\S]*?<\\/section>/i,
+    html=html.replace(/<section class="work-page service-grid">[\s\S]*?<\/section>/i,
       '<section class="work-page service-grid">'+site.services.map((s,i)=>serviceMarkup(s,i,supabaseUrl)).join('')+'</section>');
  }
  if(route==='/gallery/'&&Array.isArray(site.images)){
   const pictures=site.images.slice(0,250);
   const categories=[...new Set(pictures.filter(x=>x&&typeof x.category==='string'&&x.category).map(x=>x.category))];
-  html=html.replace(/<div class="gallery-grid full-gallery">[\\s\\S]*?<\\/div>/i,
+  html=html.replace(/<div class="gallery-grid full-gallery">[\s\S]*?<\/div>/i,
     '<div class="gallery-grid full-gallery">'+pictures.map((im,i)=>galleryMarkup(im,i,supabaseUrl)).join('')+'</div>');
-  html=html.replace(/<div class="filters" role="group" aria-label="Filter gallery">[\\s\\S]*?<\\/div>/i,
+  html=html.replace(/<div class="filters" role="group" aria-label="Filter gallery">[\s\S]*?<\/div>/i,
     '<div class="filters" role="group" aria-label="Filter gallery"><button class="active" data-filter="All" aria-pressed="true">All images</button>'+
     categories.map(c=>'<button data-filter="'+esc(c)+'" aria-pressed="false">'+esc(c)+'</button>').join('')+'</div>');
-  html=html.replace(/(<p class="fine" data-gallery-status[^>]*>)[\\s\\S]*?(<\\/p>)/i,(_,s,e)=>s+'Showing '+pictures.length+' images'+e);
+  html=html.replace(/(<p class="fine" data-gallery-status[^>]*>)[\s\S]*?(<\/p>)/i,(_,s,e)=>s+'Showing '+pictures.length+' images'+e);
  }
  if(route==='/reviews/'&&Array.isArray(site.reviews)){
   const reviews=site.reviews.slice(0,40).map(reviewMarkup).filter(Boolean);
-  html=html.replace(/(<div class="review-grid" data-public-reviews>)[\\s\\S]*?(<\\/div>)/i,
+  html=html.replace(/(<div class="review-grid" data-public-reviews>)[\s\S]*?(<\/div>)/i,
     (_,s,e)=>s+(reviews.length?reviews.join(''):'<p class="review-empty">No reviews published yet.</p>')+e);
  }
  return html;
