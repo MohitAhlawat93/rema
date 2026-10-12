@@ -1,0 +1,33 @@
+name: Cloudflare staging AI — live one-question test
+on:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths: ['.github/workflows/cloudflare-ai-live.yml']
+permissions:
+  contents: read
+jobs:
+  ai:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check free-tier Cloudflare AI response without credentials in CI
+        run: |
+          node --input-type=module <<'NODE'
+          const origin='https://lema-website-staging.pages.dev';
+          const response=await fetch(origin+'/api/assistant',{
+            method:'POST',
+            headers:{'content-type':'application/json'},
+            body:JSON.stringify({question:'How does this website describe its atmosphere and approach to visitors?',language:'en'}),
+            signal:AbortSignal.timeout(20000)
+          });
+          const body=await response.json().catch(()=>({}));
+          const output={
+            httpStatus:response.status,
+            source:body.source||'none',
+            rag:body.rag||'none',
+            provider:body.diagnostics?.provider||'not shown',
+            answerPresent:typeof body.answer==='string'&&body.answer.trim().length>5
+          };
+          console.log('Cloudflare staging AI test:',JSON.stringify(output));
+          if(response.status!==200||!output.answerPresent||output.source!=='ai')process.exit(1);
+          NODE
