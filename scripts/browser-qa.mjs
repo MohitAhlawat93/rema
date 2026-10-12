@@ -260,10 +260,16 @@ try{
   await page.locator('[data-seo-page]').selectOption('/reviews/');
   const title='Guest experiences and Reviews | Witness Lema';
   await page.locator('[data-seo-field="title"]').fill(title);
-  await page.locator('[data-panel="seo"] [data-save]').first().click();
+  await Promise.all([
+    page.waitForResponse(response=>response.url().includes('/api/admin/state')&&response.request().method()==='PUT'),
+    page.locator('[data-panel="seo"] [data-save]').first().click()
+  ]);
   assert.equal(saveCount,1);
   assert.equal(simulated.draft.seo.pages['/reviews/'].title,title);
-  await page.locator('[data-publish]').click();
+  await Promise.all([
+    page.waitForResponse(response=>response.url().includes('/api/admin/state')&&response.request().method()==='POST'),
+    page.locator('[data-publish]').click()
+  ]);
   assert.equal(publishCount,1);
   assert.equal(simulated.published.seo.pages['/reviews/'].title,title);
   const html='<html><head><title>Old</title><meta name="description" content="old">'+
