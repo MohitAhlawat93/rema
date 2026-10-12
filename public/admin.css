@@ -40,3 +40,12 @@
 .panel[data-panel="business"] .workflow{margin-top:22px}
 .panel[data-panel="business"] .editor-form fieldset{min-width:0}
 .panel[data-panel="business"] input{max-width:100%}
+
+/* Private owner handover workflow. Responsive, no external CSS dependencies. */
+.handover-wizard-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:16px;margin:22px 0}
+.handover-step{min-width:0;border:1px solid #c8c9c4;border-radius:13px;padding:18px;background:rgba(255,255,255,.7)}
+.handover-step h3{margin:5px 0 10px}
+.handover-step p{overflow-wrap:anywhere}
+[data-panel="handover"] select{display:block;width:100%;max-width:100%;margin:10px 0 16px;padding:12px;border:1px solid #bcbfba;border-radius:7px;background:#fff;color:#253027;font:inherit}
+[data-panel="handover"] button{margin-top:6px;max-width:100%}
+[data-handover-indicators] li{margin:8px 0}

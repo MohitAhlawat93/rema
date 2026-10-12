@@ -17,6 +17,13 @@ Deno.serve(async(req)=>{
     if(allowed!==true)return json({error:'Unauthorized'},401);
     const input=await req.json();
     const action=String(input?.action||'');
+    if(action==='handover-read'||action==='handover-save'){
+      const pAction=action==='handover-read'?'read':'save';
+      const payload=action==='handover-save'?(input.body??{}):{};
+      if(pAction==='save'&&(typeof payload!=='object'||!payload||Array.isArray(payload)||
+         JSON.stringify(payload).length>3500))return json({error:'Invalid handover request'},400);
+      return json(await rpc('witness_lema_handover_state',{p_action:pAction,p_payload:payload}));
+    }
     if(action==='review-inbox'){
       const reviewAction=String(input.body?.reviewAction||'');
       if(!['submit','list','delete'].includes(reviewAction))return json({error:'Unknown review action.'},400);
