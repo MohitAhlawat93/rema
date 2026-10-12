@@ -52,6 +52,32 @@ export default async function handler(req,res){
       const groq=Boolean(process.env.GROQ_API_KEY),xai=Boolean(process.env.XAI_API_KEY);
       return send(res,200,{configured:groq||xai,provider:groq?'Groq':'xAI Grok',model:groq?(process.env.GROQ_MODEL||'llama-3.3-70b-versatile'):(process.env.XAI_MODEL||process.env.AI_MODEL||'grok-4')});
     }
+    if(route==='ai-test'){
+      if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
+      // Owner-initiated tiny inference proves credentials and the configured model actually work.
+      const groq=Boolean(process.env.GROQ_API_KEY),xai=Boolean(process.env.XAI_API_KEY);
+      if(!groq&&!xai)return send(res,200,{status:'missing',message:'No usable AI API key is available to this production function.'});
+      const choice=String(process.env.ASSISTANT_AI_PROVIDER||'').toLowerCase();
+      const provider=choice==='xai'&&xai?'xai':choice==='groq'&&groq?'groq':groq?'groq':'xai';
+      const model=provider==='groq'?(process.env.GROQ_MODEL||'llama-3.3-70b-versatile'):(process.env.XAI_MODEL||'grok-4');
+      const started=Date.now();
+      try{
+        const r=await fetch(provider==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://api.x.ai/v1/responses',{
+          method:'POST',
+          signal:AbortSignal.timeout(5000),
+          headers:{authorization:'Bearer '+(provider==='groq'?process.env.GROQ_API_KEY:process.env.XAI_API_KEY),'content-type':'application/json'},
+          body:JSON.stringify(provider==='groq'?{
+            model,messages:[{role:'user',content:'Reply only OK.'}],max_completion_tokens:20,temperature:0
+          }:{model,store:false,max_output_tokens:20,input:'Reply only OK.'})
+        });
+        const body=await r.json().catch(()=>({}));
+        const answer=provider==='groq'?body.choices?.[0]?.message?.content:
+          body.output?.flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join(' ');
+        return send(res,200,{status:r.ok&&Boolean(String(answer||'').trim())?'ready':'failed',provider,model,
+          httpStatus:r.status,elapsedMs:Date.now()-started});
+      }catch(error){return send(res,200,{status:error?.name==='TimeoutError'||error?.name==='AbortError'?'timeout':'failed',provider,model,
+        elapsedMs:Date.now()-started});}
+    }
     if(route==='state'){
       if(req.method==='GET')return send(res,200,await callAdminBackend('read'));
       if(req.method==='PUT')return send(res,200,await callAdminBackend('save',{draft:readBody(req).state,expectedVersion:readBody(req).expectedVersion}));

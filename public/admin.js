@@ -219,7 +219,20 @@ function validateEditorialControls(){
   }
 }
 function renderAll(){renderBusiness();renderLinks();renderReviews();populateProfile();renderServices();renderPhotos();renderAnswers();renderHistory();renderSeoEditor();$('[data-version]').textContent=state.version;$('[data-published-version]').textContent=state.publishedVersion;$('[data-photo-count]').textContent=state.draft.images?.length||0;$('[data-answer-count]').textContent=knowledge.length;}
-async function loadAiStatus(){try{const status=await api('ai-status');$('[data-ai-status]').textContent=status.configured?status.provider+' connected':'Knowledge-only mode';$('[data-ai-detail]').textContent=status.configured?`${status.model} · API key is stored securely on the server.`:'Add a server-side Groq or xAI key to enable conversational answers.';}catch{$('[data-ai-status]').textContent='Status unavailable';}}
+async function loadAiStatus(){try{const status=await api('ai-status');$('[data-ai-status]').textContent=status.configured?status.provider+' key configured (not tested)':'Knowledge-only mode';$('[data-ai-detail]').textContent=status.configured?`${status.model} · Press Test AI connection to verify that real replies work.`:'A usable Groq or xAI key is missing from this deployment.';}catch{$('[data-ai-status]').textContent='Status unavailable';}}
+$('[data-test-ai]')?.addEventListener('click',async event=>{
+ const button=event.currentTarget;
+ button.disabled=true;
+ $('[data-ai-status]').textContent='Testing real AI reply…';
+ try{
+   const result=await api('ai-test',{method:'POST',body:'{}'});
+   $('[data-ai-status]').textContent=result.status==='ready'?'AI connection working':result.status==='missing'?'API key unavailable':'AI connection failed';
+   $('[data-ai-detail]').textContent=result.status==='ready'?`${result.provider} · ${result.model} · ${result.elapsedMs} ms`:
+     result.status==='missing'?'Set a valid server-side API key for Production in Vercel, then redeploy.':
+       `${result.provider||'Provider'} · ${result.status==='timeout'?'Request timed out':'HTTP '+(result.httpStatus||'network error')}. Check provider quota, key and model.`;
+ }catch(error){$('[data-ai-status]').textContent='AI test unavailable';$('[data-ai-detail]').textContent=error.message||'Try again.';}
+ finally{button.disabled=false;}
+});
 async function loadWorkspace(){
   const session=await api('session');
   if(!session?.state?.draft)throw new Error('Your private workspace is unavailable.');

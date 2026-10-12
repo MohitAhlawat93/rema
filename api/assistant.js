@@ -232,6 +232,6 @@ export default async function handler(request, response) {
   // Return a usable response even when AI is down or missing.
   console.info('assistant_request_complete',JSON.stringify({source:provider!=='none'&&!failed&&answer?'ai':ranked.length?'retrieval':'fallback',
     elapsedMs:Date.now()-started,knowledge:published===null?'fallback':'published',provider,providerFailed:failed}));
-  return json(response,200,{answer:clean(answer,2200),href:ranked.length&&answer===ranked[0].item.answer?safeHref(ranked[0].item.href):'',source:provider!=='none'&&!failed?'ai':ranked.length?'retrieval':'fallback',diagnostics:failed?{code:failureCode,provider}:undefined});
+  return json(response,200,{answer:clean(answer,2200),href:ranked.length&&answer===ranked[0].item.answer?safeHref(ranked[0].item.href):'',source:provider!=='none'&&!failed?'ai':ranked.length?'retrieval':'fallback',diagnostics:failed?{code:failureCode,provider}:provider==='none'?{code:'provider_not_configured',provider:'none'}:undefined});
 
 }
