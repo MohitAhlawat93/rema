@@ -1,4 +1,4 @@
-// Tenant-scoped hybrid RAG. Only trusted server callers possessing the tenant
+// Tenant-scoped vector-only RAG. Only trusted server callers possessing the tenant
 // credential may query or reindex; the browser never receives that credential.
 // Requires pgvector tables/functions from the rag_* SQL migrations.
 const url = Deno.env.get('SUPABASE_URL') || '';
@@ -110,21 +110,19 @@ Deno.serve(async req=>{
  if(action!=='search')return reply({error:'Unknown action'},400);
  const query=String(data.query||'').trim().slice(0,500);
  if(!query)return reply({error:'Empty query'},400);
- // Non-blocking index population. The lexical route works while embeddings
- // are generated, so site visitors never wait for the entire index.
+ // Keep ingestion asynchronous; search only embeds the visitor query.
  try{EdgeRuntime.waitUntil(indexBatch(tenant,12).catch(()=>null));}catch{/* local runtimes may omit waitUntil */}
  let embedding:number[]|null=null;
  try{
-  // gte-small is English-centric. Hybrid lexical search remains available for
-  // Hindi, Hinglish and other languages until a multilingual provider is enabled.
   const vector=await session.run(query,{mean_pool:true,normalize:true});
   const values=Array.from(vector as ArrayLike<number>);
   if(values.length===384&&values.every(Number.isFinite))embedding=values;
- }catch{/* Retrieval continues via full text without vector. */}
+ }catch{/* Embedding outages must not trigger keyword search. */}
+ if(!embedding)return reply({rows:[],mode:'unavailable',reason:'embedding_unavailable'});
  try{
-  const rows=await rpc<Array<Record<string,unknown>>>('rag_hybrid_match',{
-   p_tenant:tenant,p_query:query,p_embedding:embedding,p_limit:6
+  const rows=await rpc<Array<Record<string,unknown>>>('rag_vector_match',{
+   p_tenant:tenant,p_embedding:embedding,p_limit:5,p_min_similarity:0.72
   });
-  return reply({rows:Array.isArray(rows)?rows:[],mode:embedding?'hybrid':'lexical',model:embedding?modelName:null});
- }catch{return reply({rows:[],mode:'unavailable'});}
+  return reply({rows:Array.isArray(rows)?rows:[],mode:'vector',model:modelName});
+ }catch{return reply({rows:[],mode:'unavailable',reason:'vector_search_unavailable'});}
 });

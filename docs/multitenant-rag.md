@@ -1,11 +1,11 @@
-# Reusable hybrid RAG for customer websites
+# Reusable vector-only RAG for customer websites
 
 Each sold website must have its **own tenant**, owner login, server-side secret and production deployment. The template's frontend never receives a tenant secret.
 
 ## Components
 
 - Supabase pgvector stores approved published chunks and 384-dimensional gte-small embeddings.
-- The hybrid SQL RPC combines cosine similarity with indexed full-text search and filters all results by tenant and published status.
+- The vector SQL RPC ranks cosine similarity only and filters all results by tenant and published status.
 - The Supabase Edge Function generates embeddings and handles server-authenticated search, reindex, document upload and deletion.
 - Vercel calls the Edge Function with a server-only credential and rejects untrusted client-provided tenant selectors.
 - A short-lived fallback keeps responses working if semantic search temporarily fails.
@@ -30,7 +30,7 @@ Each sold website must have its **own tenant**, owner login, server-side secret 
 
 ## Limits
 
-Supabase built-in gte-small primarily supports English and truncates long inputs; hybrid lexical search covers many English, Hindi and Hinglish phrases. For high-quality multilingual semantic retrieval across global clients, integrate a multilingual embedding model and reindex vectors with the same model for both documents and queries. This implementation does not promise absolute immunity to every prompt injection and does not autonomously learn from visitors. Use regression tests and provider monitoring.
+Supabase built-in gte-small primarily supports English and truncates long inputs; the vector search will be weaker for Hindi and Hinglish until a multilingual embedding model is installed. For high-quality multilingual semantic retrieval across global clients, integrate a multilingual embedding model and reindex vectors with the same model for both documents and queries. This implementation does not promise absolute immunity to every prompt injection and does not autonomously learn from visitors. Use regression tests and provider monitoring.
 
 ## Verification
 
