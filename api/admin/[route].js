@@ -36,12 +36,12 @@ export default async function handler(req,res){
       const login=String(body.loginId||'').trim().slice(0,120),password=String(body.password||'').slice(0,256);
       const expected=String(process.env.SIGNATURE_ADMIN_LOGIN_ID||'').trim();
       if(!constantTimeTextEqual(login,expected)||!verifyPasswordHash(password,process.env.SIGNATURE_ADMIN_PASSWORD_HASH||''))return send(res,401,{error:'That owner ID or password is not correct.'});
-      res.setHeader('set-cookie',makeSessionCookie(createSessionToken(expected)));
+      res.setHeader('set-cookie',makeSessionCookie(createSessionToken(expected),req));
       return send(res,200,{ok:true});
     }
     if(route==='logout'){
       if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
-      res.setHeader('set-cookie',makeExpiredSessionCookie());return send(res,200,{ok:true});
+      res.setHeader('set-cookie',makeExpiredSessionCookie(req));return send(res,200,{ok:true});
     }
     if(route==='session'){
       if(req.method!=='GET')return send(res,405,{error:'Use GET.'});
@@ -62,7 +62,7 @@ export default async function handler(req,res){
       const capture={statusCode:200,setHeader(){},end(v){code=this.statusCode;try{output=JSON.parse(v);}catch{output=null;}}};
       await assistantHandler({
         method:'POST',body:{question,language:'en',history:Array.isArray(input.history)?input.history.slice(-4):[]},
-        headers:req.headers,socket:req.socket
+        headers:req.headers,socket:req.socket,cloudflareAI:req.cloudflareAI
       },capture);
       if(!output)return send(res,503,{error:'Assistant test did not complete.'});
       return send(res,code,{answer:output.answer||'',source:output.source||'unknown',
@@ -72,8 +72,9 @@ export default async function handler(req,res){
     }
     if(route==='ai-status'){
       if(req.method!=='GET')return send(res,405,{error:'Use GET.'});
-      const groq=Boolean(process.env.GROQ_API_KEY),xai=Boolean(process.env.XAI_API_KEY);
-      return send(res,200,{configured:groq||xai,provider:groq?'Groq':'xAI Grok',model:groq?(process.env.GROQ_MODEL||'openai/gpt-oss-120b'):(process.env.XAI_MODEL||process.env.AI_MODEL||'grok-4')});
+      const groq=Boolean(process.env.GROQ_API_KEY),xai=Boolean(process.env.XAI_API_KEY),cf=Boolean(req.cloudflareAI?.run);
+      return send(res,200,{configured:groq||xai||cf,provider:groq?'Groq':xai?'xAI Grok':cf?'Cloudflare Workers AI':'Not configured',
+        model:groq?(process.env.GROQ_MODEL||'openai/gpt-oss-120b'):xai?(process.env.XAI_MODEL||'grok-4'):cf?'@cf/meta/llama-3.1-8b-instruct':''});
     }
     if(route==='ai-test'){
       if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
