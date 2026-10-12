@@ -39,6 +39,11 @@ for(const question of [
  console.log(JSON.stringify({turn:idx,status:response.status,elapsedMs,
   source:result.source||'unspecified',failureCode:result.diagnostics?.code||'',answerLength:String(result.answer||'').length}));
  if(!response.ok||!result.answer?.trim())throw Error('Missing reply from production chat at turn '+idx+' (HTTP '+response.status+')');
+ if(idx>=6&&result.source!=='ai')
+  throw Error('Generative AI unavailable on production turn '+idx+' (code: '+(result.diagnostics?.code||'no_provider')+')');
+ if(idx===6&&!/\b4\b/.test(result.answer))
+  throw Error('AI arithmetic sanity check failed at turn '+idx);
+
  history.push({role:'user',content:question},{role:'assistant',content:result.answer});
 }
-console.log('LIVE CHAT SMOKE PASSED: seven consecutive production chatbot replies (including two requiring AI or fallback).');
+console.log('LIVE CHAT SMOKE PASSED: seven production replies, including two confirmed AI generations.');
