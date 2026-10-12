@@ -262,6 +262,7 @@ try{
     else if(path.endsWith('/knowledge'))body={items:[]};
     else if(path.endsWith('/ai-status'))body={configured:false};
     else if(path.endsWith('/ai-test'))body={status:'missing'};
+    else if(path.endsWith('/assistant-evaluate'))body={answer:'Video call price is in the published Services page.',source:'structured',intent:'pricing',rag:'none',elapsedMs:25};
     else if(path.endsWith('/rag-index'))body={indexed:4,attempted:4,more:false};
     else if(path.endsWith('/rag-documents'))body={saved:1,deleted:true};
     else if(path.endsWith('/review-inbox'))body={items:[]};
@@ -296,6 +297,10 @@ try{
   await page.waitForFunction(()=>document.querySelector('[data-rag-doc-status]')?.textContent.includes('Published 1 document'));
   await page.locator('[data-delete-rag-doc]').click();
   await page.waitForFunction(()=>document.querySelector('[data-rag-doc-status]')?.textContent.includes('Document removed'));
+  await page.locator('[data-eval-question]').fill('What are the video call charges?');
+  await page.locator('[data-eval-run]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-eval-answer]')?.textContent.includes('Video call price'));
+  assert.match(await page.locator('[data-eval-meta]').textContent(),/Source: structured/);
   await page.locator('[data-tab="seo"]').click();
   await page.locator('[data-seo-page]').selectOption('/reviews/');
   const title='Guest experiences and Reviews | Witness Lema';

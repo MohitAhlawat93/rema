@@ -220,6 +220,23 @@ function validateEditorialControls(){
 }
 function renderAll(){renderBusiness();renderLinks();renderReviews();populateProfile();renderServices();renderPhotos();renderAnswers();renderHistory();renderSeoEditor();$('[data-version]').textContent=state.version;$('[data-published-version]').textContent=state.publishedVersion;$('[data-photo-count]').textContent=state.draft.images?.length||0;$('[data-answer-count]').textContent=knowledge.length;}
 async function loadAiStatus(){try{const status=await api('ai-status');$('[data-ai-status]').textContent=status.configured?status.provider+' key configured (not tested)':'Knowledge-only mode';$('[data-ai-detail]').textContent=status.configured?`${status.model} · Press Test AI connection to verify that real replies work.`:'A usable Groq or xAI key is missing from this deployment.';}catch{$('[data-ai-status]').textContent='Status unavailable';}}
+$('[data-eval-run]')?.addEventListener('click',async event=>{
+ const button=event.currentTarget,question=$('[data-eval-question]').value.trim();
+ const answer=$('[data-eval-answer]'),details=$('[data-eval-meta]');
+ if(!question){answer.textContent='Enter an English question first.';return;}
+ button.disabled=true;answer.textContent='Checking the actual chatbot…';details.textContent='';
+ try{
+  const out=await api('assistant-evaluate',{method:'POST',body:JSON.stringify({question})});
+  answer.textContent=out.answer||out.error||'No answer was returned.';
+  const evidence=out.topMatch?' · Matched '+out.topMatch.question+' ('+Math.round(Number(out.topMatch.similarity)*100)+'% similarity)':'';
+  details.textContent='Source: '+(out.source||'unknown')+
+    ' · Intent: '+(out.intent||'conversational')+
+    ' · Vector: '+(out.rag||'none')+
+    ' · '+out.elapsedMs+' ms'+evidence+
+    (out.needsReview?' · Owner verification required':'');
+ }catch(error){answer.textContent=error.message||'Testing unavailable.';}
+ finally{button.disabled=false;}
+});
 $('[data-test-ai]')?.addEventListener('click',async event=>{
  const button=event.currentTarget;
  button.disabled=true;

@@ -8,6 +8,7 @@ import { callAdminBackend } from '../../lib/admin-backend.js';
 import { reviewInbox } from '../../lib/review-inbox.js';
 import { consumeRateLimit } from '../../lib/rate-limit.js';
 import { queryTenantRag } from '../../lib/tenant-rag.js';
+import assistantHandler from '../assistant.js';
 
 const readBody = req => typeof req.body === 'string' ? (()=>{try{return JSON.parse(req.body)}catch{return {}}})() : (req.body || {});
 const send = (res,status,data) => { res.statusCode=status;res.setHeader('content-type','application/json; charset=utf-8');res.end(JSON.stringify(data)); };
@@ -48,6 +49,25 @@ export default async function handler(req,res){
       return send(res,200,{authenticated:true,owner:{name:'witness_lema_',role:'Owner'},state});
     }
     if(!protectedRoute(req,res))return;
+    if(route==='assistant-evaluate'){
+      if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
+      const input=readBody(req);
+      const question=String(input.question||'').trim();
+      if(!question||question.length>400)return send(res,400,{error:'Enter a question up to 400 characters.'});
+      // The owner uses exactly the public answer path, with no privileged RAG bypass.
+      let output=null,code=200;
+      const clock=Date.now();
+      const capture={statusCode:200,setHeader(){},end(v){code=this.statusCode;try{output=JSON.parse(v);}catch{output=null;}}};
+      await assistantHandler({
+        method:'POST',body:{question,language:'en',history:Array.isArray(input.history)?input.history.slice(-4):[]},
+        headers:req.headers,socket:req.socket
+      },capture);
+      if(!output)return send(res,503,{error:'Assistant test did not complete.'});
+      return send(res,code,{answer:output.answer||'',source:output.source||'unknown',
+        intent:output.intent||'',topic:output.topic||'',rag:output.rag||'none',
+        topMatch:output.topMatch||null,needsReview:Boolean(output.needsReview),
+        elapsedMs:Date.now()-clock,error:output.error||''});
+    }
     if(route==='ai-status'){
       if(req.method!=='GET')return send(res,405,{error:'Use GET.'});
       const groq=Boolean(process.env.GROQ_API_KEY),xai=Boolean(process.env.XAI_API_KEY);
