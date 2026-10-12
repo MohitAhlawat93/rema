@@ -22,7 +22,7 @@ test('frontend keeps an auto popup, English-only UI and reviews',async()=>{
  const build=await readFile(new URL('../scripts/build.mjs',import.meta.url),'utf8');
  assert.match(app,/lema-concierge-first-visit-v3/);
  assert.match(app,/setAssistant\(true,false\)/);
- assert.doesNotMatch(build,/Hinglish|हिंदी|assistant-language/);
+ assert.doesNotMatch(build,/Hinglish|Hindi|हिंदी|assistant-language/);
  assert.match(build,/['"]\/reviews\/['"]/);
  assert.match(build,/data-public-reviews/);
 });
