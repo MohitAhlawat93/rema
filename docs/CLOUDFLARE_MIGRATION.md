@@ -33,7 +33,10 @@ Current stage: code prepared on a feature branch. The Vercel site remains the li
 
 ## Limitations
 - Moving Vercel's functions involves real runtime compatibility tests, not just a static build.
-- R2 image upload and Workers AI backup are separate staged integrations.
+- R2 upload/download logic and Workers AI fallback are staged in code, but **not activated or deployed**. R2 remains disabled in Cloudflare and no owner bucket/AI binding exists.
+- Configure the client-owned R2 bucket binding as `MEDIA_BUCKET` and Workers AI as `AI` only after authorization; add `COOKIE_SECURE=true` for production HTTPS.
+- The admin's existing photo button uploads optimized JPEGs through R2 once bound. Validate the Supabase Edge Function changes on a **new client-owned database** before turning on this flow; otherwise published R2 paths may be rejected.
+- Do not delete media directly from storage when merely removing a photo from a draft. Schedule safe garbage collection after checking published references.
 - Full source code remains with the developer according to the software licence;
   owners get content/export/website operation rights.
 - Free services have traffic/usage limits. Supabase Free may pause inactive projects.
