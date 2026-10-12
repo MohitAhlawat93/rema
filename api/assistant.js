@@ -204,20 +204,22 @@ export default async function handler(request, response) {
     const match=ranked[0].item;
     return json(response,200,{answer:clean(match.answer,2200),href:safeHref(match.href),source:'retrieval'});
   }
-  let answer='',provider='none',failed=false;
+  let answer='',provider='none',failed=false,failureCode='';
   const choice=String(process.env.ASSISTANT_AI_PROVIDER||'').toLowerCase();
   const candidate=choice==='xai'?'xai':choice==='groq'?'groq':process.env.GROQ_API_KEY?'groq':process.env.XAI_API_KEY?'xai':'none';
   if(candidate!=='none'){
     provider=candidate;
     try{
       answer=await (candidate==='xai'?callXai:callGroq)(question,language,matches,site,history);
-      if(!answer)failed=true;
+      if(!answer){failed=true;failureCode='empty_output';}
     }catch(error){
       failed=true;
+      const status=Number(String(error?.message||'').match(/\b(?:400|401|403|404|408|429|500|502|503)\b/)?.[0]||0);
+      failureCode=status?'http_'+status:(error?.name==='TimeoutError'||error?.name==='AbortError'?'timeout':'network_or_provider');
       // Diagnostic metadata only: never log visitor messages, history or API keys.
       console.warn('assistant_provider_failure',JSON.stringify({provider,
         kind:error?.name==='TimeoutError'||error?.name==='AbortError'?'timeout':'provider_error',
-        status:Number(String(error?.message||'').match(/\b(?:400|401|403|404|408|429|500|502|503)\b/)?.[0]||0),
+        status,
         elapsedMs:Date.now()-started}));
     }
   }
@@ -230,6 +232,6 @@ export default async function handler(request, response) {
   // Return a usable response even when AI is down or missing.
   console.info('assistant_request_complete',JSON.stringify({source:provider!=='none'&&!failed&&answer?'ai':ranked.length?'retrieval':'fallback',
     elapsedMs:Date.now()-started,knowledge:published===null?'fallback':'published',provider,providerFailed:failed}));
-  return json(response,200,{answer:clean(answer,2200),href:ranked.length&&answer===ranked[0].item.answer?safeHref(ranked[0].item.href):'',source:provider!=='none'&&!failed?'ai':ranked.length?'retrieval':'fallback'});
+  return json(response,200,{answer:clean(answer,2200),href:ranked.length&&answer===ranked[0].item.answer?safeHref(ranked[0].item.href):'',source:provider!=='none'&&!failed?'ai':ranked.length?'retrieval':'fallback',diagnostics:failed?{code:failureCode,provider}:undefined});
 
 }
