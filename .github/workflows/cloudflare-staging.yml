@@ -7,6 +7,8 @@ on:
       - '.github/workflows/cloudflare-staging.yml'
       - 'wrangler.jsonc'
       - 'scripts/cloudflare-staging-smoke.mjs'
+      - 'public/app.js'
+      - 'scripts/cloudflare-slideshow-qa.mjs'
 permissions:
   contents: read
   deployments: write
@@ -56,3 +58,9 @@ jobs:
           command: pages deploy dist --project-name=lema-website-staging --branch=main
       - name: Verify deployed Pages routes (read-only)
         run: node scripts/cloudflare-staging-smoke.mjs https://lema-website-staging.pages.dev
+      - name: Install Chromium for real slideshow tests
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Verify changing published photographs on Cloudflare
+        run: node scripts/cloudflare-slideshow-qa.mjs https://lema-website-staging.pages.dev
