@@ -6,7 +6,7 @@ if(!/^https:\/\/[-a-z0-9.]+\.pages\.dev$/i.test(origin)) {
  process.exit(2);
 }
 const paths=['/','/about/','/gallery/','/services/','/contact/','/reviews/',
- '/api/site-content','/api/reviews','/api/admin/session','/sitemap.xml','/robots.txt',
+ '/admin/','/api/site-content','/api/reviews','/api/admin/session','/sitemap.xml','/robots.txt',
  '/media/uploads/00000000-0000-4000-8000-000000000000.jpg'];
 let failed=0;
 for(const path of paths){
@@ -18,7 +18,8 @@ for(const path of paths){
    let good=false;
    if(['/','/about/','/gallery/','/services/','/contact/','/reviews/'].includes(path)){
       good=r.ok&&html.includes('text/html')&&/noindex/i.test(noindex+' '+(body.match(/<meta\s+name="robots"[^>]*>/i)||[])[0]);
-   }else if(path==='/api/site-content')good=r.ok&&body.includes('"payload"');
+   }else if(path==='/admin/')good=r.ok&&body.includes('data-login')&&body.includes('data-staging-self-test');
+   else if(path==='/api/site-content')good=r.ok&&body.includes('"payload"');
    else if(path==='/api/reviews')good=r.ok&&body.includes('"items"');
    else if(path==='/api/admin/session')good=[401,503].includes(r.status);
    else if(path==='/sitemap.xml')good=r.ok&&body.includes('<?xml');
