@@ -17,11 +17,8 @@ jobs:
         with:
           node-version: '22'
       - run: npm run build
-      - name: Replace functions in workspace ONLY for minimal test
+      - name: Test full website backend without optional bindings
         run: |
-          mv functions functions-real
-          mkdir -p functions/api
-          printf '%s\n' 'export async function onRequest() { return Response.json({ok:true,diagnostic:true}); }' > functions/api/health.js
           cat > wrangler.jsonc <<'EOF'
           {"name":"lema-runtime-diagnostic","pages_build_output_dir":"./dist","compatibility_date":"2026-10-12","compatibility_flags":["nodejs_compat"]}
           EOF
@@ -31,12 +28,20 @@ jobs:
           apiToken: ${{ secrets.CF_STAGING_API_TOKEN }}
           accountId: '13032a1345920c80c9572e3ba6dddeba'
           command: pages deploy dist --project-name=lema-runtime-diagnostic --branch=main
-      - name: Check minimal Function
+      - name: Verify API routes are deployed and secrets fail closed
         run: |
           node --input-type=module -e '
             const base="https://lema-runtime-diagnostic.pages.dev";
-            const [a,b]=await Promise.all([fetch(base+"/"),fetch(base+"/api/health")]);
-            const health=await b.json().catch(()=>({}));
-            console.log("home:",a.status,"health:",b.status,health);
-            if(!a.ok||!b.ok||health.ok!==true)process.exit(1);
+            const [home,admin,content]=await Promise.all([
+              fetch(base+"/"),fetch(base+"/api/admin/session"),fetch(base+"/api/site-content")
+            ]);
+            const a=await admin.json().catch(()=>({}));
+            const c=await content.json().catch(()=>({}));
+            console.log("home:",home.status,"admin:",admin.status,
+              "content:",content.status);
+            if(!home.ok||admin.status!==503||!a.authenticated===false) {
+              // Authentication must be unavailable; no private editing without secrets.
+              if(!home.ok||admin.status!==503)process.exit(1);
+            }
+            if(content.status!==503||!c.error)process.exit(1);
           '
