@@ -22,7 +22,7 @@ jobs:
           cat > wrangler.jsonc <<'EOF'
           {"name":"lema-runtime-diagnostic","pages_build_output_dir":"./dist","compatibility_date":"2026-10-12","compatibility_flags":["nodejs_compat"]}
           EOF
-      - name: Deploy minimal Function to isolated Cloudflare project
+      - name: Deploy full backend with explicit Pages API routes and no optional bindings
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CF_STAGING_API_TOKEN }}
@@ -38,10 +38,8 @@ jobs:
             const a=await admin.json().catch(()=>({}));
             const c=await content.json().catch(()=>({}));
             console.log("home:",home.status,"admin:",admin.status,
-              "content:",content.status);
-            if(!home.ok||admin.status!==503||!a.authenticated===false) {
-              // Authentication must be unavailable; no private editing without secrets.
-              if(!home.ok||admin.status!==503)process.exit(1);
-            }
+              "content:",content.status,"adminReply:",JSON.stringify(a).slice(0,140),
+              "contentReply:",JSON.stringify(c).slice(0,140));
+            if(!home.ok||admin.status!==503||a.authenticated===true)process.exit(1);
             if(content.status!==503||!c.error)process.exit(1);
           '
