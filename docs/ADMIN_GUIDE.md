@@ -21,3 +21,6 @@ Open /admin on the deployed website and sign in with the private owner credentia
 - **Assistant:** edit questions, answers, keywords and related page links.
 
 Never place passwords, identification documents, private addresses or screening information in public website fields or assistant answers.
+
+## What is automatically checked
+The Easy setup tab runs a protected, read-only diagnostic when first opened in real mode and has a “Check again” control. A single server invocation verifies six public page HTTP responses, robots instructions, sitemap XML, published-content API and image references, and reports AI/domain/database/Search Console configuration presence. It makes **zero provider mutations**, incurs no new Vercel deployment, and uses no customer-supplied URLs, secrets or AI inference. It cannot prove the owner controls an account, owns a domain, approved website copy, or has verified a real database restore. Practice mode never calls the checker.

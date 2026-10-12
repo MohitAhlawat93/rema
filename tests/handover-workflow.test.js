@@ -108,13 +108,16 @@ test('beginner practice uses a second email only in local memory and cannot chan
  const fetch=async(url,options={})=>{
   requests.push({url,method:options.method||'GET',body:options.body});
   if(url==='/api/admin/handover')return {ok:true,json:async()=>initial};
+  if(url==='/api/admin/setup-check')return {ok:true,json:async()=>({
+   mode:'read_only',checks:[{id:'pages',title:'Website pages',status:'passed',detail:'6/6 pages responded.'}]
+  })};
   throw new Error('Unexpected API call during practice: '+url);
  };
  const ctx=vm.createContext({document:{querySelector:element},window:{addEventListener(){}},fetch,confirm:()=>true});
  new vm.Script(script,{filename:'public/handover.js'}).runInContext(ctx);
  element('[data-tab="handover"]').handlers.click();
  for(let n=0;n<15;n++)await Promise.resolve();
- assert.equal(requests.length,1);
+ assert.equal(requests.length,2,'real mode triggers one automatic website check');
  assert.match(element('[data-handover-simple]').innerHTML,/Check your website/);
  element('[data-handover-practice]').handlers.click();
  assert.equal(element('[data-handover-practice-banner]').hidden,false);
@@ -127,13 +130,14 @@ test('beginner practice uses a second email only in local memory and cannot chan
  element('[data-handover-save]').handlers.click();
  element('[data-handover-export]').handlers.click();
  for(let n=0;n<10;n++)await Promise.resolve();
- assert.equal(requests.length,1,'practice cannot make backend API calls');
+ assert.equal(requests.length,2,'practice cannot make backend API calls');
  assert.match(element('[data-handover-message]').textContent,/disabled in practice/i);
  element('[data-handover-real]').handlers.click();
  assert.equal(element('[data-handover-practice-banner]').hidden,true);
  assert.match(element('[data-handover-count]').textContent,/1\/10/,'real owner progress must survive the practice session');
  assert.equal(element('[data-handover-sale-model]').value,'managed');
  assert.ok(!requests.some(x=>JSON.stringify(x).includes('my.other.email@example.com')),'practice email must not be transmitted');
+ assert.equal(requests.filter(x=>x.url==='/api/admin/setup-check').length,1,'do not rerun automatic scan during practice');
 });
 test('easy setup has exactly three owner steps and keeps developer work separate',async()=>{
  const html=await readFile(new URL('../public/admin.html',import.meta.url),'utf8');
