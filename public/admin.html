@@ -1,11 +1,11 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="theme-color" content="#253027"><title>witness_lema_ Control — Private</title><link rel="icon" href="/assets/mark.svg"><link rel="stylesheet" href="/admin.css"><script type="module" src="/admin.js?v=dashboard-runtime-11"></script><script type="module" src="/handover.js?v=handover-wizard-1"></script></head>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="theme-color" content="#253027"><title>witness_lema_ Control — Private</title><link rel="icon" href="/assets/mark.svg"><link rel="stylesheet" href="/admin.css"><script type="module" src="/admin.js?v=dashboard-runtime-11"></script><script type="module" src="/handover.js?v=easy-setup-2"></script></head>
 <body>
 <main class="login-shell" data-login>
   <section class="login-card"><img src="/assets/mark.svg" alt="" width="72" height="72"><p class="eyebrow">Private owner access</p><h1>witness_lema_<br><em>Control</em></h1><p>Update the website, photographs and assistant without editing GitHub.</p>
   <form data-login-form><label>Owner ID<input name="loginId" autocomplete="username" required></label><label>Password<span class="password-field"><input name="password" type="password" autocomplete="current-password" required><button type="button" data-password-toggle aria-label="Show password">Show</button></span></label><button class="primary">Sign in</button><p class="message" data-login-message role="status"></p></form><a href="/">← Return to website</a></section>
 </main>
 <main class="dashboard" data-dashboard hidden>
-  <aside><a class="brand" href="/"><img src="/assets/mark.svg" alt=""><span>witness_lema_<small>PRIVATE CONTROL</small></span></a><nav aria-label="Admin sections"><button data-tab="overview" class="active">Overview</button><button data-tab="business">Business identity</button><button data-tab="profile">Profile &amp; links</button><button data-tab="services">Services</button><button data-tab="photos">Photographs</button><button data-tab="assistant">Assistant</button><button data-tab="links">Afterhours &amp; contacts</button><button data-tab="reviews">Reviews</button><button data-tab="seo">Google SEO</button><button data-tab="handover">Client handover</button></nav><div class="side-foot"><a href="/" target="_blank">View website ↗</a><button data-logout>Log out</button></div></aside>
+  <aside><a class="brand" href="/"><img src="/assets/mark.svg" alt=""><span>witness_lema_<small>PRIVATE CONTROL</small></span></a><nav aria-label="Admin sections"><button data-tab="overview" class="active">Overview</button><button data-tab="business">Business identity</button><button data-tab="profile">Profile &amp; links</button><button data-tab="services">Services</button><button data-tab="photos">Photographs</button><button data-tab="assistant">Assistant</button><button data-tab="links">Afterhours &amp; contacts</button><button data-tab="reviews">Reviews</button><button data-tab="seo">Google SEO</button><button data-tab="handover">Easy setup</button></nav><div class="side-foot"><a href="/" target="_blank">View website ↗</a><button data-logout>Log out</button></div></aside>
   <section class="workspace">
     <header><div><p class="eyebrow">Owner workspace</p><h1>Good to see you, <em>witness_lema_.</em></h1></div><div class="header-actions"><button class="secondary" data-preview>Preview draft ↗</button><button class="primary" data-publish>Publish website</button></div></header>
     <div class="notice" data-notice role="status">Loading your private workspace…</div>
@@ -134,37 +134,54 @@
     </section>
     
     <section class="panel" data-panel="handover" aria-labelledby="handover-heading">
-      <div class="section-head"><div><p class="eyebrow">Owner setup / Client handover</p><h2 id="handover-heading">Handover wizard &amp; content export.</h2>
-      <p>Record progress safely and prepare a portable content export. Submitting a task does not prove provider ownership, permission, or acceptance.</p></div>
-      <div class="header-actions"><button class="secondary" type="button" data-handover-refresh>↻ Refresh</button><button class="primary" type="button" data-handover-save>Save handover progress</button></div></div>
-      <div class="workflow"><h3>Choose the agreed delivery model</h3>
-        <label>Website ownership arrangement
+      <div class="section-head"><div><p class="eyebrow">Easy website setup</p><h2 id="handover-heading">Get your website ready.</h2>
+        <p>Just three small steps. You do not need to know anything about coding, hosting, or databases.</p></div></div>
+      <div class="handover-mode-bar" role="group" aria-label="Choose real setup or practice">
+        <button class="primary" type="button" data-handover-real aria-pressed="true">Real website setup</button>
+        <button class="secondary" type="button" data-handover-practice aria-pressed="false">Try it safely (practice)</button>
+      </div>
+      <section class="workflow handover-practice-banner" data-handover-practice-banner hidden aria-label="Practice mode">
+        <h3>Practice mode — nothing here changes the real website</h3>
+        <p>Use your own second email to try this. Your email stays on this screen: it is not sent, saved or used to create accounts. Practice resets when you refresh.</p>
+        <label>Practice email (optional)<input type="email" data-handover-practice-email placeholder="mysecondemail@example.com" autocomplete="off" maxlength="254"></label>
+        <p class="fine" data-handover-practice-email-note>Enter an email you own, or leave it blank. Do not enter a password.</p>
+      </section>
+      <div class="workflow handover-progress">
+        <h3 data-handover-next>Start with step 1.</h3>
+        <p data-handover-count>Open this page to see where you are.</p>
+        <p class="notice" data-handover-message role="status">Your progress will appear here.</p>
+      </div>
+      <div class="handover-simple-steps" data-handover-simple aria-label="Your three simple steps"></div>
+      <div class="handover-simple-controls">
+        <button class="primary" type="button" data-handover-save>Save my progress</button>
+        <button class="secondary" type="button" data-handover-refresh>Start again / Reload</button>
+      </div>
+      <div class="workflow handover-meaning">
+        <h3>What happens after these three steps?</h3>
+        <p><strong>We handle the technical setup.</strong> That includes hosting, safe storage, backups and Google setup. We will only say your website is ready to hand over after we check those things, agree on ownership and receive the owner's approval.</p>
+        <p class="fine">Marking “Please review” sends your progress for review. It does not buy a domain, change a live website, sign a contract or verify an account.</p>
+      </div>
+      <details class="handover-advanced">
+        <summary>For the website developer — technical setup and exports</summary>
+        <p class="fine">Ownership transfers are not performed by this page. Client does not need to complete these technical items. They require separate provider checks, backups and approvals. Never paste passwords, API keys, OTP codes or recovery details here.</p>
+        <label>How will the website be owned and supported?
           <select data-handover-sale-model>
-            <option value="undecided">Not yet agreed</option>
-            <option value="managed">Managed website — developer operates hosting under agreement</option>
-            <option value="client_owned">Client-owned infrastructure — contractually licensed source</option>
-            <option value="full_source">Full client-specific source purchase and transfer</option>
+            <option value="undecided">Still deciding</option>
+            <option value="managed">We manage the technical side</option>
+            <option value="client_owned">Owner has separate hosting and accounts</option>
+            <option value="full_source">Full source-code purchase agreed</option>
           </select>
         </label>
-        <p class="fine">The selected model is a plan, not a signed contract. Never paste API keys, passwords, one-time codes, personal identification or account recovery details here.</p>
-      </div>
-      <div class="workflow"><h3>Readiness tracking</h3><p data-handover-count>Open this section to load the plan.</p>
-        <p><strong>All external account transfers are unverified until authenticated provider checks and Lema's approval are recorded.</strong> Ownership transfers are not performed by this page. This page does not purchase domains, register email accounts, take billing control, rotate keys, or migrate private infrastructure.</p>
-        <p class="notice" role="status" data-handover-message>Choose Client handover to load your private progress.</p>
-      </div>
-      <div class="handover-wizard-list" data-handover-list></div>
-      <div class="workflow"><h3>Read-only configuration checks</h3>
-        <p class="fine">These indicators check server configuration only. They cannot prove provider ownership, user permission or successful restore.</p>
-        <ul data-handover-indicators></ul>
-      </div>
-      <div class="workflow"><h3>Owner content export</h3>
-        <p>Download the latest private draft, published content/history, chatbot FAQ answers, public reviews and submitted handover progress. No API keys or database login details are included. <strong>Not a backup:</strong> uploaded media bytes, database/schema/roles, private AI vectors and source-code rights require separate migration and authorization.</p>
-        <button class="secondary" data-handover-export type="button">Download owner content (.json) ↓</button>
-      </div>
-      <div class="workflow"><h3>External verification checklist</h3>
-        <p>Owner verifies domain and recovery access at their registrar; provider permissions and billing at hosting and database providers; their email and API-provider accounts; Google Search Console after DNS/HTML verification. A developer completes a separate, backed-up, isolated database migration and performs restore/security tests before accepting the handover.</p>
-        <p class="fine">No automatic external access is granted by checking these tasks.</p>
-      </div>
+        <div class="handover-wizard-list" data-handover-list></div>
+        <div class="workflow"><h3>Technical configuration checks</h3>
+          <p class="fine">These describe settings, not proof that a person owns an account.</p>
+          <ul data-handover-indicators></ul>
+        </div>
+        <div class="workflow"><h3>Export the owner's website information</h3>
+          <p>Exports website text/settings, knowledge answers and reviews. This is not a full media or database backup.</p>
+          <button class="secondary" data-handover-export type="button">Download website information (.json)</button>
+        </div>
+      </details>
     </section>
     <section class="panel" data-panel="assistant"><div class="section-head"><div><p class="eyebrow">Assistant</p><h2>Your website concierge.</h2><p>Change its public name and welcome text here. Knowledge answers update immediately.</p></div><div><button class="primary" data-save>Save assistant settings</button></div></div><div class="assistant-settings"><fieldset><legend>Public identity</legend><label>Assistant name<input data-path="assistant.name" maxlength="80"></label><label>Welcome message<textarea data-path="assistant.greeting" rows="3" maxlength="500"></textarea></label><label>Owner-verified sensitive topics (English keywords, comma-separated)<input data-path="assistant.verifiedSensitiveClaims" maxlength="300" placeholder="Leave empty until personally approved"></label><p class="fine">Do not list a sensitive arrangement unless the owner has explicitly confirmed it. Publishing new settings requires Save and Publish.</p><div class="repeat-fields"><label>First suggestion label<input data-path="assistant.suggestionOneLabel" maxlength="40"></label><label>First suggested question<input data-path="assistant.suggestionOne" maxlength="160"></label><label>Second suggestion label<input data-path="assistant.suggestionTwoLabel" maxlength="40"></label><label>Second suggested question<input data-path="assistant.suggestionTwo" maxlength="160"></label></div></fieldset><aside class="ai-status"><p class="eyebrow">AI connection</p><strong data-ai-status>Checking…</strong><span data-ai-detail>The API key remains server-only.</span><button type="button" class="secondary" data-test-ai>Test AI connection</button><button type="button" class="secondary" data-rebuild-rag>Rebuild search index</button><span data-rag-status role="status">Vector-only search uses approved published information.</span></aside></div>
     <fieldset class="assistant-evaluator"><legend>Test visitor questions</legend>

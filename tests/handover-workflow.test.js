@@ -60,6 +60,7 @@ test('client handover UI loads after protected tab click and persists with optim
  class FakeElement{
   constructor(){this.dataset={};this.handlers={};this.value='';this.textContent='';this.innerHTML='';this.disabled=false;this.className='';}
   addEventListener(name,fn){this.handlers[name]=fn;}
+  setAttribute(name,value){this[name]=value;}
  }
  const elements=new Map();
  const element=selector=>{if(!elements.has(selector))elements.set(selector,new FakeElement());return elements.get(selector);};
@@ -91,4 +92,57 @@ test('client handover UI loads after protected tab click and persists with optim
  for(let n=0;n<12;n++)await Promise.resolve();
  assert.equal(calls.filter(c=>c.method==='PUT').length,1);
  assert.match(element('[data-handover-message]').textContent,/Submitted steps are awaiting/);
+});
+
+test('beginner practice uses a second email only in local memory and cannot change live progress',async()=>{
+ const script=await readFile(new URL('../public/handover.js',import.meta.url),'utf8');
+ class FakeElement{
+  constructor(){this.dataset={};this.handlers={};this.value='';this.textContent='';this.innerHTML='';this.disabled=false;this.hidden=false;this.className='';}
+  addEventListener(name,fn){this.handlers[name]=fn;}
+  setAttribute(name,value){this[name]=value;}
+ }
+ const items=new Map();
+ const element=name=>{if(!items.has(name))items.set(name,new FakeElement());return items.get(name);};
+ const requests=[];
+ const initial={version:5,saleModel:'managed',progress:{'business-approval':'submitted'},steps:HANDOVER_STEPS,indicators:[]};
+ const fetch=async(url,options={})=>{
+  requests.push({url,method:options.method||'GET',body:options.body});
+  if(url==='/api/admin/handover')return {ok:true,json:async()=>initial};
+  throw new Error('Unexpected API call during practice: '+url);
+ };
+ const ctx=vm.createContext({document:{querySelector:element},window:{addEventListener(){}},fetch,confirm:()=>true});
+ new vm.Script(script,{filename:'public/handover.js'}).runInContext(ctx);
+ element('[data-tab="handover"]').handlers.click();
+ for(let n=0;n<15;n++)await Promise.resolve();
+ assert.equal(requests.length,1);
+ assert.match(element('[data-handover-simple]').innerHTML,/Check your website/);
+ element('[data-handover-practice]').handlers.click();
+ assert.equal(element('[data-handover-practice-banner]').hidden,false);
+ assert.match(element('[data-handover-simple]').innerHTML,/Practice only/);
+ assert.doesNotMatch(element('[data-handover-simple]').innerHTML,/https:\/\/accounts.google.com/);
+ element('[data-handover-practice-email]').handlers.input({target:{value:'my.other.email@example.com'}});
+ assert.match(element('[data-handover-practice-email-note]').textContent,/NOT been sent/);
+ element('[data-handover-simple]').handlers.change({target:{dataset:{simpleStep:'business-approval'},value:'submitted'}});
+ element('[data-handover-simple]').handlers.change({target:{dataset:{simpleSaleModel:'client_owned'},value:'client_owned'}});
+ element('[data-handover-save]').handlers.click();
+ element('[data-handover-export]').handlers.click();
+ for(let n=0;n<10;n++)await Promise.resolve();
+ assert.equal(requests.length,1,'practice cannot make backend API calls');
+ assert.match(element('[data-handover-message]').textContent,/disabled in practice/i);
+ element('[data-handover-real]').handlers.click();
+ assert.equal(element('[data-handover-practice-banner]').hidden,true);
+ assert.match(element('[data-handover-count]').textContent,/1\/10/,'real owner progress must survive the practice session');
+ assert.equal(element('[data-handover-sale-model]').value,'managed');
+ assert.ok(!requests.some(x=>JSON.stringify(x).includes('my.other.email@example.com')),'practice email must not be transmitted');
+});
+test('easy setup has exactly three owner steps and keeps developer work separate',async()=>{
+ const html=await readFile(new URL('../public/admin.html',import.meta.url),'utf8');
+ const js=await readFile(new URL('../public/handover.js',import.meta.url),'utf8');
+ assert.match(html,/Try it safely \(practice\)/);
+ assert.match(html,/data-handover-practice-email/);
+ assert.match(html,/data-handover-simple/);
+ assert.match(html,/<details class="handover-advanced">/);
+ assert.match(js,/STEP '+\(index\+1\)+' OF 3/);
+ assert.match(js,/if\(practice\)\{changes=false;/);
+ assert.match(html,/nothing here changes the real website/);
 });

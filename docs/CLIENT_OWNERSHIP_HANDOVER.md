@@ -83,3 +83,9 @@ The owner-only `/api/admin/handover-export` endpoint returns a JSON content expo
 
 ### Quota discipline
 Vercel Git deployments are limited to the production branch using `git.deploymentEnabled` in `vercel.json`. GitHub builds/tests run on feature branches; reviewed changes are merged and released in **one** production commit. Avoid build skipping as a quota workaround, redundant redeploys, and preview deployments unless explicitly needed.
+
+
+## Simple owner journey / safe rehearsal
+The admin “Easy setup” tab presents just three owner tasks: **check website**, **confirm a personal email/domain plan**, **choose who handles the technical work**. Advanced provider and source tasks stay under a developer-only disclosure. These are guided actions, not fake provider connections.
+Use **Try it safely (practice)** with a second email that the tester controls. The sample email is never posted to an API or persisted; practice progress is in-memory and resets on refresh. Practice disables real site editing links, external account creation links, production saves, and owner exports. Rehearsal is not evidence of DNS, GSC or provider ownership.
+For real onboarding, Lema must personally control account recovery and grant explicit authority. A developer's spare Gmail may own disposable test services but does not establish Lema's control; never transfer production billing or domain using the tester's identity as a shortcut.

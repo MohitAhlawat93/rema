@@ -1,82 +1,164 @@
-// Handover progress is stored in private service-only storage, never the public site draft.
-// Provider ownership is NOT validated by owner-selected progress statuses.
+// Beginner-friendly website setup. Real progress uses private service-only storage.
+// PRACTICE IS MEMORY-ONLY: never save or export, send sample emails, or open production editors.
 const $=selector=>document.querySelector(selector);
-let plan=null,changes=false;
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const options=[['todo','Not started'],['in_progress','I am working on this'],['submitted','Please review this for me']];
+const easySteps=[
+ {id:'business-approval',title:'Check your website',description:'Look at your name, photos, prices, services and contact details. Are they correct?',action:'Review website details',tab:'business'},
+ {id:'email-domain',title:'Use your own email',description:'Have an email address that only you control. You can choose a website address later with our help. You do not need to buy anything to practice.',action:'Create a Google email',url:'https://accounts.google.com/signup'},
+ {id:'source-agreement',title:'Choose who manages it',description:'Would you like us to handle the technical work, or do you want accounts in your own name? We will explain the agreement first.',action:null}
+];
+let plan=null,realPlan=null,practicePlan=null,practice=false,changes=false,practiceEmail='';
 const report=(message,error=false)=>{const el=$('[data-handover-message]');if(el){el.textContent=message;el.className=error?'notice error':'notice success';}};
 async function request(path,options={}){
  const response=await fetch('/api/admin/'+path,{...options,cache:'no-store',headers:{'content-type':'application/json',...(options.headers||{})}});
  const body=await response.json().catch(()=>({}));
- if(!response.ok)throw new Error(body.error||'The handover service is not available.');
+ if(!response.ok)throw new Error(body.error||'Could not load website setup.');
  return body;
 }
-const options=[['todo','Not started'],['in_progress','In progress'],['submitted','Submitted for review (not verified)']];
+const firstOutstanding=()=>easySteps.find(s=>(plan?.progress?.[s.id]||'todo')!=='submitted');
+const markChanged=()=>{changes=true;report(practice?'Practice only — this is not saved anywhere.':'Your changes are not saved yet. Choose Save my progress.');};
+const selectOptions=(selected)=>options.map(([value,label])=>
+ '<option value="'+value+'" '+(selected===value?'selected':'')+'>'+escapeHtml(label)+'</option>').join('');
 function draw(){
  if(!plan)return;
+ const status=plan.progress||{},steps=plan.steps||[];
+ const total=steps.filter(s=>status[s.id]==='submitted').length;
+ const clientTotal=easySteps.filter(s=>status[s.id]==='submitted').length;
  $('[data-handover-sale-model]').value=plan.saleModel||'undecided';
- const steps=plan.steps||[],progress=plan.progress||{};
- const n=steps.filter(s=>progress[s.id]==='submitted').length;
- $('[data-handover-count]').textContent=n+'/'+steps.length+' submitted for review — 0 provider ownership transfers verified here';
+ const count=$('[data-handover-count]');
+ count.textContent=total+'/'+steps.length+' tasks sent for review. Your three steps: '+clientTotal+'/3 sent.';
+ const next=firstOutstanding();
+ $('[data-handover-next]').textContent=next?'Next: '+next.title:'Your three steps were sent for review.';
+ $('[data-handover-simple]').innerHTML=easySteps.map((step,index)=>{
+  const selected=status[step.id]||'todo';
+  const action=step.url?
+    (practice?'<p class="fine">In practice, no new account is created.</p>':
+     '<a href="'+escapeHtml(step.url)+'" target="_blank" rel="noopener noreferrer">'+escapeHtml(step.action)+' ↗</a>'):
+    (step.tab?(practice?'<p class="fine">Practice only — the real editor stays untouched.</p>':
+     '<button class="secondary" type="button" data-simple-navigate="'+escapeHtml(step.tab)+'">'+escapeHtml(step.action)+' →</button>'):'');
+  const ownerType=step.id==='source-agreement'?
+    '<label>Who should look after the technical setup?<select data-simple-sale-model>'+
+    [['undecided','I am not sure yet'],['managed','Please manage it for me'],['client_owned','I want to own the accounts'],['full_source','I purchased the website code']].map(([v,label])=>
+      '<option value="'+v+'" '+(plan.saleModel===v?'selected':'')+'>'+escapeHtml(label)+'</option>').join('')+
+    '</select></label>':'';
+  return '<article class="handover-easy-step"><p class="easy-number">STEP '+(index+1)+' OF 3</p>'+
+    '<h3>'+escapeHtml(step.title)+'</h3><p>'+escapeHtml(step.description)+'</p>'+
+    ownerType+'<label>Where are you with this?<select data-simple-step="'+escapeHtml(step.id)+'">'+
+    selectOptions(selected)+'</select></label><div class="easy-actions">'+action+'</div></article>';
+ }).join('');
  $('[data-handover-list]').innerHTML=steps.map((step,index)=>
-   '<article class="handover-step"><p class="fine">Step '+(index+1)+'</p>'+
-   '<h3>'+escapeHtml(step.title)+'</h3><p>'+escapeHtml(step.description)+'</p>'+
-   '<label>Owner-reported progress<select data-handover-step="'+escapeHtml(step.id)+'">'+
-   options.map(([v,label])=>'<option value="'+v+'" '+((progress[step.id]||'todo')===v?'selected':'')+'>'+escapeHtml(label)+'</option>').join('')+
-   '</select></label><button type="button" class="secondary" data-handover-navigate="'+escapeHtml(step.tab)+'">Open relevant admin section →</button></article>'
- ).join('');
- const indicators=plan.indicators||[];
- $('[data-handover-indicators]').innerHTML=indicators.map(x=>
-   '<li><strong>'+escapeHtml(x.configured?'Configured':'Not configured')+'</strong> — '+escapeHtml(x.label)+'</li>').join('');
+  '<article class="handover-step"><p class="fine">Technical item '+(index+1)+'</p>'+
+  '<h3>'+escapeHtml(step.title)+'</h3><p>'+escapeHtml(step.description)+'</p>'+
+  '<label>Tracking only<select data-handover-step="'+escapeHtml(step.id)+'">'+
+  selectOptions(status[step.id]||'todo')+'</select></label>'+
+  (practice?'<p class="fine">Links to real editors are disabled in practice.</p>':
+   '<button type="button" class="secondary" data-handover-navigate="'+escapeHtml(step.tab)+'">Open relevant section →</button>')+
+  '</article>').join('');
+ $('[data-handover-indicators]').innerHTML=(practice?[]:plan.indicators||[]).map(x=>
+  '<li><strong>'+escapeHtml(x.configured?'Configured':'Not configured')+'</strong> — '+escapeHtml(x.label)+'</li>').join('');
+ $('[data-handover-practice-banner]').hidden=!practice;
+ $('[data-handover-practice]').setAttribute('aria-pressed',String(practice));
+ $('[data-handover-real]').setAttribute('aria-pressed',String(!practice));
+ $('[data-handover-practice]').className=practice?'primary':'secondary';
+ $('[data-handover-real]').className=practice?'secondary':'primary';
+ $('[data-handover-export]').disabled=practice;
+ $('[data-handover-save]').textContent=practice?'Try saving (practice only)':'Save my progress';
 }
 async function refresh(){
- if(changes&&!confirm('Discard unsaved handover progress?'))return;
- report('Loading private handover plan…');
- try{plan=await request('handover');changes=false;draw();report('Plan loaded privately. External ownership remains unverified.');}
- catch(error){report(error.message||'Could not load the handover plan.',true);}
+ if(practice){draw();report('You are practising. Nothing is saved or sent to anyone.');return;}
+ if(changes&&!confirm('Discard unsaved setup changes and reload?'))return;
+ report('Loading your website setup…');
+ try{plan=await request('handover');realPlan=plan;changes=false;draw();report('Ready. Complete the three simple steps above.');}
+ catch(error){report(error.message||'Could not load setup. Sign in again and retry.',true);}
+}
+function choosePractice(){
+ if(practice)return;
+ if(changes&&!confirm('Leave without saving your real setup changes?'))return;
+ realPlan=plan;practice=true;changes=false;practiceEmail='';
+ if($('[data-handover-practice-email]'))$('[data-handover-practice-email]').value='';
+ const steps=plan?.steps||easySteps.map(s=>({id:s.id,title:s.title,description:s.description,tab:s.tab||'handover'}));
+ practicePlan={version:0,saleModel:'undecided',progress:{},steps,indicators:[]};
+ plan=practicePlan;draw();report('Practice mode is ON. No real account, payment, data or website content can change here.');
+}
+function chooseReal(){
+ if(!practice)return;
+ practice=false;practicePlan=null;practiceEmail='';changes=false;
+ plan=realPlan;draw();
+ if(plan)report('Back to the real website setup. Your practice changes were discarded.');
+ else void refresh();
 }
 async function save(){
- if(!plan)return;
- const button=$('[data-handover-save]');
- button.disabled=true;
- report('Saving private handover progress…');
+ if(!plan)return report('Open this page again to load the setup.',true);
+ if(practice){changes=false;report('Practice complete! Nothing was saved or sent. Switch to Real website setup when ready.');return;}
+ const button=$('[data-handover-save]');button.disabled=true;report('Saving your progress…');
  try{
   const updated=await request('handover',{method:'PUT',body:JSON.stringify({
    expectedVersion:plan.version,saleModel:plan.saleModel,progress:plan.progress
   })});
   plan.version=updated.version;plan.updatedAt=updated.updatedAt;changes=false;
-  report('Saved. Submitted steps are awaiting independent evidence verification.');
- }catch(error){report(error.message||'Could not save the plan.',true);}
+  realPlan=plan;draw();report('Saved. Items marked “Please review” are waiting for a person to check them.');
+ }catch(error){report(error.message||'Could not save. Your changes are still on this screen.',true);}
  finally{button.disabled=false;}
 }
 async function exportOwnerData(){
- const button=$('[data-handover-export]');button.disabled=true;
- report('Preparing authenticated owner content export…');
+ if(practice)return report('Exports are disabled in practice mode.',true);
+ const button=$('[data-handover-export]');button.disabled=true;report('Preparing your private website information…');
  try{
   const data=await request('handover-export');
   const content=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const uri=URL.createObjectURL(content);
   const a=document.createElement('a');a.href=uri;a.download='lema-owner-content-export.json';
   document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(uri);
-  report('Content export prepared. This is NOT a database or media backup.');
- }catch(error){report(error.message||'Export failed.',true);}
- finally{button.disabled=false;}
+  report('Downloaded. This is website information, NOT a full media or database backup.');
+ }catch(error){report(error.message||'The download did not complete.',true);}
+ finally{button.disabled=practice;}
 }
-const nav=$('[data-tab="handover"]');
-nav?.addEventListener('click',()=>void refresh());
+$('[data-tab="handover"]')?.addEventListener('click',()=>void refresh());
 $('[data-handover-refresh]')?.addEventListener('click',()=>void refresh());
 $('[data-handover-save]')?.addEventListener('click',()=>void save());
 $('[data-handover-export]')?.addEventListener('click',()=>void exportOwnerData());
+$('[data-handover-practice]')?.addEventListener('click',choosePractice);
+$('[data-handover-real]')?.addEventListener('click',chooseReal);
+$('[data-handover-practice-email]')?.addEventListener('input',event=>{
+ if(!practice)return;
+ practiceEmail=String(event.target.value||'').trim().slice(0,254);
+ const note=$('[data-handover-practice-email-note]');
+ note.textContent=!practiceEmail?'You can leave this blank. No email or password is needed.':
+ /^[^\s@<>]+@[^\s@<>]+\.[a-zA-Z]{2,}$/.test(practiceEmail)?
+ 'Looks like an email address. It has NOT been sent, registered, or saved.':
+ 'Please enter a valid email address. Never enter a password.';
+});
+function updateStep(id,value){
+ if(!plan)return;
+ const match=plan.steps.some(s=>s.id===id);
+ if(!match||!options.some(([v])=>v===value))return;
+ plan.progress={...plan.progress,[id]:value};draw();markChanged();
+}
 $('[data-handover-sale-model]')?.addEventListener('change',event=>{
- if(!plan)return;plan.saleModel=event.target.value;changes=true;report('Unsaved handover changes.');
+ if(!plan)return;plan.saleModel=event.target.value;draw();markChanged();
+});
+$('[data-handover-simple]')?.addEventListener('change',event=>{
+ const id=event.target?.dataset?.simpleStep;
+ if(id){updateStep(id,event.target.value);return;}
+ if(event.target?.dataset?.simpleSaleModel){
+  if(!plan)return;plan.saleModel=event.target.value;draw();markChanged();
+ }
 });
 $('[data-handover-list]')?.addEventListener('change',event=>{
  const id=event.target?.dataset?.handoverStep;
- if(!id||!plan)return;
- plan.progress={...plan.progress,[id]:event.target.value};changes=true;draw();
- report('Unsaved handover changes. Review each step before submitting.');
+ if(id)updateStep(id,event.target.value);
+});
+$('[data-handover-simple]')?.addEventListener('click',event=>{
+ if(practice)return;
+ const tab=event.target?.closest?.('[data-simple-navigate]')?.dataset?.simpleNavigate;
+ if(tab)$('[data-tab="'+tab+'"]')?.click();
 });
 $('[data-handover-list]')?.addEventListener('click',event=>{
+ if(practice)return;
  const tab=event.target?.closest?.('[data-handover-navigate]')?.dataset?.handoverNavigate;
  if(tab&&tab!=='handover')$('[data-tab="'+tab+'"]')?.click();
 });
-window.addEventListener('beforeunload',event=>{if(changes){event.preventDefault();event.returnValue='';}});
+window.addEventListener('beforeunload',event=>{
+ if(changes&&!practice){event.preventDefault();event.returnValue='';}
+});
