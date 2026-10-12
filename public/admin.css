@@ -49,3 +49,28 @@
 [data-panel="handover"] select{display:block;width:100%;max-width:100%;margin:10px 0 16px;padding:12px;border:1px solid #bcbfba;border-radius:7px;background:#fff;color:#253027;font:inherit}
 [data-panel="handover"] button{margin-top:6px;max-width:100%}
 [data-handover-indicators] li{margin:8px 0}
+
+/* Guided setup for nontechnical owners: simple first, technical details optional. */
+.handover-mode-bar,.handover-simple-controls{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 20px}
+.handover-mode-bar button[aria-pressed="true"]{outline:2px solid currentColor;outline-offset:2px}
+.handover-practice-banner{border:2px dashed #897556}
+.handover-practice-banner input{display:block;width:100%;max-width:410px;margin-top:7px;padding:12px;border:1px solid #aeafa8;border-radius:6px}
+.handover-progress{margin:0 0 18px}
+.handover-simple-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,285px),1fr));gap:15px}
+.handover-easy-step{border:1px solid #d2cec5;border-radius:14px;padding:20px;background:rgba(255,255,255,.85);min-width:0;display:flex;flex-direction:column;gap:11px}
+.handover-easy-step h3,.handover-easy-step p{margin:0}
+.handover-easy-step p{line-height:1.6}
+.handover-easy-step .easy-number{font-size:12px;letter-spacing:.09em;font-weight:700}
+.handover-easy-step select{display:block;width:100%;max-width:100%;margin:7px 0;padding:12px;border:1px solid #acafa9;border-radius:6px;background:#fff;color:#253027;font:inherit}
+.handover-easy-step .easy-actions{margin-top:auto;display:flex;flex-wrap:wrap;gap:10px}
+.handover-easy-step .easy-actions a{display:inline-block;color:inherit;text-decoration:underline;text-underline-offset:4px}
+.handover-easy-step button{margin-top:0}
+.handover-meaning{margin-top:16px}
+.handover-advanced{border-top:1px solid #ccc5b8;margin-top:25px;padding-top:15px}
+.handover-advanced summary{cursor:pointer;font-weight:700;font-size:16px;line-height:1.5;padding:12px 0}
+.handover-advanced>.fine{margin:10px 0}
+@media(max-width:720px){
+ .handover-mode-bar button,.handover-simple-controls button{flex:1 1 190px}
+ .handover-simple-steps{grid-template-columns:1fr}
+ .handover-easy-step{padding:17px}
+}
