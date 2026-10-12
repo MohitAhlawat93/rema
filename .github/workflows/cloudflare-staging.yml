@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/cloudflare-staging.yml'
       - 'wrangler.jsonc'
+      - 'scripts/cloudflare-staging-smoke.mjs'
 permissions:
   contents: read
   deployments: write
