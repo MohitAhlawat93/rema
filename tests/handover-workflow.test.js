@@ -87,7 +87,8 @@ test('client handover UI loads after protected tab click and persists with optim
  assert.match(element('[data-handover-count]').textContent,/0\/10/);
  element('[data-handover-sale-model]').handlers.change({target:{value:'managed'}});
  element('[data-handover-list]').handlers.change({target:{dataset:{handoverStep:'business-approval'},value:'submitted'}});
- await element('[data-handover-save]').handlers.click();
+ element('[data-handover-save]').handlers.click();
+ for(let n=0;n<12;n++)await Promise.resolve();
  assert.equal(calls.filter(c=>c.method==='PUT').length,1);
  assert.match(element('[data-handover-message]').textContent,/Submitted steps are awaiting/);
 });
