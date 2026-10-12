@@ -216,6 +216,12 @@ function bubble(text,user=false,href=''){
  messages.scrollTop=messages.scrollHeight;
  return p;
 }
+function removeRepeatedAnswer(answer,previous,changedQuestion){
+ const incoming=String(answer||'').trim(),prior=String(previous||'').trim();
+ if(!changedQuestion||prior.length<16||!incoming.toLowerCase().startsWith(prior.toLowerCase()))return incoming;
+ const remainder=incoming.slice(prior.length).replace(/^[\\s:—.,;-]+/u,'').trim();
+ return remainder.length>=3?remainder:incoming;
+}
 async function ask(text){
  const clean=String(text||'').trim();
  if(!clean||chatBusy)return;
@@ -224,6 +230,8 @@ async function ask(text){
  setAssistant(true,false);
  // Only earlier visitor questions are possible context; never resend assistant answers.
  const history=chatHistory.filter(item=>item.role==='user').slice(-2);
+ const previousAnswer=chatHistory.filter(item=>item.role==='assistant').at(-1)?.content||'';
+ const changedQuestion=history.at(-1)?.content?.trim().toLowerCase()!==clean.toLowerCase();
  bubble(clean,true);
  chatHistory.push({role:'user',content:clean});
  question.value='';
@@ -243,8 +251,9 @@ async function ask(text){
   const data=await response.json().catch(()=>({}));
   if(!response.ok||typeof data.answer!=='string'||!data.answer.trim())throw new Error('HTTP '+response.status);
   pending.remove();
-  bubble(data.answer,false,data.href);
-  chatHistory.push({role:'assistant',content:data.answer});
+  const answer=removeRepeatedAnswer(data.answer,previousAnswer,changedQuestion);
+  bubble(answer,false,data.href);
+  chatHistory.push({role:'assistant',content:answer});
  }catch(error){
   pending.remove();
   const rateLimited=/HTTP 429/.test(String(error?.message||''));
