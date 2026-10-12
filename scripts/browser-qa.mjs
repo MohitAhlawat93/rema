@@ -131,6 +131,44 @@ try{
   assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('chat-visible')),false);
   await page.close();await context.close();
  });
+ await run('three consecutive mobile questions recover from API failure and retry',async()=>{
+  for(const width of [320,390]){
+   const context=await browser.newContext({viewport:{width,height:740},isMobile:true,hasTouch:true});
+   const page=await context.newPage();
+   await page.addInitScript(()=>sessionStorage.setItem('lema-concierge-first-visit-v3','1'));
+   let count=0;
+   await page.route('**/api/assistant',async route=>{
+    count++;
+    await new Promise(resolve=>setTimeout(resolve,120));
+    if(count===2)return route.fulfill({status:503,contentType:'application/json',body:'{"error":"Provider is unavailable"}'});
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+     answer:'Test response '+count+' for '+route.request().postDataJSON().question,href:''
+    })});
+   });
+   await page.goto(root+'/',{waitUntil:'domcontentloaded'});
+   await page.locator('#assistant-launch').click();
+   const send=async(value)=>{
+    await page.locator('#question').fill(value);
+    await page.locator('#assistant-form button').click();
+   };
+   await send('First test question');
+   await page.locator('#messages .bubble').filter({hasText:'Test response 1'}).waitFor({state:'visible'});
+   await send('Second test question');
+   await page.locator('#messages .assistant-retry').waitFor({state:'visible'});
+   assert.equal(await page.locator('#question').isEnabled(),true);
+   assert.equal(await page.locator('#assistant-form button').isEnabled(),true);
+   await page.locator('#messages .assistant-retry').click();
+   await page.locator('#messages .bubble').filter({hasText:'Test response 3'}).waitFor({state:'visible'});
+   await send('Third test question');
+   await page.locator('#messages .bubble').filter({hasText:'Test response 4'}).waitFor({state:'visible'});
+   assert.equal(count,4,'First, error, retry and third request should all reach API');
+   const rect=await page.locator('#assistant-panel').boundingBox();
+   assert.ok(rect&&rect.x>=0&&rect.y>=0&&rect.x+rect.width<=width+2&&rect.y+rect.height<=742,JSON.stringify(rect));
+   assert.ok(await page.locator('html').evaluate(e=>e.style.getPropertyValue('--chat-visual-height').endsWith('px')),
+      'Android visual viewport adaptation should be initialized');
+   await page.close();await context.close();
+  }
+ });
  await run('automatic chat waits for Afterhours dialog then opens after closure',async()=>{
   const ctx=await browser.newContext({viewport:{width:1280,height:720}});
   const page=await ctx.newPage();
