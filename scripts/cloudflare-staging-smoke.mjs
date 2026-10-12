@@ -6,7 +6,8 @@ if(!/^https:\/\/[-a-z0-9.]+\.pages\.dev$/i.test(origin)) {
  process.exit(2);
 }
 const paths=['/','/about/','/gallery/','/services/','/contact/','/reviews/',
- '/api/site-content','/api/reviews','/api/admin/session','/sitemap.xml','/robots.txt'];
+ '/api/site-content','/api/reviews','/api/admin/session','/sitemap.xml','/robots.txt',
+ '/media/uploads/00000000-0000-4000-8000-000000000000.jpg'];
 let failed=0;
 for(const path of paths){
  try{
@@ -22,6 +23,7 @@ for(const path of paths){
    else if(path==='/api/admin/session')good=[401,503].includes(r.status);
    else if(path==='/sitemap.xml')good=r.ok&&body.includes('<?xml');
    else if(path==='/robots.txt')good=r.ok&&/Disallow:\s*\//.test(body);
+   else if(path.startsWith('/media/uploads/'))good=r.status===404;
    console.log((good?'PASS ':'FAIL ')+r.status+' '+path);
    if(!good){
      // Log only safe API error categories, never content bodies or credentials.

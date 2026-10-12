@@ -26,13 +26,13 @@ Current stage: code prepared on a feature branch. The Vercel site remains the li
 
 ## Cloudflare account status checked on 2026-10-12
 - Connection to the developer account works.
-- A Pages project named `lema-website-staging` was created on 2026-10-12; no deployment has been uploaded.
+- Cloudflare Pages `lema-website-staging` deployed successfully to `https://lema-website-staging.pages.dev`; public and browser slideshow checks have passed.
 - R2 has been enabled and an **empty staging-only** `lema-staging-media` bucket was created and bound to both preview and production environments of the staging Pages project. Do not copy client photos before content approval; do not use developer billing for client production.
-- No resource creation or deployment happened in this preparation stage.
+- The original Vercel production site is unchanged. The new isolated database is used by staging only.
 
 ## Limitations
 - Moving Vercel's functions involves real runtime compatibility tests, not just a static build.
-- R2 upload/download logic and Workers AI fallback are staged in code, but **not activated or deployed**. R2 remains disabled in Cloudflare and no owner bucket/AI binding exists.
+- R2 upload/download logic is deployed, and the staging `MEDIA_BUCKET` R2 binding is configured. Authenticated upload, delete and publish have not yet been verified. Workers AI fallback is implemented but not yet end-to-end tested.
 - Configure the client-owned R2 bucket binding as `MEDIA_BUCKET` and Workers AI as `AI` only after authorization; add `COOKIE_SECURE=true` for production HTTPS.
 - The admin's existing photo button uploads optimized JPEGs through R2 once bound. Validate the Supabase Edge Function changes on a **new client-owned database** before turning on this flow; otherwise published R2 paths may be rejected.
 - Do not delete media directly from storage when merely removing a photo from a draft. Schedule safe garbage collection after checking published references.
@@ -41,9 +41,9 @@ Current stage: code prepared on a feature branch. The Vercel site remains the li
 - Free services have traffic/usage limits. Supabase Free may pause inactive projects.
 
 ## Staging provider readiness checked 2026-10-12
-- Cloudflare Pages project: `lema-website-staging` (currently has **no live deployment**, even if the pages.dev hostname exists).
+- Cloudflare Pages project: `lema-website-staging` is live on its free `pages.dev` hostname; 81 code tests and public, SEO and real-browser slideshow checks passed.
 - Cloudflare R2: `lema-staging-media` empty bucket, bound as `MEDIA_BUCKET`.
-- Build source / Git integration: not connected; no Pages bundle uploaded.
+- GitHub Actions Direct Upload to Pages is working with `CF_STAGING_API_TOKEN`; the client does not need a GitHub connection.
 - Production Supabase credentials: deliberately **not copied** from developer account.
 - This staging environment must remain unindexed and must not become Lema's permanent project. The final owner controls their own accounts.
 
@@ -79,9 +79,22 @@ It does **not** have the internal admin secret, a Supabase service-role key,
 the developer's admin password or a Groq production key. Thus owner edits,
 review posting and privileged RAG cannot run from this temporary staging site.
 
-To test the *complete* workflow, create a separate Supabase staging project
-in an organization explicitly approved by its owner, restore only Lema test
-data, create fresh staging-only credentials, deploy its backend functions,
-and configure those credentials in the staging Pages environment securely.
-Never copy unrelated shared-tenancy records. Verify restore, RLS and
-admin, upload, review and chatbot operations before involving any client.
+Staging database: `lema_staging` (`ap-south-1`, Mumbai), created on the Supabase Free tier
+on 2026-10-12. All 12 existing migrations and the RAG trigger-permission
+hardening migration were applied; public/owner RLS checks completed.
+We copied ONLY Lema's already published site snapshot (21 image references)
+and 62 published FAQ answers; no other application data, production owner
+passwords or internal secrets. The private test draft begins as the published
+snapshot; client secrets are not shared.
+
+Both Supabase Edge Functions `witness-lema-admin` and `tenant-hybrid-rag`
+have been deployed to the isolated project with their own custom-secret
+authorization; the test database currently has no seeded owner credential.
+Create fresh staging-only owner credentials and test admin login, publish,
+R2 photo upload, review submission/deletion, AI inference, backups/restore
+and isolation before calling handover complete.
+
+The new Cloudflare staging project and Supabase test database are still in the
+**developer's accounts** for testing. The final customer must receive their own
+accounts, recovery access, verified domain and separate secrets as part of
+the automated handover.

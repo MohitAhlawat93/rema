@@ -7,6 +7,7 @@ on:
       - '.github/workflows/cloudflare-staging.yml'
       - 'wrangler.jsonc'
       - 'scripts/cloudflare-staging-smoke.mjs'
+      - 'docs/CLOUDFLARE_MIGRATION.md'
       - 'public/app.js'
       - 'scripts/cloudflare-slideshow-qa.mjs'
 permissions:
