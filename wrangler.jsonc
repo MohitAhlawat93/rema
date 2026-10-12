@@ -1,0 +1,9 @@
+{
+  // Staging-only config. Do not deploy to a client without their own account/secrets.
+  "name": "lema-site-staging",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-10-12",
+  "compatibility_flags": ["nodejs_compat"]
+  // Bind R2 storage and Workers AI after account authorization.
+  // All Supabase/Groq/admin credentials are Cloudflare encrypted secrets.
+}
