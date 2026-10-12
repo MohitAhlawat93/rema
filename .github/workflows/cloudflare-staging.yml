@@ -13,6 +13,8 @@ on:
       - 'public/admin.js'
       - 'public/admin.html'
       - 'api/admin/**'
+      - 'lib/setup-automation.js'
+      - 'tests/setup-automation.test.js'
       - 'lib/staging-self-test.js'
       - 'lib/workers-ai-fallback.js'
       - 'lib/rate-limit.js'
