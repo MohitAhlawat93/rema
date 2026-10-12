@@ -234,6 +234,7 @@ try{
     if(path.endsWith('/session'))body={authenticated:true,state:simulated};
     else if(path.endsWith('/knowledge'))body={items:[]};
     else if(path.endsWith('/ai-status'))body={configured:false};
+    else if(path.endsWith('/ai-test'))body={status:'missing'};
     else if(path.endsWith('/review-inbox'))body={items:[]};
     else if(path.endsWith('/state')&&method==='PUT'){
       const request=req.postDataJSON();
@@ -250,6 +251,10 @@ try{
   page.on('dialog',dialog=>dialog.accept());
   await page.goto(root+'/admin.html');
   await page.locator('[data-dashboard]').waitFor({state:'visible'});
+  await page.locator('[data-tab="assistant"]').click();
+  await page.locator('[data-test-ai]').click();
+  assert.match(await page.locator('[data-ai-status]').textContent(),/API key unavailable/);
+  assert.match(await page.locator('[data-ai-detail]').textContent(),/valid server-side API key/);
   await page.locator('[data-tab="seo"]').click();
   await page.locator('[data-seo-page]').selectOption('/reviews/');
   const title='Guest experiences and Reviews | Witness Lema';
