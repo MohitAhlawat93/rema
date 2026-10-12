@@ -157,6 +157,20 @@ nav.addEventListener('click',()=>setMenu(false));
 const launcher=$('#assistant-launch'),panel=$('#assistant-panel'),question=$('#question'),messages=$('#messages');
 const chatHistory=[];
 const mobileChat=()=>window.matchMedia('(max-width:640px)').matches;
+let chatBusy=false;
+function syncChatViewport(){
+  if(!window.visualViewport)return;
+  const v=window.visualViewport;
+  const h=Math.max(180,Math.floor(v.height));
+  // On Android the keyboard may shrink only the visual viewport, not 100dvh.
+  const occluded=Math.max(0,Math.floor(window.innerHeight-v.height-v.offsetTop));
+  document.documentElement.style.setProperty('--chat-visual-height',h+'px');
+  document.documentElement.style.setProperty('--chat-keyboard-offset',occluded+'px');
+}
+window.visualViewport?.addEventListener('resize',syncChatViewport,{passive:true});
+window.visualViewport?.addEventListener('scroll',syncChatViewport,{passive:true});
+window.addEventListener('resize',syncChatViewport,{passive:true});
+syncChatViewport();
 function setAssistant(open,focus=true){
   if(!open&&document.activeElement===question)question.blur();
   panel.hidden=!open;
@@ -165,8 +179,9 @@ function setAssistant(open,focus=true){
   panel.setAttribute('aria-hidden',String(!open));
   panel.classList.toggle('open',open);
   document.body.classList.toggle('chat-visible',open);
-  // Avoid the keyboard abruptly resizing the chat as soon as it opens on mobile.
-  if(focus)(open?(mobileChat()?$('#assistant-minimize'):question):launcher).focus();
+  if(open)syncChatViewport();
+  // Do not summon the Android keyboard until the visitor explicitly taps input.
+  if(focus)(open?(mobileChat()?$('#assistant-minimize'):question):launcher).focus({preventScroll:true});
 }
 const autoChatKey='lema-concierge-first-visit-v3';
 const chatSeen=()=>{try{return sessionStorage.getItem(autoChatKey)==='1';}catch{return false;}};
@@ -176,39 +191,85 @@ function attemptAutoChat(){
   if(!autoChatReady||chatSeen()||!panel.hidden)return;
   if(document.hidden||!$('#afterhours-backdrop').hidden)return;
   markChatSeen();
-  setAssistant(true,false); // Never steal keyboard focus on automatic open.
+  setAssistant(true,false);
 }
 launcher.addEventListener('click',()=>{markChatSeen();setAssistant(true);});
 if(!chatSeen())window.setTimeout(()=>{autoChatReady=true;attemptAutoChat();},1500);
 document.addEventListener('visibilitychange',attemptAutoChat);
 $('#assistant-minimize').addEventListener('click',()=>setAssistant(false));
-$('#assistant-expand').addEventListener('click',()=>{const expanded=panel.classList.toggle('expanded');$('#assistant-expand').setAttribute('aria-pressed',String(expanded));$('#assistant-expand').setAttribute('aria-label',expanded?'Shrink chat':'Expand chat');if(!mobileChat())question.focus();});
-function bubble(text,user=false,href=''){const p=document.createElement('p');p.className='bubble'+(user?' user':'');p.textContent=String(text||'');if(href&&/^\/(?:[\w/-]*)$/.test(href)){const a=document.createElement('a');a.href=href;a.textContent='Explore this page ↗';p.append(a);}messages.append(p);while(messages.children.length>40)messages.firstElementChild.remove();messages.scrollTop=messages.scrollHeight;return p;}
+$('#assistant-expand').addEventListener('click',()=>{
+ const expanded=panel.classList.toggle('expanded');
+ $('#assistant-expand').setAttribute('aria-pressed',String(expanded));
+ $('#assistant-expand').setAttribute('aria-label',expanded?'Shrink chat':'Expand chat');
+ syncChatViewport();
+ if(!mobileChat())question.focus();
+});
+function bubble(text,user=false,href=''){
+ const p=document.createElement('p');
+ p.className='bubble'+(user?' user':'');
+ p.textContent=String(text||'');
+ if(href&&/^\/(?:[\w/-]*)$/.test(href)){
+  const a=document.createElement('a');a.href=href;a.textContent='Explore this page ↗';p.append(a);
+ }
+ messages.append(p);
+ while(messages.children.length>40)messages.firstElementChild.remove();
+ messages.scrollTop=messages.scrollHeight;
+ return p;
+}
 async function ask(text){
-  const clean=String(text||'').trim();if(!clean||question.disabled)return;
-  setAssistant(true);
-  const history=chatHistory.slice(-6);
-  bubble(clean,true);chatHistory.push({role:'user',content:clean});
-  question.value='';question.disabled=true;
-  if(mobileChat()&&document.activeElement===question)question.blur();
-  const pending=bubble('Thinking');
-  pending.classList.add('pending');
-  pending.setAttribute('role','status');
-  try{
-    const response=await fetch('/api/assistant',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:clean,language:$('#assistant-language').value,history}),signal:AbortSignal.timeout(14000)});
-    const data=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(data.error||'Assistant temporarily unavailable.');
-    pending.remove();bubble(data.answer||'Please ask again in a different way.',false,data.href);
-    chatHistory.push({role:'assistant',content:data.answer||''});
-  }catch(error){
-    pending.remove();
-    const message='Sorry, the chat connection is having a moment. Please try again, or ask in another way. You can also reach Lema from the Contact page.';
-    bubble(message,false,'/contact/');
-    chatHistory.push({role:'assistant',content:message});
-  }finally{question.disabled=false;if(!mobileChat()&&!panel.hidden)question.focus();}
+ const clean=String(text||'').trim();
+ if(!clean||chatBusy)return;
+ chatBusy=true;
+ // Prevent a second keyboard/focus jump every time a message is submitted.
+ setAssistant(true,false);
+ const history=chatHistory.slice(-6);
+ bubble(clean,true);
+ chatHistory.push({role:'user',content:clean});
+ question.value='';
+ const send=$('#assistant-form button[type="submit"]')||$('#assistant-form button');
+ send.disabled=true;
+ const pending=bubble('Thinking');
+ pending.classList.add('pending');
+ pending.setAttribute('role','status');
+ const controller=new AbortController();
+ const timeoutId=window.setTimeout(()=>controller.abort(),8500);
+ try{
+  const response=await fetch('/api/assistant',{
+   method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({question:clean,language:$('#assistant-language').value,history}),
+   signal:controller.signal
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||typeof data.answer!=='string'||!data.answer.trim())throw new Error('HTTP '+response.status);
+  pending.remove();
+  bubble(data.answer,false,data.href);
+  chatHistory.push({role:'assistant',content:data.answer});
+ }catch(error){
+  pending.remove();
+  const rateLimited=/HTTP 429/.test(String(error?.message||''));
+  const message=rateLimited?'Too many messages right now. Please wait a moment and try again.':
+    'The answer took too long or the connection was interrupted. You can retry this question.';
+  const failed=bubble(message);
+  failed.classList.add('assistant-error');
+  const retry=document.createElement('button');
+  retry.type='button';
+  retry.className='assistant-retry';
+  retry.textContent='Retry ↻';
+  retry.addEventListener('click',()=>{failed.remove();void ask(clean);});
+  failed.append(retry);
+  // Do not add a fabricated assistant answer to the conversation history.
+ }finally{
+  window.clearTimeout(timeoutId);
+  chatBusy=false;
+  send.disabled=false;
+  question.disabled=false;
+  syncChatViewport();
+  // Mobile: keep the user's keyboard state unchanged.
+  if(!mobileChat()&&!panel.hidden)question.focus({preventScroll:true});
+ }
 }
 $('#assistant-form').addEventListener('submit',e=>{e.preventDefault();void ask(question.value);});
-document.querySelectorAll('[data-question]').forEach(b=>b.addEventListener('click',()=>ask(b.dataset.question)));
+document.querySelectorAll('[data-question]').forEach(b=>b.addEventListener('click',()=>{void ask(b.dataset.question);}));
 const afterhoursLaunch=$('#afterhours-launch'),afterhoursBackdrop=$('#afterhours-backdrop'),afterhoursClose=$('#afterhours-close');
 function setAfterhours(open){if(open&&afterhoursLaunch.hidden)return;afterhoursBackdrop.hidden=!open;afterhoursLaunch.setAttribute('aria-expanded',String(open));document.body.classList.toggle('afterhours-visible',open);(open?afterhoursClose:afterhoursLaunch).focus();if(!open)attemptAutoChat();}
 afterhoursLaunch.addEventListener('click',()=>setAfterhours(true));
