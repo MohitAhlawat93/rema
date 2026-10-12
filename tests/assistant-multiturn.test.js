@@ -34,10 +34,10 @@ test('second answer stays independent and RAG retrieval uses vector results only
   return {status:res.statusCode,...result};
  };
  try{
-  const first=await chat('How can I contact her?');
+  const first=await chat('Can you explain her cancellation policy?');
   assert.equal(first.status,200);assert.equal(first.answer,'THE_FIRST_ANSWER');
-  const second=await chat('Can you show her gallery?',[
-   {role:'user',content:'How can I contact her?'},{role:'assistant',content:'THE_FIRST_ANSWER'}
+  const second=await chat('Can you explain her rescheduling policy?',[
+   {role:'user',content:'Can you explain her cancellation policy?'},{role:'assistant',content:'THE_FIRST_ANSWER'}
   ]);
   assert.equal(second.status,200);assert.equal(second.answer,'THE_SECOND_ANSWER');
   assert.doesNotMatch(prompts[1],/THE_FIRST_ANSWER|How can I contact her/i);

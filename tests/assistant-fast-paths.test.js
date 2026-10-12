@@ -51,18 +51,18 @@ test('vector-only FAQ uses Supabase vector endpoint, not legacy keyword search',
   if(url.includes('witness-lema-admin'))return ok({allowed:true});
   if(url.includes('/functions/v1/tenant-hybrid-rag')){
    vector++;assert.equal(JSON.parse(options.body).tenant,'witness-lema');
-   return ok({mode:'vector',rows:[{question:'How can I contact her?',answer:'Use the Contact page.',href:'/contact/',score:.95,similarity:.95}]});
+   return ok({mode:'vector',rows:[{question:'What is her cancellation policy?',answer:'Please contact her for the verified cancellation policy.',href:'/contact/',score:.95,similarity:.95}]});
   }
   if(url.includes('witness_lema_published_site'))return ok([{payload:{}}]);
   if(url.includes('witness_lema_knowledge'))legacy++;
   throw Error('Unexpected legacy call '+url);
  };
  try{
-  const result=await chat('How can I contact her?');
+  const result=await chat('What is her cancellation policy?');
   assert.equal(result.status,200);
   assert.equal(result.body.source,'vector');
   assert.equal(result.body.rag,'vector');
-  assert.equal(result.body.answer,'Use the Contact page.');
+  assert.equal(result.body.answer,'Please contact her for the verified cancellation policy.');
   assert.equal(result.body.href,'/contact/');
   assert.equal(vector,1);assert.equal(legacy,0);
  }finally{
