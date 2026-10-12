@@ -10,6 +10,7 @@ const xml=esc;
 export function validImage(image,supabaseUrl=''){
  if(typeof image!=='string'||image.length>2048)return false;
  if(/^\/images\/[a-z0-9_./-]+\.(?:jpe?g|png|webp)$/i.test(image)&&!image.includes('..'))return true;
+ if(/^\/media\/uploads\/[0-9a-f-]{36}\.(?:jpg|png|webp)$/.test(image))return true;
  return Boolean(supabaseUrl)&&image.startsWith(supabaseUrl.replace(/\/$/,'')+'/storage/v1/object/public/witness-lema-gallery/')&&/^https:\/\//.test(image)&&!/[<>"'\s]/.test(image);
 }
 export function cleanSEOPage(raw,route,template={},supabaseUrl=''){
