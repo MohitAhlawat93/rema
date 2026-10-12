@@ -17,6 +17,7 @@ on:
       - 'lib/workers-ai-fallback.js'
       - 'lib/rate-limit.js'
       - 'functions/api/staging-binding-check.js'
+      - 'functions/api/**'
       - 'api/assistant.js'
       - 'tests/staging-self-test.test.mjs'
       - 'scripts/cloudflare-slideshow-qa.mjs'
