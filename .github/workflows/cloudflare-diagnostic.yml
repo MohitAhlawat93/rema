@@ -1,0 +1,42 @@
+name: Cloudflare diagnostic — minimal Function
+on:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths: ['.github/workflows/cloudflare-diagnostic.yml']
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run build
+      - name: Replace functions in workspace ONLY for minimal test
+        run: |
+          mv functions functions-real
+          mkdir -p functions/api
+          printf '%s\n' 'export async function onRequest() { return Response.json({ok:true,diagnostic:true}); }' > functions/api/health.js
+          cat > wrangler.jsonc <<'EOF'
+          {"name":"lema-runtime-diagnostic","pages_build_output_dir":"./dist","compatibility_date":"2026-10-12","compatibility_flags":["nodejs_compat"]}
+          EOF
+      - name: Deploy minimal Function to isolated Cloudflare project
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CF_STAGING_API_TOKEN }}
+          accountId: '13032a1345920c80c9572e3ba6dddeba'
+          command: pages deploy dist --project-name=lema-runtime-diagnostic --branch=main
+      - name: Check minimal Function
+        run: |
+          node --input-type=module -e '
+            const base="https://lema-runtime-diagnostic.pages.dev";
+            const [a,b]=await Promise.all([fetch(base+"/"),fetch(base+"/api/health")]);
+            const health=await b.json().catch(()=>({}));
+            console.log("home:",a.status,"health:",b.status,health);
+            if(!a.ok||!b.ok||health.ok!==true)process.exit(1);
+          '
