@@ -16,6 +16,7 @@ on:
       - 'lib/staging-self-test.js'
       - 'lib/workers-ai-fallback.js'
       - 'lib/rate-limit.js'
+      - 'functions/api/staging-binding-check.js'
       - 'api/assistant.js'
       - 'tests/staging-self-test.test.mjs'
       - 'scripts/cloudflare-slideshow-qa.mjs'
@@ -69,6 +70,14 @@ jobs:
           command: pages deploy dist --project-name=lema-website-staging --branch=main
       - name: Verify deployed Pages routes (read-only)
         run: node scripts/cloudflare-staging-smoke.mjs https://lema-website-staging.pages.dev
+      - name: Inspect staging runtime AI and R2 binding availability
+        run: |
+          node --input-type=module <<'NODE'
+          const r=await fetch('https://lema-website-staging.pages.dev/api/staging-binding-check');
+          const status=await r.json().catch(()=>({}));
+          console.log('staging runtime binding status',status);
+          if(!r.ok||!status.staging)process.exit(1);
+          NODE
       - name: Verify live AI fallback with one visitor-safe question
         run: |
           node --input-type=module <<'NODE'
