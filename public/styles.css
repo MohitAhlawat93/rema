@@ -309,9 +309,9 @@
  #assistant-panel:not(.expanded) {
    left: auto;
    right: 10px;
-   width: clamp(184px, 54vw, 240px);
-   height: min(280px, 43dvh, calc(var(--chat-visual-height, 100dvh) - 40px));
-   max-height: min(280px, 43dvh, calc(var(--chat-visual-height, 100dvh) - 40px));
+   width: clamp(240px, 70vw, 312px);
+   height: min(364px, 56dvh, calc(var(--chat-visual-height, 100dvh) - 40px));
+   max-height: min(364px, 56dvh, calc(var(--chat-visual-height, 100dvh) - 40px));
    bottom: calc(10px + var(--chat-keyboard-offset, 0px) + env(safe-area-inset-bottom, 0px));
    border-radius: 14px;
  }

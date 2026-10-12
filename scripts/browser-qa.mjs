@@ -17,8 +17,8 @@ try{
     await page.goto(root+'/');
     await page.locator('#assistant-panel').waitFor({state:'visible',timeout:10000});
     const bounds=await page.locator('#assistant-panel').boundingBox();
-    assert.ok(bounds&&bounds.width<= (profile.isMobile?profile.viewport.width*.63:308),JSON.stringify(bounds));
-    assert.ok(bounds.height<= (profile.isMobile?305:361),JSON.stringify(bounds));
+    assert.ok(bounds&&bounds.width<= (profile.isMobile?profile.viewport.width*.80:308),JSON.stringify(bounds));
+    assert.ok(bounds.height<= (profile.isMobile?375:361),JSON.stringify(bounds));
     assert.ok(bounds.x>=0&&bounds.x+bounds.width<=profile.viewport.width+1,'chat must fit viewport');
     await page.click('#assistant-minimize');
     assert.equal(await page.locator('#assistant-panel').isHidden(),true);
@@ -92,7 +92,7 @@ try{
    assert.equal(await page.locator('#question').evaluate(el=>document.activeElement===el),false,
       'Mobile chat must not open the soft keyboard automatically');
    const box=await page.locator('#assistant-panel').boundingBox();
-   assert.ok(box&&box.width>=width*.50&&box.width<=width*.64&&box.x>=0&&box.x+box.width<=width+2,JSON.stringify(box));
+   assert.ok(box&&box.width>=width*.68&&box.width<=width*.81&&box.x>=0&&box.x+box.width<=width+2,JSON.stringify(box));
    assert.ok(box.y>=0&&box.y+box.height<=740+2,JSON.stringify(box));
    assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('chat-visible')),true);
    await page.locator('#assistant-minimize').click();

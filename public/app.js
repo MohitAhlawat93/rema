@@ -245,7 +245,7 @@ async function ask(text){
  try{
   const response=await fetch('/api/assistant',{
    method:'POST',headers:{'content-type':'application/json'},
-   body:JSON.stringify({question:clean,language:$('#assistant-language').value,history}),
+   body:JSON.stringify({question:clean,language:'en',history}),
    signal:controller.signal
   });
   const data=await response.json().catch(()=>({}));
