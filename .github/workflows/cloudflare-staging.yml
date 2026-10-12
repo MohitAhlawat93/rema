@@ -44,3 +44,5 @@ jobs:
           apiToken: ${{ secrets.CF_STAGING_API_TOKEN }}
           accountId: '13032a1345920c80c9572e3ba6dddeba'
           command: pages deploy dist --project-name=lema-website-staging --branch=feat/cloudflare-client-handover
+      - name: Verify deployed Pages routes (read-only)
+        run: node scripts/cloudflare-staging-smoke.mjs https://lema-website-staging.pages.dev
