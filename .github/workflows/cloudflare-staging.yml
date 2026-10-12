@@ -14,6 +14,8 @@ on:
       - 'public/admin.html'
       - 'api/admin/**'
       - 'lib/staging-self-test.js'
+      - 'lib/workers-ai-fallback.js'
+      - 'api/assistant.js'
       - 'tests/staging-self-test.test.mjs'
       - 'scripts/cloudflare-slideshow-qa.mjs'
 permissions:
