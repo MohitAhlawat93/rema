@@ -113,7 +113,7 @@ try{
     assert.ok(data.history.every(x=>x.role==='user'),'Do not resend older assistant answers');
    }
    await route.fulfill({status:200,contentType:'application/json',
-    body:JSON.stringify({answer:requests===1?'FIRST_RECORDED_REPLY':'ONLY_SECOND_REPLY',href:''})});
+    body:JSON.stringify({answer:requests===1?'FIRST_RECORDED_REPLY':'FIRST_RECORDED_REPLY\nONLY_SECOND_REPLY',href:''})});
   });
   await page.goto(root+'/',{waitUntil:'domcontentloaded'});
   await page.locator('#assistant-launch').click();
