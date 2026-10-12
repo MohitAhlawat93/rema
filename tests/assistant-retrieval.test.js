@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {site} from '../data/site.js';
-import {normalizeEnglish,interpretQuestion,ownerName,verifiedFactAnswer,resolvedRetrievalQuery} from '../lib/assistant-facts.js';
+import {normalizeEnglish,interpretQuestion,ownerName,verifiedFactAnswer,resolvedRetrievalQuery,filterVerifiedEvidence} from '../lib/assistant-facts.js';
 
 test('English typos normalize consistently',()=>{
  assert.equal(normalizeEnglish('whose WEBSITS is it?'),'whose website is it');
@@ -66,4 +66,17 @@ test('English business intent evaluation benchmark contains >100 evaluated cases
  assert.ok(variants.length>=150,'Expected more than 100 distinct phrasing tests');
  const errors=variants.filter(item=>interpretQuestion(item.question).kind!==item.expected);
  assert.deepEqual(errors,[],'Every benchmark phrase should resolve to the intended fact type');
+});
+
+test('broad vector searches cannot expose unverified sensitive/personal claims',()=>{
+ const rows=[
+  {question:'Does she do threesome?',answer:'An arrangement is offered.'},
+  {question:'Does she live alone?',answer:'A private and secure place.'},
+  {question:'What are her contact options?',answer:'Use the Contact page.'}
+ ];
+ const result=filterVerifiedEvidence(rows,site);
+ assert.equal(result.length,1);
+ assert.match(result[0].question,/contact/i);
+ const approved=filterVerifiedEvidence(rows,{assistant:{verifiedSensitiveClaims:'threesome, private residence'}});
+ assert.equal(approved.length,3);
 });

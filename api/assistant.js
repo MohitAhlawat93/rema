@@ -1,6 +1,6 @@
 import { site as baseSite } from '../data/site.js';
 import { consumeRateLimit } from '../lib/rate-limit.js';
-import { normalizeEnglish, interpretQuestion, ownerName, verifiedFactAnswer, resolvedRetrievalQuery } from '../lib/assistant-facts.js';
+import { normalizeEnglish, interpretQuestion, ownerName, verifiedFactAnswer, resolvedRetrievalQuery, filterVerifiedEvidence } from '../lib/assistant-facts.js';
 import { queryTenantRag } from '../lib/tenant-rag.js';
 import { isInstructionAttack, safeConversationHistory, safeRagContext, securityInstructions } from '../lib/rag-security.js';
 
@@ -156,7 +156,7 @@ export default async function handler(request, response) {
     try{
       const rag=await queryTenantRag(resolvedRetrievalQuery(question,candidateHistory));
       ragMode=rag?.mode||'unavailable';
-      matches=ragMode==='vector'&&Array.isArray(rag.rows)?rag.rows.filter(x=>x.similarity>=.72).slice(0,5):[];
+      matches=ragMode==='vector'&&Array.isArray(rag.rows)?filterVerifiedEvidence(rag.rows.filter(x=>x.similarity>=.72),site).slice(0,5):[];
     }catch{/* Vector unavailable: never switch to lexical search or invent facts. */}
   }
   let answer='',provider='none',failed=false,failureCode='';
