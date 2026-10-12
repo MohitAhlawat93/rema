@@ -1,6 +1,7 @@
 import { site as baseSite } from '../data/site.js';
 import { consumeRateLimit } from '../lib/rate-limit.js';
 import { visitorReply } from '../lib/assistant-intents.js';
+import { normalizeQuestion, rankKnowledge, publishedKnowledgeOrFallback, isAvailabilityFollowup } from '../lib/assistant-retrieval.js';
 
 const json = (res, status, data) => {
   res.statusCode = status;
@@ -12,7 +13,7 @@ const json = (res, status, data) => {
 const devanagari = /[\u0900-\u097f]/;
 const hindiWords = /\b(kya|kaise|kitna|kitni|hai|hain|mujhe|aap|apka|aapka|batao|bataiye|chahiye|krna|karna|baat|kahan|kidhar|namaste|shukriya|dhanyavad)\b/i;
 const localeOf = (text, requested) => {
-  if (requested === 'hi' || requested === 'en') return requested;
+  if (requested === 'hi') return 'hi';
   return devanagari.test(text) || hindiWords.test(text) ? 'hi' : 'en';
 };
 const clean = (value, max = 1800) => String(value ?? '').trim().slice(0, max);
@@ -64,28 +65,17 @@ async function loadPublishedKnowledge(url, headers) {
         if (!Array.isArray(items)) return [];
         knowledgeCache = { items, until: Date.now()+45000 };
         return items;
-      }).catch(() => []).finally(() => { knowledgeLoad = null; });
+      }).catch(() => null).finally(() => { knowledgeLoad = null; });
   }
   return knowledgeLoad;
 }
-async function fetchPublicKnowledge(question) {
+async function fetchPublicKnowledge() {
   const url = clean(process.env.SUPABASE_URL, 200).replace(/\/$/, '');
   const key = clean(process.env.SUPABASE_PUBLISHABLE_KEY, 400);
-  if (!url || !key) return [];
-  const headers = { apikey: key, authorization: 'Bearer ' + key };
-  const [knowledge, retrieval] = await Promise.allSettled([
-    loadPublishedKnowledge(url, headers),
-    fetch(url + '/rest/v1/rpc/search_witness_lema_knowledge', {
-      method: 'POST', headers: { ...headers, 'content-type': 'application/json' },
-      body: JSON.stringify({ query_text: question, match_count: 5 }),
-      signal: AbortSignal.timeout(1650)
-    }).then(r => r.ok ? r.json() : [])
-  ]);
-  const raw = [
-    ...(knowledge.status === 'fulfilled' && Array.isArray(knowledge.value) ? knowledge.value : []),
-    ...(retrieval.status === 'fulfilled' && Array.isArray(retrieval.value) ? retrieval.value : [])
-  ];
-  return [...new Map(raw.filter(x => x && x.question && x.answer).map(x => [x.question, x])).values()];
+  if (!url || !key) return null;
+  const headers = { apikey:key, authorization:'Bearer '+key };
+  // Fetch the small approved FAQ once; avoid the extra English-only RPC.
+  return loadPublishedKnowledge(url, headers);
 }
 let profileCache = { value: baseSite, until: 0 }, profileLoad = null;
 async function fetchPublishedProfile() {
@@ -137,7 +127,7 @@ async function callGroq(question, language, matches, site, history) {
   if (!key) return '';
   const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
   const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST', signal: AbortSignal.timeout(5000),
+    method: 'POST', signal: AbortSignal.timeout(4500),
     headers: { authorization: 'Bearer ' + key, 'content-type': 'application/json' },
     body: JSON.stringify({
       model,
@@ -186,33 +176,60 @@ export default async function handler(request, response) {
   if(shortReply) return json(response,200,{answer:shortReply,href:''});
   const naturalReply=visitorReply(question,language,baseSite);
   if(naturalReply) return json(response,200,naturalReply);
-  // Rate-limit costly database/AI requests, not cheap greetings.
-  try {
-    const limit=await consumeRateLimit(request,'assistant',40,600);
-    if(!limit.allowed){response.setHeader('retry-after',String(limit.retryAfterSeconds));return json(response,429,{error:language==='hi'?'थोड़ी देर बाद फिर कोशिश करें।':'Please try again shortly.'});}
-  } catch { /* Graceful fallback if the rate-limit store briefly fails. */ }
-  const [knowledgeResult,siteResult] = await Promise.allSettled([fetchPublicKnowledge(question),fetchPublishedProfile()]);
-  const site = siteResult.status === 'fulfilled' ? siteResult.value : baseSite;
-  const knowledge = [...(knowledgeResult.status === 'fulfilled' ? knowledgeResult.value : []), ...knownFallback()];
-  const matches = [...new Map(knowledge.map(x=>[x.question,x])).values()]
-    .map(x=>({ ...x, score:scoreMatch(question,x) }))
-    .filter(x=>x.score >= 2.5)
-    .sort((a,b)=>b.score-a.score).slice(0,6);
-  // An exact owner-approved response should not wait for an external AI model.
-  const exact=knowledge.find(x=>normal(x.question)&&normal(x.question)===normal(question));
-  if(exact)return json(response,200,{answer:clean(exact.answer,2200),href:safeHref(exact.href)});
   const history = (Array.isArray(body.history) ? body.history : []).slice(-6)
-    .filter(x => x && ['user','assistant'].includes(x.role) && typeof x.content === 'string')
-    .map(x => ({ role:x.role, content:clean(x.content,450) }));
-  let answer = '';
-  for (const provider of [callGroq,callXai]) {
-    try { answer = await provider(question,language,matches,site,history); if (answer) break; } catch { /* Try next configured provider or reliable local answer. */ }
+    .filter(x=>x&&['user','assistant'].includes(x.role)&&typeof x.content==='string')
+    .map(x=>({role:x.role,content:clean(x.content,450)}));
+  // These three independent checks run together, rather than sequentially.
+  const started=Date.now();
+  const [rateResult,knowledgeResult,siteResult]=await Promise.allSettled([
+    consumeRateLimit(request,'assistant',40,600),fetchPublicKnowledge(),fetchPublishedProfile()
+  ]);
+  if(rateResult.status==='fulfilled'&&!rateResult.value.allowed){
+    response.setHeader('retry-after',String(rateResult.value.retryAfterSeconds));
+    return json(response,429,{error:language==='hi'?'थोड़ी देर बाद फिर कोशिश करें।':'Please try again shortly.'});
   }
-  if (!answer && matches.length && matches[0].score >= 5.5) answer = matches[0].answer;
-  if (!answer && serviceQuestion(question) && (site.services||[]).length) {
-    answer = (language === 'hi' ? 'वेबसाइट पर दी गई सेवाओं की जानकारी:\n' : 'Here are the services listed on the website:\n')
-      + site.services.slice(0,8).map(x => '• '+x.title+(x.tag?' — '+x.tag:'')).join('\n');
+  const published=knowledgeResult.status==='fulfilled'?knowledgeResult.value:null;
+  const knowledge=publishedKnowledgeOrFallback(published,knownFallback());
+  const site=siteResult.status==='fulfilled'?siteResult.value:baseSite;
+  const questionText=normalizeQuestion(question);
+  const exact=knowledge.find(x=>normalizeQuestion(x.question)===questionText);
+  if(exact)return json(response,200,{answer:clean(exact.answer,2200),href:safeHref(exact.href),source:'approved'});
+  if(isAvailabilityFollowup(question,history)){
+    return json(response,200,{answer:language==='hi'?'मेरे पास लाइव उपलब्धता नहीं है। समय की पुष्टि के लिए Lema से Contact पेज पर सीधे संपर्क करें।':'I cannot check live availability or promise a time. Please use the Contact page to confirm directly with Lema.',href:'/contact/',source:'availability'});
   }
-  if (!answer) answer = generalFallback(question,language);
-  return json(response,200,{answer:clean(answer,2200),href:answer===matches[0]?.answer?safeHref(matches[0].href):''});
+  const ranked=rankKnowledge(question,knowledge,{history});
+  const matches=ranked.map(x=>x.item);
+  // Prefer a strongly distinguished, owner-approved answer over a slow model.
+  if(ranked[0]?.score>=10&&(ranked[0].score-(ranked[1]?.score||0)>=3)){
+    const match=ranked[0].item;
+    return json(response,200,{answer:clean(match.answer,2200),href:safeHref(match.href),source:'retrieval'});
+  }
+  let answer='',provider='none',failed=false;
+  const choice=String(process.env.ASSISTANT_AI_PROVIDER||'').toLowerCase();
+  const candidate=choice==='xai'?'xai':choice==='groq'?'groq':process.env.GROQ_API_KEY?'groq':process.env.XAI_API_KEY?'xai':'none';
+  if(candidate!=='none'){
+    provider=candidate;
+    try{
+      answer=await (candidate==='xai'?callXai:callGroq)(question,language,matches,site,history);
+      if(!answer)failed=true;
+    }catch(error){
+      failed=true;
+      // Diagnostic metadata only: never log visitor messages, history or API keys.
+      console.warn('assistant_provider_failure',JSON.stringify({provider,
+        kind:error?.name==='TimeoutError'||error?.name==='AbortError'?'timeout':'provider_error',
+        status:Number(String(error?.message||'').match(/\b(?:400|401|403|404|408|429|500|502|503)\b/)?.[0]||0),
+        elapsedMs:Date.now()-started}));
+    }
+  }
+  if(!answer&&ranked.length)answer=ranked[0].item.answer;
+  if(!answer&&serviceQuestion(question)&&(site.services||[]).length){
+    answer=(language==='hi'?'वेबसाइट पर दी गई सेवाओं की जानकारी:\n':'Here are the services listed on the website:\n')+
+      site.services.slice(0,8).map(x=>'• '+x.title+(x.tag?' — '+x.tag:'')).join('\n');
+  }
+  if(!answer)answer=generalFallback(question,language);
+  // Return a usable response even when AI is down or missing.
+  console.info('assistant_request_complete',JSON.stringify({source:provider!=='none'&&!failed&&answer?'ai':ranked.length?'retrieval':'fallback',
+    elapsedMs:Date.now()-started,knowledge:published===null?'fallback':'published',provider,providerFailed:failed}));
+  return json(response,200,{answer:clean(answer,2200),href:ranked.length&&answer===ranked[0].item.answer?safeHref(ranked[0].item.href):'',source:provider!=='none'&&!failed?'ai':ranked.length?'retrieval':'fallback'});
+
 }
