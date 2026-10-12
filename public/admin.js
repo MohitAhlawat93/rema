@@ -233,6 +233,23 @@ $('[data-test-ai]')?.addEventListener('click',async event=>{
  }catch(error){$('[data-ai-status]').textContent='AI test unavailable';$('[data-ai-detail]').textContent=error.message||'Try again.';}
  finally{button.disabled=false;}
 });
+$('[data-rebuild-rag]')?.addEventListener('click',async event=>{
+ const button=event.currentTarget;
+ button.disabled=true;
+ const status=$('[data-rag-status]');
+ let total=0;
+ try{
+  for(let batch=0;batch<20;batch++){
+   status.textContent='Updating search index… '+total+' documents embedded.';
+   const result=await api('rag-index',{method:'POST',body:'{}'});
+   total+=Number(result.indexed)||0;
+   if(!result.more){status.textContent='Semantic search index up to date. '+total+' new embeddings generated.';return;}
+   if(!(result.indexed>0))throw new Error('Indexing paused; please retry when the embedding service is available.');
+  }
+  status.textContent='Updated '+total+' entries. Run again to finish the rest.';
+ }catch(error){status.textContent='Indexing stopped: '+String(error.message||'Service unavailable')+'. Already indexed: '+total+'.';}
+ finally{button.disabled=false;}
+});
 async function loadWorkspace(){
   const session=await api('session');
   if(!session?.state?.draft)throw new Error('Your private workspace is unavailable.');

@@ -7,6 +7,7 @@ import { validateOwnerWriteOrigin } from '../../lib/admin-origin-guard.js';
 import { callAdminBackend } from '../../lib/admin-backend.js';
 import { reviewInbox } from '../../lib/review-inbox.js';
 import { consumeRateLimit } from '../../lib/rate-limit.js';
+import { queryTenantRag } from '../../lib/tenant-rag.js';
 
 const readBody = req => typeof req.body === 'string' ? (()=>{try{return JSON.parse(req.body)}catch{return {}}})() : (req.body || {});
 const send = (res,status,data) => { res.statusCode=status;res.setHeader('content-type','application/json; charset=utf-8');res.end(JSON.stringify(data)); };
@@ -77,6 +78,12 @@ export default async function handler(req,res){
           httpStatus:r.status,elapsedMs:Date.now()-started});
       }catch(error){return send(res,200,{status:error?.name==='TimeoutError'||error?.name==='AbortError'?'timeout':'failed',provider,model,
         elapsedMs:Date.now()-started});}
+    }
+    if(route==='rag-index'){
+      if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
+      const outcome=await queryTenantRag('',{action:'reindex',limit:12});
+      if(!outcome)return send(res,503,{error:'RAG is not configured for this tenant.'});
+      return send(res,200,outcome);
     }
     if(route==='state'){
       if(req.method==='GET')return send(res,200,await callAdminBackend('read'));

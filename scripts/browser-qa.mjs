@@ -235,6 +235,7 @@ try{
     else if(path.endsWith('/knowledge'))body={items:[]};
     else if(path.endsWith('/ai-status'))body={configured:false};
     else if(path.endsWith('/ai-test'))body={status:'missing'};
+    else if(path.endsWith('/rag-index'))body={indexed:4,attempted:4,more:false};
     else if(path.endsWith('/review-inbox'))body={items:[]};
     else if(path.endsWith('/state')&&method==='PUT'){
       const request=req.postDataJSON();
@@ -256,6 +257,9 @@ try{
   await page.waitForFunction(()=>document.querySelector('[data-ai-status]')?.textContent==='API key unavailable');
   assert.match(await page.locator('[data-ai-status]').textContent(),/API key unavailable/);
   assert.match(await page.locator('[data-ai-detail]').textContent(),/valid server-side API key/);
+  await page.locator('[data-rebuild-rag]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-rag-status]')?.textContent.includes('up to date'));
+  assert.match(await page.locator('[data-rag-status]').textContent(),/4 new embeddings/);
   await page.locator('[data-tab="seo"]').click();
   await page.locator('[data-seo-page]').selectOption('/reviews/');
   const title='Guest experiences and Reviews | Witness Lema';
