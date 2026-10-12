@@ -219,7 +219,7 @@ function bubble(text,user=false,href=''){
 function removeRepeatedAnswer(answer,previous,changedQuestion){
  const incoming=String(answer||'').trim(),prior=String(previous||'').trim();
  if(!changedQuestion||prior.length<16||!incoming.toLowerCase().startsWith(prior.toLowerCase()))return incoming;
- const remainder=incoming.slice(prior.length).replace(/^[\\s:—.,;-]+/u,'').trim();
+ const remainder=incoming.slice(prior.length).replace(/^[\s:—.,;-]+/u,'').trim();
  return remainder.length>=3?remainder:incoming;
 }
 async function ask(text){
