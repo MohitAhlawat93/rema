@@ -495,7 +495,7 @@ if(stagingTest)stagingTest.onclick=async()=>{
     clearInterval(clock);
     stagingTest.disabled=false;
     stagingTest.textContent='Run complete test again';
-    if(stagingSave)stagingSave.hidden=false;
+    if(stagingSave)stagingSave.hidden=!hasUnsavedDraft();
   }
 };
 $('[data-logout]').onclick=async()=>{await api('logout',{method:'POST',body:'{}'});state=null;showLogin('You have been signed out.');};
