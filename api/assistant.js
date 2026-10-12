@@ -118,10 +118,10 @@ const summariseProfile = site => JSON.stringify({
 // maths must never inherit arbitrary FAQ context (a common RAG hallucination path).
 const isBusinessQuestion=(question,history=[])=>{
  const q=normalizeQuestion(question);
- if(/\\b(?:lema|she|her|website|web site|your site|your service|gallery|photo|pictures|appointment|booking|book|rate|price|fee|cost|charge|contact|whatsapp|about her|available|availability|private meeting|policy|policies|owner|business)\\b|(?:कीमत|सेवा|बुकिंग|संपर्क|तस्वीर|फोटो|कितना)/i.test(q))return true;
+ if(/\b(?:lema|she|her|website|web site|your site|your service|gallery|photo|pictures|appointment|booking|book|rate|price|fee|cost|charge|contact|whatsapp|about her|available|availability|private meeting|policy|policies|owner|business)\b|(?:कीमत|सेवा|बुकिंग|संपर्क|तस्वीर|फोटो|कितना)/i.test(q))return true;
  const context=[...history].reverse().find(m=>m?.role==='user');
  return /^(and |what about |how about |why |does it |is it )/i.test(q)
-   &&context&&/\\b(?:lema|she|her|site|service|book|contact|price|rate)\\b/i.test(context.content||'');
+   &&context&&/\b(?:lema|she|her|site|service|book|contact|price|rate)\b/i.test(context.content||'');
 };
 const prompt = (question, language, matches, site) => [
   'You are '+clean(site.assistant?.name||'Website Concierge',100)+', the helpful assistant for '+brandOwner(site)+'.',
