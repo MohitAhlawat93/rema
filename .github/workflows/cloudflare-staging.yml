@@ -30,6 +30,7 @@ jobs:
           npm run build
           npm test
           npm run validate:seo
+      # Re-run automatically whenever this workflow changes after token provisioning.
       - name: Require staging-only API token
         env:
           STAGING_TOKEN: ${{ secrets.CF_STAGING_API_TOKEN }}
