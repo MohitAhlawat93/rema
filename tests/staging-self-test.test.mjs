@@ -29,7 +29,7 @@ test('Workers AI backup uses a supported model and reads the text response',asyn
   const binding={async run(model,input){
     selected=model;
     assert.equal(input.messages[0].role,'system');
-    return {response:'Hello from Cloudflare AI'};
+    return {choices:[{message:{content:'Hello from Cloudflare AI'}}]};
   }};
   const answer=await workersAiAnswer(binding,'Only answer verified information.','Hello');
   assert.equal(selected,'@cf/zai-org/glm-4.7-flash');
