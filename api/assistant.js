@@ -143,6 +143,11 @@ export default async function handler(request, response) {
     consumeRateLimit(request,'assistant',40,600),
     grounded?fetchPublishedProfile():Promise.resolve(baseSite)
   ]);
+  // Never run paid or quota-limited inference if the shared abuse limiter is unavailable.
+  // A staging site without owner credentials must not expose unlimited AI requests.
+  if(rateResult.status!=='fulfilled'||typeof rateResult.value?.allowed!=='boolean'){
+    return json(response,503,{error:'Assistant temporarily unavailable. Please try again shortly.'});
+  }
   if(rateResult.status==='fulfilled'&&!rateResult.value.allowed){
     response.setHeader('retry-after',String(rateResult.value.retryAfterSeconds));
     return json(response,429,{error:'Please wait a moment before sending more questions.'});
