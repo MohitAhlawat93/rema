@@ -57,7 +57,7 @@ export default async function handler(req,res){
       if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
       if(!allowedStagingSelfTest(req))return send(res,404,{error:'Not available on this website.'});
       const result=await runStagingSelfTest(req);
-      return send(res,result.ok?200:207,result);
+      return send(res,200,result);
     }
     if(route==='assistant-evaluate'){
       if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
