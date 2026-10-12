@@ -46,3 +46,42 @@ Current stage: code prepared on a feature branch. The Vercel site remains the li
 - Build source / Git integration: not connected; no Pages bundle uploaded.
 - Production Supabase credentials: deliberately **not copied** from developer account.
 - This staging environment must remain unindexed and must not become Lema's permanent project. The final owner controls their own accounts.
+
+## One-time automated staging deployment authorization
+
+The Pages project is **Direct Upload**, not Git-connected. This is intentional:
+clients do not need GitHub or source-code access.
+
+1. In the *developer's* Cloudflare account, create a restricted API token
+   with **Account > Cloudflare Pages > Edit** for the selected staging account.
+   Use a short expiration for testing. Do not place it in source or chat.
+2. Open the developer's GitHub repository > Settings > Secrets and variables >
+   Actions > New repository secret. Name it exactly `CF_STAGING_API_TOKEN`.
+   Paste the token there. Never place it in a public repository variable.
+3. Run `Cloudflare staging — deploy reviewed branch` from Actions after
+   the workflow reaches the default branch; **while it exists only in a feature
+   branch**, a push changing the workflow file triggers the staging run.
+4. GitHub builds/tests and uploads `dist` plus Pages Functions via Wrangler.
+   It uploads *feature-branch source* to the **main deployment branch of the
+   independent staging Pages project**; it does not merge the GitHub branch or
+   deploy to Vercel.
+5. The workflow runs `scripts/cloudflare-staging-smoke.mjs` against
+   `https://lema-website-staging.pages.dev`. All publicly exposed test pages
+   must remain noindex. Credentials must never print into Actions logs.
+6. Revoke the temporary Cloudflare token when finished testing.
+
+## Safe read-only staging database connection
+
+The staging Pages project temporarily uses only
+`SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` from the existing
+developer account, to **read already-published site data** and published reviews.
+It does **not** have the internal admin secret, a Supabase service-role key,
+the developer's admin password or a Groq production key. Thus owner edits,
+review posting and privileged RAG cannot run from this temporary staging site.
+
+To test the *complete* workflow, create a separate Supabase staging project
+in an organization explicitly approved by its owner, restore only Lema test
+data, create fresh staging-only credentials, deploy its backend functions,
+and configure those credentials in the staging Pages environment securely.
+Never copy unrelated shared-tenancy records. Verify restore, RLS and
+admin, upload, review and chatbot operations before involving any client.
