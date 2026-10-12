@@ -261,6 +261,14 @@ try{
   await page.locator('[data-rebuild-rag]').click();
   await page.waitForFunction(()=>document.querySelector('[data-rag-status]')?.textContent.includes('up to date'));
   assert.match(await page.locator('[data-rag-status]').textContent(),/4 new embeddings/);
+  await page.locator('[data-rag-doc-key]').fill('test-doc');
+  await page.locator('[data-rag-doc-title]').fill('A published information document');
+  await page.locator('[data-rag-doc-content]').fill('Only published, owner-approved information should be used.');
+  await page.locator('[data-rag-doc-href]').fill('/contact/');
+  await page.locator('[data-save-rag-doc]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-rag-doc-status]')?.textContent.includes('Published 1 document'));
+  await page.locator('[data-delete-rag-doc]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-rag-doc-status]')?.textContent.includes('Document removed'));
   await page.locator('[data-tab="seo"]').click();
   await page.locator('[data-seo-page]').selectOption('/reviews/');
   const title='Guest experiences and Reviews | Witness Lema';
