@@ -3,6 +3,7 @@ import { consumeRateLimit } from '../lib/rate-limit.js';
 import { normalizeEnglish, interpretQuestion, ownerName, verifiedFactAnswer, resolvedRetrievalQuery, filterVerifiedEvidence } from '../lib/assistant-facts.js';
 import { queryTenantRag } from '../lib/tenant-rag.js';
 import { isInstructionAttack, safeConversationHistory, safeRagContext, securityInstructions } from '../lib/rag-security.js';
+import { workersAiAnswer } from '../lib/workers-ai-fallback.js';
 
 const json = (res, status, data) => {
   res.statusCode = status;
@@ -176,6 +177,18 @@ export default async function handler(request, response) {
         kind:error?.name==='TimeoutError'||error?.name==='AbortError'?'timeout':'provider_error',
         status,
         elapsedMs:Date.now()-started}));
+    }
+  }
+  // Cloudflare Workers AI is a secondary provider when Groq/xAI is down or not configured.
+  // Only works with an explicitly configured AI binding in a client-owned Cloudflare deployment.
+  if(!answer&&request.cloudflareAI?.run){
+    try{
+      answer=await workersAiAnswer(request.cloudflareAI,
+        prompt(question,language,matches,site),singleTurnPrompt(question,history));
+      if(answer){provider='cloudflare';failed=false;failureCode='';}
+    }catch(error){
+      console.warn('assistant_backup_provider_failure',JSON.stringify({provider:'cloudflare',kind:error?.name||'provider_error'}));
+      failed=true;failureCode='backup_provider_error';
     }
   }
   if(!answer&&matches[0]?.similarity>=.8)answer=matches[0].answer;
