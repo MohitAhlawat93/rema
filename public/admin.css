@@ -74,3 +74,13 @@
  .handover-simple-steps{grid-template-columns:1fr}
  .handover-easy-step{padding:17px}
 }
+
+/* Server-backed read-only setup scan; status is never mistaken for owner verification. */
+.handover-auto-check{margin-top:18px}
+.handover-auto-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px;margin:12px 0}
+.auto-check-item{border:1px solid #d5d1c8;border-radius:9px;padding:14px;background:rgba(255,255,255,.7);display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.auto-check-item p{margin:5px 0}
+.auto-check-status{display:inline-block;font-size:12px;font-weight:700;border-radius:20px;padding:6px 10px;border:1px solid #c8c6c0}
+.auto-check-status.passed,.auto-check-status.configured{border-color:#7c9b78}
+.auto-check-status.attention{border-color:#c1866e}
+.auto-check-status.owner_action,.auto-check-status.developer_action{border-color:#a3a3a3}

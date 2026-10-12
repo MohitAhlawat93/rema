@@ -1,3 +1,4 @@
+import { runAutomaticSetupChecks } from '../../lib/setup-automation.js';
 import { HANDOVER_STEPS, blankProgress, handoverIndicators, validateHandoverUpdate } from '../../lib/handover.js';
 import {
   ADMIN_COOKIE_NAME, adminAuthConfigured, constantTimeTextEqual, createSessionToken,
@@ -122,6 +123,12 @@ export default async function handler(req,res){
       const outcome=await queryTenantRag('',{action:'reindex',limit:12});
       if(!outcome)return send(res,503,{error:'RAG is not configured for this tenant.'});
       return send(res,200,outcome);
+    }
+    // Owner-only read-only checks; do not accept browser-supplied URLs or credentials.
+    if(route==='setup-check'){
+      if(req.method!=='GET')return send(res,405,{error:'Use GET.'});
+      const report=await runAutomaticSetupChecks();
+      return send(res,200,report);
     }
     // Private owner handover progress. A submitted task is NOT provider-verified.
     if(route==='handover'){

@@ -8,7 +8,7 @@ const easySteps=[
  {id:'email-domain',title:'Use your own email',description:'Have an email address that only you control. You can choose a website address later with our help. You do not need to buy anything to practice.',action:'Create a Google email',url:'https://accounts.google.com/signup'},
  {id:'source-agreement',title:'Choose who manages it',description:'Would you like us to handle the technical work, or do you want accounts in your own name? We will explain the agreement first.',action:null}
 ];
-let plan=null,realPlan=null,practicePlan=null,practice=false,changes=false,practiceEmail='' ,loadSequence=0;
+let plan=null,realPlan=null,practicePlan=null,practice=false,changes=false,practiceEmail='' ,loadSequence=0,scanSequence=0,scanInProgress=false,lastScan=null;
 const report=(message,error=false)=>{const el=$('[data-handover-message]');if(el){el.textContent=message;el.className=error?'notice error':'notice success';}};
 async function request(path,options={}){
  const response=await fetch('/api/admin/'+path,{...options,cache:'no-store',headers:{'content-type':'application/json',...(options.headers||{})}});
@@ -18,6 +18,43 @@ async function request(path,options={}){
 }
 const firstOutstanding=()=>easySteps.find(s=>(plan?.progress?.[s.id]||'todo')!=='submitted');
 const markChanged=()=>{changes=true;report(practice?'Practice only — this is not saved anywhere.':'Your changes are not saved yet. Choose Save my progress.');};
+const checkLabels={passed:'Working',configured:'Configured — ownership unverified',attention:'Needs attention',owner_action:"Needs owner's decision",developer_action:'Needs technical setup'};
+const drawScan=(scan)=>{
+ const summary=$('[data-handover-auto-summary]'),body=$('[data-handover-auto-results]');
+ if(practice){
+   summary.textContent='Practice: automatic checks are not run against Lema’s live website.';
+   body.innerHTML='<p>In the real setup we will check the website automatically. No practice request is sent to any server.</p>';
+   return;
+ }
+ if(!scan){summary.textContent='Checking live website…';body.innerHTML='';return;}
+ if(scan.error){summary.textContent='Could not finish the automatic check. Please try Check again.';body.innerHTML='';return;}
+ const checks=scan.checks||[];
+ const working=checks.filter(x=>x.status==='passed'||x.status==='configured').length;
+ summary.textContent=working+'/'+checks.length+' technical checks working or configured. Items below explain anything still needed.';
+ body.innerHTML=checks.map(x=>'<article class="auto-check-item">'+
+  '<div><strong>'+escapeHtml(x.title)+'</strong><p class="fine">'+escapeHtml(x.detail)+'</p>'+
+  (x.action?'<p class="fine">'+escapeHtml(x.action)+'</p>':'')+'</div>'+
+  '<span class="auto-check-status '+escapeHtml(x.status)+'">'+escapeHtml(checkLabels[x.status]||'Not verified')+'</span></article>').join('');
+};
+async function runAutoCheck(){
+ if(practice){drawScan(null);return;}
+ if(scanInProgress)return;
+ const run=++scanSequence;
+ scanInProgress=true;
+ $('[data-handover-check]').disabled=true;
+ drawScan(null);
+ try{
+  const result=await request('setup-check');
+  if(practice||run!==scanSequence)return;
+  lastScan=result;drawScan(result);
+ }catch(error){
+  if(practice||run!==scanSequence)return;
+  lastScan={error:true};drawScan(lastScan);
+ }finally{
+  scanInProgress=false;
+  $('[data-handover-check]').disabled=false;
+ }
+}
 const selectOptions=(selected)=>options.map(([value,label])=>
  '<option value="'+value+'" '+(selected===value?'selected':'')+'>'+escapeHtml(label)+'</option>').join('');
 function draw(){
@@ -74,24 +111,25 @@ async function refresh(){
   const loaded=await request('handover');
   if(practice||requestId!==loadSequence)return;
   plan=loaded;realPlan=plan;changes=false;draw();report('Ready. Complete the three simple steps above.');
+  if(!lastScan)void runAutoCheck(); else drawScan(lastScan);
  }
  catch(error){report(error.message||'Could not load setup. Sign in again and retry.',true);}
 }
 function choosePractice(){
  if(practice)return;
  if(changes&&!confirm('Leave without saving your real setup changes?'))return;
- loadSequence++;
+ loadSequence++;scanSequence++;
  realPlan=plan;practice=true;changes=false;practiceEmail='';
  if($('[data-handover-practice-email]'))$('[data-handover-practice-email]').value='';
  const steps=plan?.steps||easySteps.map(s=>({id:s.id,title:s.title,description:s.description,tab:s.tab||'handover'}));
  practicePlan={version:0,saleModel:'undecided',progress:{},steps,indicators:[]};
- plan=practicePlan;draw();report('Practice mode is ON. No real account, payment, data or website content can change here.');
+ plan=practicePlan;draw();drawScan(null);report('Practice mode is ON. No real account, payment, data or website content can change here.');
 }
 function chooseReal(){
  if(!practice)return;
  practice=false;practicePlan=null;practiceEmail='';changes=false;
- plan=realPlan;draw();
- if(plan)report('Back to the real website setup. Your practice changes were discarded.');
+ plan=realPlan;draw();if(lastScan)drawScan(lastScan);
+ if(plan){report('Back to real website setup. Your practice changes were discarded.');if(!lastScan)void runAutoCheck();}
  else void refresh();
 }
 async function save(){
@@ -122,6 +160,7 @@ async function exportOwnerData(){
 }
 $('[data-tab="handover"]')?.addEventListener('click',()=>void refresh());
 $('[data-handover-refresh]')?.addEventListener('click',()=>void refresh());
+$('[data-handover-check]')?.addEventListener('click',()=>void runAutoCheck());
 $('[data-handover-save]')?.addEventListener('click',()=>void save());
 $('[data-handover-export]')?.addEventListener('click',()=>void exportOwnerData());
 $('[data-handover-practice]')?.addEventListener('click',choosePractice);
