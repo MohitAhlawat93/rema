@@ -17,8 +17,8 @@ try{
     await page.goto(root+'/');
     await page.locator('#assistant-panel').waitFor({state:'visible',timeout:10000});
     const bounds=await page.locator('#assistant-panel').boundingBox();
-    assert.ok(bounds&&bounds.width<= (profile.isMobile?344:308),JSON.stringify(bounds));
-    assert.ok(bounds.height<= (profile.isMobile?412:361),JSON.stringify(bounds));
+    assert.ok(bounds&&bounds.width<= (profile.isMobile?profile.viewport.width*.63:308),JSON.stringify(bounds));
+    assert.ok(bounds.height<= (profile.isMobile?305:361),JSON.stringify(bounds));
     assert.ok(bounds.x>=0&&bounds.x+bounds.width<=profile.viewport.width+1,'chat must fit viewport');
     await page.click('#assistant-minimize');
     assert.equal(await page.locator('#assistant-panel').isHidden(),true);
@@ -92,13 +92,40 @@ try{
    assert.equal(await page.locator('#question').evaluate(el=>document.activeElement===el),false,
       'Mobile chat must not open the soft keyboard automatically');
    const box=await page.locator('#assistant-panel').boundingBox();
-   assert.ok(box&&box.width>=width*.78&&box.x>=0&&box.x+box.width<=width+2,JSON.stringify(box));
+   assert.ok(box&&box.width>=width*.50&&box.width<=width*.64&&box.x>=0&&box.x+box.width<=width+2,JSON.stringify(box));
    assert.ok(box.y>=0&&box.y+box.height<=740+2,JSON.stringify(box));
    assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('chat-visible')),true);
    await page.locator('#assistant-minimize').click();
    assert.equal(await page.locator('#assistant-panel').isHidden(),true);
    await page.close();await context.close();
   }
+ });
+ await run('mobile next answer never resends or repeats earlier assistant reply',async()=>{
+  const ctx=await browser.newContext({viewport:{width:390,height:740},isMobile:true,hasTouch:true});
+  const page=await ctx.newPage();
+  await page.addInitScript(()=>sessionStorage.setItem('lema-concierge-first-visit-v3','1'));
+  let requests=0;
+  await page.route('**/api/assistant',async route=>{
+   requests++;
+   const data=route.request().postDataJSON();
+   if(requests===2){
+    assert.equal(data.question,'Tell me about her gallery');
+    assert.ok(data.history.every(x=>x.role==='user'),'Do not resend older assistant answers');
+   }
+   await route.fulfill({status:200,contentType:'application/json',
+    body:JSON.stringify({answer:requests===1?'FIRST_RECORDED_REPLY':'ONLY_SECOND_REPLY',href:''})});
+  });
+  await page.goto(root+'/',{waitUntil:'domcontentloaded'});
+  await page.locator('#assistant-launch').click();
+  await page.locator('#question').fill('Can I contact her?');
+  await page.locator('#assistant-form button').click();
+  await page.locator('#messages .bubble').filter({hasText:'FIRST_RECORDED_REPLY'}).waitFor({state:'visible'});
+  await page.locator('#question').fill('Tell me about her gallery');
+  await page.locator('#assistant-form button').click();
+  await page.locator('#messages .bubble').filter({hasText:'ONLY_SECOND_REPLY'}).waitFor({state:'visible'});
+  assert.equal(await page.locator('#messages .bubble').filter({hasText:'FIRST_RECORDED_REPLY'}).count(),1);
+  assert.equal(requests,2);
+  await ctx.close();
  });
  await run('mobile messages show prompt feedback quickly and remain usable after published data refresh',async()=>{
   const context=await browser.newContext({viewport:{width:390,height:740},isMobile:true,hasTouch:true});
