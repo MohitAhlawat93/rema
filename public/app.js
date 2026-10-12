@@ -222,7 +222,8 @@ async function ask(text){
  chatBusy=true;
  // Prevent a second keyboard/focus jump every time a message is submitted.
  setAssistant(true,false);
- const history=chatHistory.slice(-6);
+ // Only earlier visitor questions are possible context; never resend assistant answers.
+ const history=chatHistory.filter(item=>item.role==='user').slice(-2);
  bubble(clean,true);
  chatHistory.push({role:'user',content:clean});
  question.value='';

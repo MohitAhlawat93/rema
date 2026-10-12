@@ -300,3 +300,40 @@
 @media(prefers-reduced-motion:reduce){
  #assistant-panel #messages { scroll-behavior:auto; }
 }
+
+
+/* Mobile chat is a floating half-width card, not a screen-covering sheet.
+   Visitors can explicitly expand it when they want more reading space. */
+@media (max-width:640px) {
+ body.chat-visible { overflow: auto; }
+ #assistant-panel:not(.expanded) {
+   left: auto;
+   right: 10px;
+   width: clamp(184px, 54vw, 240px);
+   height: min(280px, 43dvh, calc(var(--chat-visual-height, 100dvh) - 40px));
+   max-height: min(280px, 43dvh, calc(var(--chat-visual-height, 100dvh) - 40px));
+   bottom: calc(10px + var(--chat-keyboard-offset, 0px) + env(safe-area-inset-bottom, 0px));
+   border-radius: 14px;
+ }
+ #assistant-panel .assistant-head { padding: 7px 9px; gap: 3px; }
+ #assistant-panel .assistant-head > div:first-child { flex: 1; min-width: 0; }
+ #assistant-panel .assistant-head strong { font-size: 14px; line-height: 1.1; }
+ #assistant-panel .assistant-head span { font-size: 8px; }
+ #assistant-panel .assistant-head-actions { flex-shrink: 0; gap: 0; display: flex; }
+ #assistant-panel .assistant-head button { width: 30px; height: 30px; font-size: 20px; padding: 0; }
+ #assistant-panel .assistant-language { padding: 4px 7px; }
+ #assistant-panel .assistant-language label { font-size: 9px; }
+ #assistant-panel .assistant-language select { font-size: 10px; padding: 3px; min-height: 27px; }
+ #assistant-panel #messages { padding: 7px; }
+ #assistant-panel .bubble { font-size: 11px; padding: 8px; margin-bottom: 6px; line-height: 1.5; }
+ #assistant-panel .suggestions { flex-wrap: wrap; gap: 4px; padding: 0 6px 6px; }
+ #assistant-panel .suggestions button { font-size: 9px; padding: 3px 6px; }
+ #assistant-panel #assistant-form { padding: 5px; gap: 3px; }
+ #assistant-panel #assistant-form input { font-size: 16px; padding: 5px 3px; min-width: 0; }
+ #assistant-panel #assistant-form button { width: 30px; min-width: 30px; min-height: 34px; }
+ #assistant-panel.expanded {
+   left: 8px; right: 8px; width: auto;
+   height: min(510px, calc(var(--chat-visual-height, 100dvh) - 30px));
+   max-height: calc(var(--chat-visual-height, 100dvh) - 30px);
+ }
+}
