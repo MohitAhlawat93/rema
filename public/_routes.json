@@ -10,7 +10,8 @@
     "/reviews/",
     "/privacy/",
     "/sitemap.xml",
-    "/image-sitemap.xml"
+    "/image-sitemap.xml",
+    "/media/*"
   ],
   "exclude": [
     "/assets/*",
