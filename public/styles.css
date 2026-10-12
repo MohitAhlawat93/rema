@@ -263,3 +263,40 @@
 @media (prefers-reduced-motion: reduce) {
  #assistant-panel.open, #assistant-panel #messages .bubble.pending::after { animation: none; }
 }
+
+/* Visual-viewport keyboard-safe chat: does not cover Android soft keyboard. */
+#assistant-panel #messages {
+ scroll-behavior: smooth;
+ overscroll-behavior: contain;
+ -webkit-overflow-scrolling: touch;
+}
+#assistant-panel #messages .assistant-error { border: 1px solid #bb9b79; }
+#assistant-panel #messages .assistant-retry {
+ display: block;
+ margin-top: 9px;
+ padding: 6px 12px;
+ border: 1px solid currentColor;
+ background: transparent;
+ border-radius: 16px;
+ color: inherit;
+ font: inherit;
+ cursor: pointer;
+}
+#assistant-form button:disabled { opacity: .6; cursor: wait; }
+@media(max-width:640px) {
+ #assistant-panel:not(.expanded) {
+   bottom: calc(12px + var(--chat-keyboard-offset, 0px) + env(safe-area-inset-bottom, 0px));
+   height: min(410px, calc(var(--chat-visual-height, 100dvh) - 38px));
+   max-height: calc(var(--chat-visual-height, 100dvh) - 38px);
+ }
+ #assistant-panel.expanded {
+   bottom: calc(8px + var(--chat-keyboard-offset, 0px) + env(safe-area-inset-bottom, 0px));
+   height: calc(var(--chat-visual-height, 100dvh) - 24px);
+   max-height: calc(var(--chat-visual-height, 100dvh) - 24px);
+ }
+ #assistant-panel #assistant-form input { font-size: 16px; }
+ #assistant-panel #assistant-form button { min-height: 38px; }
+}
+@media(prefers-reduced-motion:reduce){
+ #assistant-panel #messages { scroll-behavior:auto; }
+}
