@@ -23,7 +23,9 @@ for(const question of [
  'How can I get in touch with her?',
  'What are her rates?',
  'And tomorrow?',
- 'Which page shows her photos?'
+ 'Which page shows her photos?',
+ 'What is two plus two?',
+ 'Why is that the answer?'
 ]){
  const started=Date.now();
  const response=await fetch(site+'/api/assistant',{
@@ -39,4 +41,4 @@ for(const question of [
  if(!response.ok||!result.answer?.trim())throw Error('Missing reply from production chat at turn '+idx+' (HTTP '+response.status+')');
  history.push({role:'user',content:question},{role:'assistant',content:result.answer});
 }
-console.log('LIVE CHAT SMOKE PASSED: five consecutive production chatbot replies.');
+console.log('LIVE CHAT SMOKE PASSED: seven consecutive production chatbot replies (including two requiring AI or fallback).');
