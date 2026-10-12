@@ -60,6 +60,48 @@ Deno.serve(async req=>{
   if(authorized!==true)return reply({error:'Unauthorized'},401);
  }catch{return reply({error:'Authentication unavailable'},503);}
  const action=String(data.action||'search');
+ // Generic owner-approved document ingestion for independently sold websites.
+ // Per-tenant credentials are verified before this point. No browser upload access.
+ if(action==='upsert-documents'){
+  const docs=data.documents;
+  if(!Array.isArray(docs)||docs.length<1||docs.length>20)return reply({error:'Send 1-20 documents'},400);
+  const rows:Record<string,unknown>[]=[];
+  for(const doc of docs){
+    if(!doc||typeof doc!=='object')return reply({error:'Invalid document'},400);
+    const d=doc as Record<string,unknown>;
+    const key=String(d.key||'');
+    const title=String(d.title||'').trim();
+    const content=String(d.content||'').trim();
+    const href=String(d.href||'');
+    const keywords=Array.isArray(d.keywords)?d.keywords.map(x=>String(x).slice(0,80)).slice(0,16):[];
+    if(!/^[a-z0-9_-]{3,100}$/.test(key)||title.length<1||title.length>300||
+       content.length<1||content.length>3000||!/^\/[a-z0-9/_#-]{0,280}$/i.test(href))
+      return reply({error:'Invalid document fields'},400);
+    if(/<\s*(?:script|system|developer)\b|\b(?:ignore previous instructions|reveal system prompt|exfiltrate secret)\b/i.test(content))
+      return reply({error:'Instruction-like content is not allowed'},400);
+    rows.push({tenant_id:tenant,doc_key:key,ordinal:0,title,content,href,keywords,
+      source_type:'owner-document',published:true,embedding:null,embedding_model:null,
+      content_hash:await sha256(title+'|'+content+'|'+keywords.join(','))});
+  }
+  try{
+   const saved=await fetch(url+'/rest/v1/rag_chunks?on_conflict=tenant_id,doc_key,ordinal',{
+    method:'POST',headers:{...headers,Prefer:'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify(rows),signal:AbortSignal.timeout(6000)
+   });
+   if(!saved.ok)return reply({error:'Document storage unavailable'},503);
+   try{EdgeRuntime.waitUntil(indexBatch(tenant,12).catch(()=>null));}catch{}
+   return reply({saved:rows.length,embedding:'queued'});
+  }catch{return reply({error:'Document indexing unavailable'},503);}
+ }
+ if(action==='delete-document'){
+  const key=String(data.key||'');
+  if(!/^[a-z0-9_-]{3,100}$/.test(key))return reply({error:'Invalid document'},400);
+  const removed=await fetch(url+'/rest/v1/rag_chunks?tenant_id=eq.'+encodeURIComponent(tenant)+
+   '&doc_key=eq.'+encodeURIComponent(key)+'&source_type=eq.owner-document',{
+    method:'DELETE',headers,signal:AbortSignal.timeout(3500)
+  }).catch(()=>null);
+  return removed?.ok?reply({deleted:true}):reply({error:'Document deletion unavailable'},503);
+ }
  if(action==='reindex'){
   try{return reply(await indexBatch(tenant,Math.min(25,Math.max(1,Number(data.limit)||10))));}
   catch{return reply({error:'Index temporarily unavailable'},503);}
