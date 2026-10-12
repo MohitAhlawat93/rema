@@ -6,11 +6,13 @@ export const config={
  matcher:['/','/about/','/gallery/','/services/','/contact/','/reviews/','/privacy/','/sitemap.xml','/image-sitemap.xml']
 };
 const origin='https://rema-ruby.vercel.app';
-const siteOrigin=()=>{
- const v=String(process.env.SEO_SITE_ORIGIN||origin).replace(/\/$/,'');
+const siteOrigin=(env=process.env)=>{
+ const v=String(env.SEO_SITE_ORIGIN||origin).replace(/\/$/,'');
  return /^https:\/\/[a-z0-9.-]+(?::[0-9]{2,5})?$/i.test(v)?v:origin;
 };
-const active=()=>process.env.VERCEL_ENV==='production'&&process.env.SEO_INDEXING_ENABLED!=='false';
+const active=(env=process.env,hosting='vercel')=>hosting==='cloudflare'
+ ?env.SEO_INDEXING_ENABLED==='true'&&Boolean(env.SEO_SITE_ORIGIN)
+ :env.VERCEL_ENV==='production'&&env.SEO_INDEXING_ENABLED!=='false';
 const cacheHeaders=type=>({'content-type':type,'cache-control':'no-store','x-content-type-options':'nosniff'});
 async function getJson(url,headers={}){
  const r=await fetch(url,{headers,signal:AbortSignal.timeout(2600),cache:'no-store'});
@@ -18,7 +20,7 @@ async function getJson(url,headers={}){
  return r.json();
 }
 const staticTemplate=(path,url)=>new URL('/_seo_templates/'+path,url).toString();
-export default async function middleware(req){
+export default async function middleware(req,{env=process.env,assetFetch=fetch,hosting='vercel'}={}){
  const pathname=new URL(req.url).pathname;
  const sitemap=pathname==='/sitemap.xml'||pathname==='/image-sitemap.xml';
  if(!CONTENT_ROUTES.includes(pathname)&&!sitemap)return new Response('Not found',{status:404});
@@ -27,12 +29,13 @@ export default async function middleware(req){
  const baseURL=staticTemplate(fallback,req.url);
  // Always fetch an actual compiled HTML template. Supabase failures fail open
  // to static build content; the template remains indexable where appropriate.
- const templatePromise=fetch(baseURL,{signal:AbortSignal.timeout(3000)});
- const supa=String(process.env.SUPABASE_URL||'').replace(/\/$/,'');
- const key=String(process.env.SUPABASE_PUBLISHABLE_KEY||'');
+ const templatePromise=assetFetch(baseURL,{signal:AbortSignal.timeout(3000)});
+ const supa=String(env.SUPABASE_URL||'').replace(/\/$/,'');
+ const key=String(env.SUPABASE_PUBLISHABLE_KEY||'');
  const dataPromise=supa&&key?getJson(supa+'/rest/v1/witness_lema_published_site?id=eq.main&select=payload,version&limit=1',
      {apikey:key,authorization:'Bearer '+key}).then(rows=>rows?.[0]?.payload||null).catch(()=>null):Promise.resolve(null);
- const defaultsPromise=getJson(new URL('/seo-defaults.json',req.url).toString()).catch(()=>null);
+ const defaultsPromise=assetFetch(new URL('/seo-defaults.json',req.url).toString(),
+  {signal:AbortSignal.timeout(2600)}).then(r=>{if(!r.ok)throw Error('Missing SEO defaults');return r.json();}).catch(()=>null);
  const publicReviewsPromise=pathname==='/reviews/'&&supa&&key?
    getJson(supa+'/rest/v1/witness_lema_public_reviews?select=author,review_text,language&order=created_at.desc,id.desc&limit=100',
      {apikey:key,authorization:'Bearer '+key}).catch(()=>null):Promise.resolve(null);
@@ -41,14 +44,14 @@ export default async function middleware(req){
  const raw=await template.text();
  if(!payload||!defaults?.pages){
    const h=new Headers(template.headers);h.set('cache-control','no-store');
-   if(!active())h.set('x-robots-tag','noindex, nofollow');
+   if(!active(env,hosting))h.set('x-robots-tag','noindex, nofollow');
    return new Response(req.method==='HEAD'?null:raw,{status:200,headers:h});
  }
  const pages={};
  for(const route of SEO_ROUTES){
    pages[route]=cleanSEOPage(payload.seo?.pages?.[route],route,defaults.pages[route],supa);
  }
- const canonical=siteOrigin(),production=active();
+ const canonical=siteOrigin(env),production=active(env,hosting);
  if(sitemap){
    const xml=pathname==='/sitemap.xml'?xmlSitemap(pages,canonical,production):imageSitemap(pages,payload,canonical,supa,production);
    return new Response(req.method==='HEAD'?null:xml,{status:200,headers:cacheHeaders('application/xml; charset=utf-8')});
