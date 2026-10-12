@@ -1,0 +1,46 @@
+name: Cloudflare staging — deploy reviewed branch
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths:
+      - '.github/workflows/cloudflare-staging.yml'
+      - 'wrangler.jsonc'
+permissions:
+  contents: read
+  deployments: write
+concurrency:
+  group: cloudflare-lema-staging
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout staging code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source and website
+        run: |
+          npm run build
+          npm test
+          npm run validate:seo
+      - name: Require staging-only API token
+        env:
+          STAGING_TOKEN: ${{ secrets.CF_STAGING_API_TOKEN }}
+        run: |
+          if [ -z "$STAGING_TOKEN" ]; then
+            echo "::error::Set CF_STAGING_API_TOKEN in GitHub Actions repository secrets before deploying."
+            exit 1
+          fi
+      - name: Direct Upload to staging (client never receives source)
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CF_STAGING_API_TOKEN }}
+          accountId: '13032a1345920c80c9572e3ba6dddeba'
+          command: pages deploy dist --project-name=lema-website-staging --branch=feat/cloudflare-client-handover
