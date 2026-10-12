@@ -37,7 +37,7 @@ for(const question of [
  const elapsedMs=Date.now()-started;
  const idx=history.filter(x=>x.role==='user').length+1;
  console.log(JSON.stringify({turn:idx,status:response.status,elapsedMs,
-  source:result.source||'unspecified',failureCode:result.diagnostics?.code||'',answerLength:String(result.answer||'').length}));
+  source:result.source||'unspecified',ragMode:result.rag||'none',failureCode:result.diagnostics?.code||'',answerLength:String(result.answer||'').length}));
  if(!response.ok||!result.answer?.trim())throw Error('Missing reply from production chat at turn '+idx+' (HTTP '+response.status+')');
  if(idx>=6&&result.source!=='ai')
   throw Error('Generative AI unavailable on production turn '+idx+' (code: '+(result.diagnostics?.code||'no_provider')+')');
