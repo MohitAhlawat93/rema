@@ -68,9 +68,18 @@ test('owner-only route is read-only and follows session protection',async()=>{
  const ui=await readFile(new URL('../public/handover.js',import.meta.url),'utf8');
  assert.ok(route.indexOf("if(route==='setup-check')")>route.indexOf('if(!protectedRoute(req,res))return;'));
  assert.match(route,/if\(req.method!=='GET'\)return send\(res,405,\{error:'Use GET.'\}\)/);
- assert.match(route,/runAutomaticSetupChecks\(\)/);
+ assert.match(route,/runAutomaticSetupChecks\(\{workersAiAvailable:Boolean\(req\.cloudflareAI\?\.run\)\}\)/);
  assert.match(html,/data-handover-check/);
  assert.match(ui,/if\(practice\)\{drawScan\(null\);return;\}/);
  assert.match(ui,/const result=await request\('setup-check'\)/);
  assert.doesNotMatch(ui,/fetch\(.*SEO_SITE_ORIGIN/);
+});
+
+test('Cloudflare Workers AI is recognized and the staging URL is not called client-owned',async()=>{
+ const report=await runAutomaticSetupChecks({
+  env:{SEO_SITE_ORIGIN:'https://lema-website-staging.pages.dev'},workersAiAvailable:true,
+  fetchImpl:async()=>response('<html></html>')
+ });
+ assert.equal(report.checks.find(x=>x.id==='ai').status,'configured');
+ assert.equal(report.checks.find(x=>x.id==='domain').status,'owner_action');
 });
