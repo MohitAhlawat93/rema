@@ -13,6 +13,17 @@ const siteOrigin=(env=process.env)=>{
 const active=(env=process.env,hosting='vercel')=>hosting==='cloudflare'
  ?env.SEO_INDEXING_ENABLED==='true'&&Boolean(env.SEO_SITE_ORIGIN)
  :env.VERCEL_ENV==='production'&&env.SEO_INDEXING_ENABLED!=='false';
+// Google URL-prefix verification can be updated on the destination Cloudflare account
+// without rebuilding or exposing a token to an admin visitor. A verification token is
+// public by design, but strictly validated before it becomes HTML.
+export function injectGoogleVerification(html,token){
+ const value=String(token||'').trim();
+ if(!/^[A-Za-z0-9_-]{8,256}$/.test(value))return html;
+ const meta='<meta name="google-site-verification" content="'+value+'">';
+ return /<meta\\s+name=["']google-site-verification["'][^>]*>/i.test(html)?
+   html.replace(/<meta\\s+name=["']google-site-verification["'][^>]*>/i,meta):
+   html.replace(/<\\/head>/i,meta+'</head>');
+}
 const cacheHeaders=type=>({'content-type':type,'cache-control':'no-store','x-content-type-options':'nosniff'});
 async function getJson(url,headers={}){
  const r=await fetch(url,{headers,signal:AbortSignal.timeout(2600),cache:'no-store'});
@@ -45,7 +56,8 @@ export default async function middleware(req,{env=process.env,assetFetch=fetch,h
  if(!payload||!defaults?.pages){
    const h=new Headers(template.headers);h.set('cache-control','no-store');
    if(!active(env,hosting))h.set('x-robots-tag','noindex, nofollow');
-   return new Response(req.method==='HEAD'?null:raw,{status:200,headers:h});
+   const verifiedHtml=pathname==='/'?injectGoogleVerification(raw,env.GOOGLE_SITE_VERIFICATION):raw;
+   return new Response(req.method==='HEAD'?null:verifiedHtml,{status:200,headers:h});
  }
  const pages={};
  for(const route of SEO_ROUTES){
@@ -61,7 +73,8 @@ export default async function middleware(req,{env=process.env,assetFetch=fetch,h
       author:r.author,textEn:r.language==='en'?r.review_text:'',
       textHi:r.language==='hi'?r.review_text:'',published:true,consent:true
     }))}:payload;
- const html=renderLivePage(raw,pathname,pages[pathname]||null,publishedForPage,canonical,production,supa);
+ const pageHtml=renderLivePage(raw,pathname,pages[pathname]||null,publishedForPage,canonical,production,supa);
+ const html=pathname==='/'?injectGoogleVerification(pageHtml,env.GOOGLE_SITE_VERIFICATION):pageHtml;
  const h=cacheHeaders('text/html; charset=utf-8');
  if(new URL(req.url).searchParams.get('admin_preview')==='1')h['x-robots-tag']='noindex, nofollow';
  if(!production||!pages[pathname]?.index)h['x-robots-tag']='noindex, nofollow';
