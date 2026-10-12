@@ -410,7 +410,7 @@ $('[data-add-answer]').onclick=()=>{knowledge.unshift({question:'',answer:'',key
 $('[data-save-answers]').onclick=saveAnswers;
 $('[data-upload]').onclick=uploadPhoto;
 const stagingTest=$('[data-staging-self-test]'),stagingSection=$('[data-staging-self-test-section]');
-if(stagingSection)stagingSection.hidden=location.hostname!=='lema-website-staging.pages.dev';
+if(stagingSection)stagingSection.hidden=globalThis.location?.hostname!=='lema-website-staging.pages.dev';
 if(stagingTest)stagingTest.onclick=async()=>{
   const status=$('[data-staging-self-test-status]');
   const results=$('[data-staging-self-test-results]');
