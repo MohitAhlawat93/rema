@@ -9,6 +9,7 @@ on:
       - 'scripts/cloudflare-staging-smoke.mjs'
       - 'docs/CLOUDFLARE_MIGRATION.md'
       - 'public/app.js'
+      - 'public/styles.css'
       - 'public/admin.js'
       - 'public/admin.html'
       - 'api/admin/**'
@@ -30,6 +31,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 2
       - name: Set up Node 22
         uses: actions/setup-node@v4
         with:
@@ -64,7 +66,21 @@ jobs:
           command: pages deploy dist --project-name=lema-website-staging --branch=main
       - name: Verify deployed Pages routes (read-only)
         run: node scripts/cloudflare-staging-smoke.mjs https://lema-website-staging.pages.dev
+      - name: Check if rotating image code changed
+        id: photo
+        run: |
+          if git diff --name-only HEAD^ HEAD | grep -Eq '^(public/app.js|public/styles.css|scripts/cloudflare-slideshow-qa.mjs)
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Verify changing published photographs on Cloudflare
+        if: github.event_name == 'workflow_dispatch' || steps.photo.outputs.changed == 'true'
+        run: node scripts/cloudflare-slideshow-qa.mjs https://lema-website-staging.pages.dev
+; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install Chromium for real slideshow tests
+        if: github.event_name == 'workflow_dispatch' || steps.photo.outputs.changed == 'true'
         run: |
           npm install --no-save --no-package-lock playwright@1.56.1
           npx playwright install --with-deps chromium
