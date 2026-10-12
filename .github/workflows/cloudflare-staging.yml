@@ -9,6 +9,11 @@ on:
       - 'scripts/cloudflare-staging-smoke.mjs'
       - 'docs/CLOUDFLARE_MIGRATION.md'
       - 'public/app.js'
+      - 'public/admin.js'
+      - 'public/admin.html'
+      - 'api/admin/**'
+      - 'lib/staging-self-test.js'
+      - 'tests/staging-self-test.test.mjs'
       - 'scripts/cloudflare-slideshow-qa.mjs'
 permissions:
   contents: read
