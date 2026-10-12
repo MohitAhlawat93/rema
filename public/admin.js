@@ -409,6 +409,35 @@ $('[data-add-service]').onclick=()=>{state.draft.services.push({number:String(st
 $('[data-add-answer]').onclick=()=>{knowledge.unshift({question:'',answer:'',keywords:[],href:'/contact/',published:true});knowledgeDirty=true;renderAnswers();notice('Finish both fields, then choose Save answers.');};
 $('[data-save-answers]').onclick=saveAnswers;
 $('[data-upload]').onclick=uploadPhoto;
+const stagingTest=$('[data-staging-self-test]'),stagingSection=$('[data-staging-self-test-section]');
+if(stagingSection)stagingSection.hidden=location.hostname!=='lema-website-staging.pages.dev';
+if(stagingTest)stagingTest.onclick=async()=>{
+  const status=$('[data-staging-self-test-status]');
+  const results=$('[data-staging-self-test-results]');
+  if(hasUnsavedDraft()||knowledgeDirty){
+    status.textContent='Save or discard your unsaved edits before running the test.';
+    return;
+  }
+  if(!confirm('Run staging-only checks? Temporary test content will be published and removed automatically.'))return;
+  stagingTest.disabled=true;status.textContent='Testing the database, uploads, reviews and publishing…';
+  results.replaceChildren();
+  try{
+    const report=await api('staging-self-test',{method:'POST',body:'{}'});
+    const p=document.createElement('p');
+    p.textContent=(report.ok?'All tests passed: ':'Some tests need attention: ')+report.passed+'/'+report.total;
+    results.appendChild(p);
+    for(const check of report.checks||[]){
+      const item=document.createElement('p');
+      item.textContent=(check.passed?'✓ ':'✗ ')+String(check.name)+' — '+String(check.detail||'');
+      results.appendChild(item);
+    }
+    status.textContent=report.ok?'Staging integration checks completed. Test data was cleaned up.':
+      'Some staging checks failed. Read the messages below.';
+    if(!report.ok)notice('Some staging checks need attention.','error');
+    await loadWorkspace();
+  }catch(error){status.textContent='Self-test unavailable: '+error.message;}
+  finally{stagingTest.disabled=false;}
+};
 $('[data-logout]').onclick=async()=>{await api('logout',{method:'POST',body:'{}'});state=null;showLogin('You have been signed out.');};
 window.addEventListener('beforeunload',event=>{if(hasUnsavedDraft()||knowledgeDirty){event.preventDefault();event.returnValue='';}});
 loadWorkspace().catch(()=>showLogin());
