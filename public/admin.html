@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="theme-color" content="#253027"><title>witness_lema_ Control — Private</title><link rel="icon" href="/assets/mark.svg"><link rel="stylesheet" href="/admin.css"><script type="module" src="/admin.js?v=dashboard-runtime-11"></script></head>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="theme-color" content="#253027"><title>witness_lema_ Control — Private</title><link rel="icon" href="/assets/mark.svg"><link rel="stylesheet" href="/admin.css"><script type="module" src="/admin.js?v=dashboard-runtime-11"></script><script type="module" src="/handover.js?v=handover-wizard-1"></script></head>
 <body>
 <main class="login-shell" data-login>
   <section class="login-card"><img src="/assets/mark.svg" alt="" width="72" height="72"><p class="eyebrow">Private owner access</p><h1>witness_lema_<br><em>Control</em></h1><p>Update the website, photographs and assistant without editing GitHub.</p>
@@ -134,20 +134,36 @@
     </section>
     
     <section class="panel" data-panel="handover" aria-labelledby="handover-heading">
-      <div class="section-head"><div><p class="eyebrow">Safe ownership transition</p><h2 id="handover-heading">Client setup &amp; handover.</h2>
-        <p>Track the work needed to make this website independent from the developer. These steps are <strong>not yet verified</strong>.</p>
-      </div></div>
-      <div class="workflow"><h3>Before handing over</h3>
-        <p><strong>Ownership transfers are not performed by this page.</strong> They require account permissions, owner approval, verified backups and explicit confirmation. Do not paste API keys, passwords, recovery codes or identity documents into the admin content fields.</p>
-        <p>Choose the commercial arrangement first: <strong>managed website</strong> (developer maintains code/infrastructure under an agreement) or <strong>full handover</strong> (the client controls hosting and receives source code if contracted).</p>
+      <div class="section-head"><div><p class="eyebrow">Owner setup / Client handover</p><h2 id="handover-heading">Handover wizard &amp; content export.</h2>
+      <p>Record progress safely and prepare a portable content export. Submitting a task does not prove provider ownership, permission, or acceptance.</p></div>
+      <div class="header-actions"><button class="secondary" type="button" data-handover-refresh>↻ Refresh</button><button class="primary" type="button" data-handover-save>Save handover progress</button></div></div>
+      <div class="workflow"><h3>Choose the agreed delivery model</h3>
+        <label>Website ownership arrangement
+          <select data-handover-sale-model>
+            <option value="undecided">Not yet agreed</option>
+            <option value="managed">Managed website — developer operates hosting under agreement</option>
+            <option value="client_owned">Client-owned infrastructure — contractually licensed source</option>
+            <option value="full_source">Full client-specific source purchase and transfer</option>
+          </select>
+        </label>
+        <p class="fine">The selected model is a plan, not a signed contract. Never paste API keys, passwords, one-time codes, personal identification or account recovery details here.</p>
       </div>
-      <div class="handover-grid">
-        <article class="workflow"><h3>1. Business &amp; content</h3><p>Confirm the business name, public biography, service descriptions and prices, image ownership, contact methods, reviews, privacy wording and assistant answers.</p><p class="fine">Owner sign-off required · Unverified</p><button class="secondary" type="button" data-go-tab="profile">Review profile →</button></article>
-        <article class="workflow"><h3>2. Domain &amp; Google</h3><p>The owner purchases and controls a domain and Google account. Confirm production canonical URLs, HTTPS, Search Console verification and sitemap submission.</p><p class="fine">External authorization required · Unverified</p><button class="secondary" type="button" data-go-tab="seo">Review SEO →</button></article>
-        <article class="workflow"><h3>3. Infrastructure &amp; secrets</h3><p>Prepare an isolated client database, hosting ownership, environment variables, client-billed AI access and backup restore. Rotate developer secrets during cutover.</p><p class="fine">Developer migration required · Unverified</p></article>
-        <article class="workflow"><h3>4. Source-code agreement</h3><p>Managed service: no GitHub access required. Full code purchase: supply a clean client-only repository and licence/assignment terms. Never hand over shared projects or personal accounts.</p><p class="fine">Signed agreement required · Unverified</p></article>
-        <article class="workflow"><h3>5. Security &amp; acceptance</h3><p>Verify admin role separation, backups, access recovery, storage permissions, mobile images, slow connections, reviews, chatbot, WhatsApp and all public pages.</p><p class="fine">Independent launch testing required · Unverified</p></article>
-        <article class="workflow"><h3>6. Engineering preflight</h3><p>The developer runs <code>npm run audit:handover</code> in the source repository to locate hard-coded branding, the temporary domain, contact defaults and shared infrastructure references.</p><p class="fine">Code check only · Does not confirm external account ownership</p></article>
+      <div class="workflow"><h3>Readiness tracking</h3><p data-handover-count>Open this section to load the plan.</p>
+        <p><strong>All external account transfers are unverified until authenticated provider checks and Lema's approval are recorded.</strong> Ownership transfers are not performed by this page. This page does not purchase domains, register email accounts, take billing control, rotate keys, or migrate private infrastructure.</p>
+        <p class="notice" role="status" data-handover-message>Choose Client handover to load your private progress.</p>
+      </div>
+      <div class="handover-wizard-list" data-handover-list></div>
+      <div class="workflow"><h3>Read-only configuration checks</h3>
+        <p class="fine">These indicators check server configuration only. They cannot prove provider ownership, user permission or successful restore.</p>
+        <ul data-handover-indicators></ul>
+      </div>
+      <div class="workflow"><h3>Owner content export</h3>
+        <p>Download the latest private draft, published content/history, chatbot FAQ answers, public reviews and submitted handover progress. No API keys or database login details are included. <strong>Not a backup:</strong> uploaded media bytes, database/schema/roles, private AI vectors and source-code rights require separate migration and authorization.</p>
+        <button class="secondary" data-handover-export type="button">Download owner content (.json) ↓</button>
+      </div>
+      <div class="workflow"><h3>External verification checklist</h3>
+        <p>Owner verifies domain and recovery access at their registrar; provider permissions and billing at hosting and database providers; their email and API-provider accounts; Google Search Console after DNS/HTML verification. A developer completes a separate, backed-up, isolated database migration and performs restore/security tests before accepting the handover.</p>
+        <p class="fine">No automatic external access is granted by checking these tasks.</p>
       </div>
     </section>
     <section class="panel" data-panel="assistant"><div class="section-head"><div><p class="eyebrow">Assistant</p><h2>Your website concierge.</h2><p>Change its public name and welcome text here. Knowledge answers update immediately.</p></div><div><button class="primary" data-save>Save assistant settings</button></div></div><div class="assistant-settings"><fieldset><legend>Public identity</legend><label>Assistant name<input data-path="assistant.name" maxlength="80"></label><label>Welcome message<textarea data-path="assistant.greeting" rows="3" maxlength="500"></textarea></label><label>Owner-verified sensitive topics (English keywords, comma-separated)<input data-path="assistant.verifiedSensitiveClaims" maxlength="300" placeholder="Leave empty until personally approved"></label><p class="fine">Do not list a sensitive arrangement unless the owner has explicitly confirmed it. Publishing new settings requires Save and Publish.</p><div class="repeat-fields"><label>First suggestion label<input data-path="assistant.suggestionOneLabel" maxlength="40"></label><label>First suggested question<input data-path="assistant.suggestionOne" maxlength="160"></label><label>Second suggestion label<input data-path="assistant.suggestionTwoLabel" maxlength="40"></label><label>Second suggested question<input data-path="assistant.suggestionTwo" maxlength="160"></label></div></fieldset><aside class="ai-status"><p class="eyebrow">AI connection</p><strong data-ai-status>Checking…</strong><span data-ai-detail>The API key remains server-only.</span><button type="button" class="secondary" data-test-ai>Test AI connection</button><button type="button" class="secondary" data-rebuild-rag>Rebuild search index</button><span data-rag-status role="status">Vector-only search uses approved published information.</span></aside></div>

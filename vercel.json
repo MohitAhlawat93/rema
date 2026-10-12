@@ -85,5 +85,11 @@
       "destination": "/services/",
       "permanent": true
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "*": false,
+      "main": true
+    }
+  }
 }

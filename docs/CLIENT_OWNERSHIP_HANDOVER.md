@@ -1,6 +1,6 @@
 # Client ownership & website handover — policy and implementation plan
 
-**Status: Phase 1 (read-only audit and admin guidance).** This is a design/technical checklist, not confirmation that Lema's accounts or content have been approved. No migration or transfer is authorized by the existence of this document.
+**Status: the private progress wizard, owner content export, backend validations and source preflight are implemented; provider transfer, dedicated infrastructure and owner sign-off remain unverified.** This is a design/technical checklist, not confirmation that Lema's accounts or content have been approved. No migration or transfer is authorized by the existence of this document.
 
 ## Product decision: do clients receive GitHub source code?
 
@@ -66,3 +66,20 @@ npm test
 ```
 
 The report is a starting point, not proof of successful ownership transfer.
+
+## Private onboarding wizard (October 2026)
+
+The `/admin` Client handover section provides a private, version-checked milestone tracker with three truthful owner-submitted states and a delivery-model selector. It never declares external ownership verified. Its data is stored separately in `witness_lema_private.handover_state`, protected from anon/authenticated roles and unrelated applications. The `/api/admin/handover` GET/PUT API requires an authenticated owner session; writes require the origin guard and a matching version. The backend uses the existing internal secret and service-role-only RPC. No plaintext provider credentials or sensitive attachments are stored.
+
+The owner-only `/api/admin/handover-export` endpoint returns a JSON content export (draft, published/history, FAQ answers, reviews, tracker). It is **not** a relational database backup, binary media archive, RAG/vector export, source code or proof of ownership. Download image files separately and perform an authenticated backup/restore using the new client-owned project. Never merge or transfer the current shared Supabase project.
+
+### Cutover gates (mandatory)
+1. Lema creates and controls her email and domain, verifies registration/renewal and signs ownership/license terms.
+2. Lema authorizes the intended Vercel account/team and a **new** Supabase project in her own account, then the developer imports only scoped Lema schema/data/storage/functions and checks RLS, knowledge and review permissions.
+3. Capture the project-specific storage bucket, domain, CSP, environment variable names, scoped server secrets and deployment settings in a private cutover manifest (not GitHub or the public editor). Rotate/revoke old signing keys and verify access.
+4. Confirm HTTPS/canonical/robots/sitemaps on the **connected** custom domain; authorize Google Search Console and submit sitemaps. Entering a domain in admin does not perform any of these actions.
+5. Verify backup/restore, mobile/desktop/slow-network QA, email and contact, rate limits, chatbot, review moderation and privacy. Obtain written approval for services, prices, images and policies. Owner and developer sign final handover and exit record.
+6. Only if contracted, create a cleaned client-specific source repository/archive. Do not transfer the mixed developer repo or service keys.
+
+### Quota discipline
+Vercel Git deployments are limited to the production branch using `git.deploymentEnabled` in `vercel.json`. GitHub builds/tests run on feature branches; reviewed changes are merged and released in **one** production commit. Avoid build skipping as a quota workaround, redundant redeploys, and preview deployments unless explicitly needed.

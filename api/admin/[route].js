@@ -1,3 +1,4 @@
+import { HANDOVER_STEPS, blankProgress, handoverIndicators, validateHandoverUpdate } from '../../lib/handover.js';
 import {
   ADMIN_COOKIE_NAME, adminAuthConfigured, constantTimeTextEqual, createSessionToken,
   getAdminSession, makeExpiredSessionCookie, makeSessionCookie,
@@ -121,6 +122,38 @@ export default async function handler(req,res){
       const outcome=await queryTenantRag('',{action:'reindex',limit:12});
       if(!outcome)return send(res,503,{error:'RAG is not configured for this tenant.'});
       return send(res,200,outcome);
+    }
+    // Private owner handover progress. A submitted task is NOT provider-verified.
+    if(route==='handover'){
+      if(req.method==='GET'){
+        const saved=await callAdminBackend('handover-read');
+        return send(res,200,{...saved,steps:HANDOVER_STEPS,indicators:handoverIndicators(process.env),
+          message:'Progress is self-reported; external provider ownership and client consent have not been verified.'});
+      }
+      if(req.method==='PUT'){
+        const update=readBody(req),failure=validateHandoverUpdate(update);
+        if(failure)return send(res,400,{error:failure});
+        return send(res,200,await callAdminBackend('handover-save',update));
+      }
+      return send(res,405,{error:'Use GET or PUT.'});
+    }
+    if(route==='handover-export'){
+      if(req.method!=='GET')return send(res,405,{error:'Use GET.'});
+      const [site,answers,reviews,handover]=await Promise.all([
+        callAdminBackend('read'),callAdminBackend('knowledge-read'),reviewInbox('list'),callAdminBackend('handover-read')
+      ]);
+      const data={
+        format:'lema-owner-content-export-v1',generatedAt:new Date().toISOString(),
+        scope:'Authenticated owner content export. Not a full database backup, storage archive, source-code transfer or proof of provider ownership.',
+        site:{draft:site.draft,published:site.published,version:site.version,publishedVersion:site.publishedVersion,
+          history:site.history||[]},
+        assistantKnowledge:answers.items||[],
+        visitorReviews:reviews.items||[],
+        handover:{saleModel:handover.saleModel,progress:handover.progress},
+        mediaNotice:'Image URLs in site content must be downloaded and backed up separately. AI embeddings and provider configurations are not included.'
+      };
+      res.setHeader('content-disposition','attachment; filename="lema-owner-content-export.json"');
+      return send(res,200,data);
     }
     if(route==='state'){
       if(req.method==='GET')return send(res,200,await callAdminBackend('read'));
