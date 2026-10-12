@@ -21,3 +21,17 @@ test('full self-test can never run without explicit staging flag, known host and
   else process.env.SUPABASE_URL=old.url;
  }
 });
+
+import {workersAiAnswer} from '../lib/workers-ai-fallback.js';
+
+test('Workers AI backup uses a supported model and reads the text response',async()=>{
+  let selected='';
+  const binding={async run(model,input){
+    selected=model;
+    assert.equal(input.messages[0].role,'system');
+    return {response:'Hello from Cloudflare AI'};
+  }};
+  const answer=await workersAiAnswer(binding,'Only answer verified information.','Hello');
+  assert.equal(selected,'@cf/zai-org/glm-4.7-flash');
+  assert.equal(answer,'Hello from Cloudflare AI');
+});
