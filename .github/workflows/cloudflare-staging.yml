@@ -42,6 +42,11 @@ jobs:
             exit 1
           fi
       # The GitHub checkout is the feature branch; branch=main selects only the staging Pages root URL.
+      - name: Use protected Cloudflare account settings
+        run: |
+          # The staging Pages project owns its R2, SEO and Supabase bindings.
+          # Do not let a repository example override dashboard variables/secrets.
+          mv wrangler.jsonc wrangler.jsonc.example
       - name: Direct Upload to staging (client never receives source)
         uses: cloudflare/wrangler-action@v4
         with:
