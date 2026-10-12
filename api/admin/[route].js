@@ -82,7 +82,7 @@ export default async function handler(req,res){
       if(req.method!=='GET')return send(res,405,{error:'Use GET.'});
       const groq=Boolean(process.env.GROQ_API_KEY),xai=Boolean(process.env.XAI_API_KEY),cf=Boolean(req.cloudflareAI?.run);
       return send(res,200,{configured:groq||xai||cf,provider:groq?'Groq':xai?'xAI Grok':cf?'Cloudflare Workers AI':'Not configured',
-        model:groq?(process.env.GROQ_MODEL||'openai/gpt-oss-120b'):xai?(process.env.XAI_MODEL||'grok-4'):cf?'@cf/meta/llama-3.1-8b-instruct':''});
+        model:groq?(process.env.GROQ_MODEL||'openai/gpt-oss-120b'):xai?(process.env.XAI_MODEL||'grok-4'):cf?'@cf/zai-org/glm-4.7-flash':''});
     }
     if(route==='ai-test'){
       if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
