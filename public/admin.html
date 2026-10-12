@@ -161,9 +161,20 @@
           <h3>One-click staging test</h3>
           <p>Checks private website data, chatbot knowledge, photo storage, reviews, and saving/publishing. Only available on the test website. Test content is automatically cleaned up.</p>
         </div></div>
-        <button type="button" class="secondary" data-staging-self-test>Run complete test</button>
-        <p class="fine" role="status" data-staging-self-test-status>Sign in to your test account and run when ready.</p>
-        <div class="handover-auto-results" data-staging-self-test-results></div>
+        <div class="staging-test-controls">
+          <button type="button" class="secondary" data-staging-self-test>Run complete test</button>
+          <button type="button" class="secondary" data-staging-save-first hidden>Save draft before testing</button>
+        </div>
+        <p role="status" aria-live="polite" class="staging-test-status" data-staging-self-test-status>Ready to start. All six checks will show their actual progress here.</p>
+        <progress data-staging-test-progress max="6" value="0" aria-label="Completed staging tests" hidden></progress>
+        <p class="fine" data-staging-test-count hidden>0 of 6 checks completed.</p>
+        <div class="staging-test-results" data-staging-self-test-results aria-live="polite"></div>
+      </section>
+      <section class="workflow" aria-label="Account ownership requirements">
+        <h3>Who will own this website?</h3>
+        <p><strong>Not verified yet.</strong> Signing into this test dashboard does not identify the future legal owner. Before a real transfer, the client must confirm their name, a private email they control, and the agreed service arrangement. We then verify ownership through invitations and provider account permissions.</p>
+        <p><strong>Never enter or share a Gmail, Cloudflare, Supabase, registrar or Google password here.</strong> The new owner signs into each provider personally; we send permission invitations. API tokens and signing secrets are created or rotated securely on the new hosting account. The public contact email in Business identity is not proof of account ownership.</p>
+        <p class="fine">Website content can be tested now. Account transfer, domain ownership and Google Search Console verification remain pending until the owner supplies and confirms their details.</p>
       </section>
       <div class="workflow handover-auto-check">
         <div class="section-head compact"><div><h3>Automatic website checks</h3>

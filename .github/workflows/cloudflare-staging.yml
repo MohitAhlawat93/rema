@@ -12,6 +12,8 @@ on:
       - 'public/styles.css'
       - 'public/admin.js'
       - 'public/admin.html'
+      - 'public/admin.css'
+      - 'public/handover.js'
       - 'api/admin/**'
       - 'lib/setup-automation.js'
       - 'tests/setup-automation.test.js'

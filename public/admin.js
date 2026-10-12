@@ -410,33 +410,93 @@ $('[data-add-answer]').onclick=()=>{knowledge.unshift({question:'',answer:'',key
 $('[data-save-answers]').onclick=saveAnswers;
 $('[data-upload]').onclick=uploadPhoto;
 const stagingTest=$('[data-staging-self-test]'),stagingSection=$('[data-staging-self-test-section]');
+const stagingSave=$('[data-staging-save-first]');
+const stagingSteps=[
+  ['database','Private database and published content'],
+  ['knowledge','Approved chatbot knowledge'],
+  ['ai','Real chatbot AI reply'],
+  ['r2','R2 photo upload, delivery and cleanup'],
+  ['reviews','Review submission and cleanup'],
+  ['publishing','Draft save, publish and restore']
+];
 if(stagingSection)stagingSection.hidden=globalThis.location?.hostname!=='lema-website-staging.pages.dev';
+if(stagingSave)stagingSave.onclick=async()=>{
+  const status=$('[data-staging-self-test-status]');
+  if(knowledgeDirty){status.textContent='Save your assistant answers in Assistant first, then return here.';return;}
+  status.textContent='Saving your current private draft before testing…';
+  stagingSave.disabled=true;
+  try{await saveDraft();
+    status.textContent=hasUnsavedDraft()?'The draft could not be saved. Check the message at the top of the page.':
+      'Draft saved. Click Run complete test to start all six checks.';
+    stagingSave.hidden=!hasUnsavedDraft();
+  }catch(error){status.textContent='Save failed: '+error.message;}
+  finally{stagingSave.disabled=false;}
+};
 if(stagingTest)stagingTest.onclick=async()=>{
   const status=$('[data-staging-self-test-status]');
   const results=$('[data-staging-self-test-results]');
+  const progress=$('[data-staging-test-progress]');
+  const count=$('[data-staging-test-count]');
   if(hasUnsavedDraft()||knowledgeDirty){
-    status.textContent='Save or discard your unsaved edits before running the test.';
+    status.textContent=knowledgeDirty?'Assistant answers have unsaved edits. Save answers in Assistant first.':
+      'Your draft has unsaved changes. Click Save draft before testing, then try again.';
+    if(stagingSave)stagingSave.hidden=knowledgeDirty;
+    status.scrollIntoView({block:'center',behavior:'smooth'});
     return;
   }
-  if(!confirm('Run staging-only checks? Temporary test content will be published and removed automatically.'))return;
-  stagingTest.disabled=true;status.textContent='Testing the database, uploads, reviews and publishing…';
+  if(!confirm('Run six staging-only checks? A temporary test review and draft publication will be cleaned up automatically.'))return;
+  stagingTest.disabled=true;
+  if(stagingSave)stagingSave.hidden=true;
   results.replaceChildren();
+  progress.value=0;progress.hidden=false;count.hidden=false;
+  const items=stagingSteps.map(([,label])=>{
+    const item=document.createElement('p');item.className='staging-test-item';
+    item.textContent='○ Waiting: '+label;results.appendChild(item);return item;
+  });
+  const started=Date.now();
+  let completed=0,passed=0;
+  const summary=()=>{count.textContent=completed+' of '+stagingSteps.length+' checks completed · '+passed+' passed.';};
+  summary();
+  stagingTest.textContent='Testing… 0/'+stagingSteps.length;
+  const clock=setInterval(()=>{
+    if(completed<stagingSteps.length)status.textContent='Testing '+(completed+1)+'/'+stagingSteps.length+
+      ': '+stagingSteps[completed][1]+' ('+Math.floor((Date.now()-started)/1000)+'s elapsed)';
+  },1000);
+  let interrupted=false;
   try{
-    const report=await api('staging-self-test',{method:'POST',body:'{}'});
-    const p=document.createElement('p');
-    p.textContent=(report.ok?'All tests passed: ':'Some tests need attention: ')+report.passed+'/'+report.total;
-    results.appendChild(p);
-    for(const check of report.checks||[]){
-      const item=document.createElement('p');
-      item.textContent=(check.passed?'✓ ':'✗ ')+String(check.name)+' — '+String(check.detail||'');
-      results.appendChild(item);
+    for(const [index,[id,label]] of stagingSteps.entries()){
+      items[index].textContent='◌ Running: '+label;
+      items[index].className='staging-test-item running';
+      status.textContent='Testing '+(index+1)+'/'+stagingSteps.length+': '+label;
+      stagingTest.textContent='Testing… '+(index+1)+'/'+stagingSteps.length;
+      try{
+        const report=await api('staging-self-test',{method:'POST',body:JSON.stringify({step:id})});
+        const check=report.checks?.find(item=>item.id===id);
+        if(!check)throw new Error('The server did not return a test result.');
+        if(check.passed)passed++;
+        items[index].textContent=(check.passed?'✓ Passed: ':'✗ Failed: ')+label+' — '+String(check.detail||'');
+        items[index].className='staging-test-item '+(check.passed?'passed':'failed');
+      }catch(error){
+        items[index].textContent='✗ Failed: '+label+' — '+String(error.message||'Request failed');
+        items[index].className='staging-test-item failed';
+        if(/session has expired|not authenticated/i.test(String(error.message))){interrupted=true;}
+      }
+      completed++;progress.value=completed;summary();
+      if(interrupted)break;
     }
-    status.textContent=report.ok?'Staging integration checks completed. Test data was cleaned up.':
-      'Some staging checks failed. Read the messages below.';
-    if(!report.ok)notice('Some staging checks need attention.','error');
-    await loadWorkspace();
-  }catch(error){status.textContent='Self-test unavailable: '+error.message;}
-  finally{stagingTest.disabled=false;}
+    status.textContent=interrupted?'Testing stopped because your owner session expired. Sign in again to retry.':
+      passed===stagingSteps.length?'All 6 staging checks passed. Temporary test content was cleaned up.':
+        'Testing finished: '+passed+'/'+completed+' passed. Review the failed checks below.';
+    if(passed!==stagingSteps.length)notice('Staging checks need attention. See Easy setup for details.','error');
+    else notice('All six staging integration checks passed.','success');
+    // Reload only after the last check; don't erase the visible results.
+    try{await loadWorkspace();}catch{};
+  }finally{
+    clearInterval(clock);
+    stagingTest.disabled=false;
+    stagingTest.textContent='Run complete test again';
+    if(stagingSave)stagingSave.hidden=false;
+  }
 };
 $('[data-logout]').onclick=async()=>{await api('logout',{method:'POST',body:'{}'});state=null;showLogin('You have been signed out.');};
 window.addEventListener('beforeunload',event=>{if(hasUnsavedDraft()||knowledgeDirty){event.preventDefault();event.returnValue='';}});

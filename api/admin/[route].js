@@ -1,7 +1,7 @@
 import { runAutomaticSetupChecks } from '../../lib/setup-automation.js';
 import { uploadR2Photo } from '../../lib/r2-media.js';
 import { workersAiAnswer } from '../../lib/workers-ai-fallback.js';
-import {allowedStagingSelfTest,runStagingSelfTest} from '../../lib/staging-self-test.js';
+import {allowedStagingSelfTest,runStagingSelfTest,validStagingTestStep} from '../../lib/staging-self-test.js';
 import { HANDOVER_STEPS, blankProgress, handoverIndicators, validateHandoverUpdate } from '../../lib/handover.js';
 import {
   ADMIN_COOKIE_NAME, adminAuthConfigured, constantTimeTextEqual, createSessionToken,
@@ -57,7 +57,10 @@ export default async function handler(req,res){
     if(route==='staging-self-test'){
       if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
       if(!allowedStagingSelfTest(req))return send(res,404,{error:'Not available on this website.'});
-      const result=await runStagingSelfTest(req);
+      const input=readBody(req);
+      const step=input.step===undefined?null:input.step;
+      if(step!==null&&!validStagingTestStep(step))return send(res,400,{error:'Invalid staging test step.'});
+      const result=await runStagingSelfTest(req,{only:step});
       return send(res,200,result);
     }
     if(route==='assistant-evaluate'){
