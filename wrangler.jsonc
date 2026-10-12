@@ -1,11 +1,10 @@
 {
-  // Staging only. Never use this R2 bucket as the permanent client's bucket.
+  // First deployment isolates Cloudflare AI to debug Functions publishing.
   "name": "lema-website-staging",
   "pages_build_output_dir": "./dist",
   "compatibility_date": "2026-10-12",
   "compatibility_flags": ["nodejs_compat"],
   "r2_buckets": [
     {"binding":"MEDIA_BUCKET","bucket_name":"lema-staging-media"}
-  ],
-  "ai": {"binding":"AI"}
+  ]
 }
