@@ -19,7 +19,7 @@ const localeOf = (text, requested) => {
   return devanagari.test(text) || hindiWords.test(text) ? 'hi' : 'en';
 };
 const clean = (value, max = 1800) => String(value ?? '').trim().slice(0, max);
-const brandOwner=site=>clean(site?.assistant?.name?.replace(/\\b(?:Concierge|Assistant)\\b.*/i,'').trim()||site?.business?.name||site?.name||'the website owner',80);
+const brandOwner=site=>clean(site?.assistant?.name?.replace(/\b(?:Concierge|Assistant)\b.*/i,'').trim()||site?.business?.name||site?.name||'the website owner',80);
 const brandReply=(value,site)=>String(value||'').replace(/\bLema\b/g,brandOwner(site));
 const safeHref = value => /^\/(?:about|services|contact|gallery|reviews)?\/?(?:#[\w-]+)?$/.test(String(value || '')) ? value : '';
 const groups = [
