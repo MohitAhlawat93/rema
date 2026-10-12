@@ -18,7 +18,7 @@ async function request(path,options={}){
 }
 const firstOutstanding=()=>easySteps.find(s=>(plan?.progress?.[s.id]||'todo')!=='submitted');
 const markChanged=()=>{changes=true;report(practice?'Practice only — this is not saved anywhere.':'Your changes are not saved yet. Choose Save my progress.');};
-const checkLabels={passed:'Working',configured:'Configured — ownership unverified',attention:'Needs attention',owner_action:'Needs owner's decision',developer_action:'Needs technical setup'};
+const checkLabels={passed:'Working',configured:'Configured — ownership unverified',attention:'Needs attention',owner_action:"Needs owner's decision",developer_action:'Needs technical setup'};
 const drawScan=(scan)=>{
  const summary=$('[data-handover-auto-summary]'),body=$('[data-handover-auto-results]');
  if(practice){
