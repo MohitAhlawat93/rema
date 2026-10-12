@@ -23,7 +23,14 @@ for(const path of paths){
    else if(path==='/sitemap.xml')good=r.ok&&body.includes('<?xml');
    else if(path==='/robots.txt')good=r.ok&&/Disallow:\s*\//.test(body);
    console.log((good?'PASS ':'FAIL ')+r.status+' '+path);
-   if(!good)failed++;
+   if(!good){
+     // Log only safe API error categories, never content bodies or credentials.
+     if(path.startsWith('/api/')){
+       const error=JSON.parse(body||'{}')?.error;
+       console.error('API diagnostic',path,typeof error==='string'?error.slice(0,120):'invalid response');
+     }
+     failed++;
+   }
  }catch(e){console.error('FAIL '+path+' '+String(e?.name||e));failed++;}
 }
 if(failed){console.error('Cloudflare staging smoke checks failed:',failed);process.exit(1);}
