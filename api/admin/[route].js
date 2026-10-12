@@ -1,5 +1,6 @@
 import { runAutomaticSetupChecks } from '../../lib/setup-automation.js';
 import { uploadR2Photo } from '../../lib/r2-media.js';
+import { workersAiAnswer } from '../../lib/workers-ai-fallback.js';
 import {allowedStagingSelfTest,runStagingSelfTest} from '../../lib/staging-self-test.js';
 import { HANDOVER_STEPS, blankProgress, handoverIndicators, validateHandoverUpdate } from '../../lib/handover.js';
 import {
@@ -88,7 +89,20 @@ export default async function handler(req,res){
       if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
       // Owner-initiated tiny inference proves credentials and the configured model actually work.
       const groq=Boolean(process.env.GROQ_API_KEY),xai=Boolean(process.env.XAI_API_KEY);
-      if(!groq&&!xai)return send(res,200,{status:'missing',message:'No usable AI API key is available to this production function.'});
+      if(!groq&&!xai){
+        if(!req.cloudflareAI?.run)return send(res,200,{status:'missing',message:'No AI provider is configured for this website.'});
+        const started=Date.now(),model='@cf/zai-org/glm-4.7-flash';
+        try{
+          const answer=await workersAiAnswer(req.cloudflareAI,
+            'Answer the next general-knowledge question in one short English sentence.',
+            'Why is the sky blue?',{maxTokens:120});
+          return send(res,200,{status:answer?'ready':'failed',provider:'Cloudflare Workers AI',model,
+            elapsedMs:Date.now()-started});
+        }catch(error){
+          return send(res,200,{status:error?.name==='TimeoutError'||error?.name==='AbortError'?'timeout':'failed',
+            provider:'Cloudflare Workers AI',model,elapsedMs:Date.now()-started});
+        }
+      }
       const choice=String(process.env.ASSISTANT_AI_PROVIDER||'').toLowerCase();
       const provider=choice==='xai'&&xai?'xai':choice==='groq'&&groq?'groq':groq?'groq':'xai';
       const model=provider==='groq'?(process.env.GROQ_MODEL||'openai/gpt-oss-120b'):(process.env.XAI_MODEL||'grok-4');
@@ -136,7 +150,7 @@ export default async function handler(req,res){
     // Owner-only read-only checks; do not accept browser-supplied URLs or credentials.
     if(route==='setup-check'){
       if(req.method!=='GET')return send(res,405,{error:'Use GET.'});
-      const report=await runAutomaticSetupChecks();
+      const report=await runAutomaticSetupChecks({workersAiAvailable:Boolean(req.cloudflareAI?.run)});
       return send(res,200,report);
     }
     // Private owner handover progress. A submitted task is NOT provider-verified.

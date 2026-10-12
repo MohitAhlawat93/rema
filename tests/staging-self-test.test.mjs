@@ -29,9 +29,17 @@ test('Workers AI backup uses a supported model and reads the text response',asyn
   const binding={async run(model,input){
     selected=model;
     assert.equal(input.messages[0].role,'system');
+    assert.deepEqual(input.chat_template_kwargs,{enable_thinking:false});
+    assert.equal(input.max_completion_tokens,280);
+    assert.equal(input.enable_thinking,undefined);
     return {choices:[{message:{content:'Hello from Cloudflare AI'}}]};
   }};
   const answer=await workersAiAnswer(binding,'Only answer verified information.','Hello');
   assert.equal(selected,'@cf/zai-org/glm-4.7-flash');
   assert.equal(answer,'Hello from Cloudflare AI');
+});
+
+test('Workers AI never exposes reasoning content as a visitor answer',async()=>{
+  const binding={async run(){return {choices:[{message:{content:null,reasoning:'private reasoning'}}]};}};
+  assert.equal(await workersAiAnswer(binding,'Ground all website claims.','Hello'), '');
 });

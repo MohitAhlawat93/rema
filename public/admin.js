@@ -244,9 +244,9 @@ $('[data-test-ai]')?.addEventListener('click',async event=>{
  $('[data-ai-status]').textContent='Testing real AI reply…';
  try{
    const result=await api('ai-test',{method:'POST',body:'{}'});
-   $('[data-ai-status]').textContent=result.status==='ready'?'AI connection working':result.status==='missing'?'API key unavailable':'AI connection failed';
+   $('[data-ai-status]').textContent=result.status==='ready'?'AI connection working':result.status==='missing'?'No AI provider connected':'AI connection failed';
    $('[data-ai-detail]').textContent=result.status==='ready'?`${result.provider} · ${result.model} · ${result.elapsedMs} ms`:
-     result.status==='missing'?'Set a valid server-side API key for Production in Vercel, then redeploy.':
+     result.status==='missing'?'Connect an AI provider securely in your hosting settings, then deploy again.':
        `${result.provider||'Provider'} · ${result.status==='timeout'?'Request timed out':'HTTP '+(result.httpStatus||'network error')}. Check provider quota, key and model.`;
  }catch(error){$('[data-ai-status]').textContent='AI test unavailable';$('[data-ai-detail]').textContent=error.message||'Try again.';}
  finally{button.disabled=false;}
