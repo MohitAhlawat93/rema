@@ -48,9 +48,10 @@ async function indexBatch(tenant:string,limit=12){
 }
 Deno.serve(async req=>{
  if(req.method!=='POST')return reply({error:'POST required'},405);
- if(Number(req.headers.get('content-length')||0)>7000)return reply({error:'Payload too large'},413);
+ if(Number(req.headers.get('content-length')||0)>64000)return reply({error:'Payload too large'},413);
  let data:Record<string,unknown>;
  try{data=await req.json();}catch{return reply({error:'Invalid JSON'},400);}
+ if(JSON.stringify(data).length>64000)return reply({error:'Payload too large'},413);
  const tenant=String(data.tenant||'');
  const secret=String(req.headers.get('x-rag-secret')||'');
  if(!/^[a-z0-9][a-z0-9-]{1,62}$/.test(tenant)||secret.length<32||secret.length>512)
