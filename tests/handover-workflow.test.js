@@ -91,7 +91,7 @@ test('client handover UI loads after protected tab click and persists with optim
  element('[data-handover-save]').handlers.click();
  for(let n=0;n<12;n++)await Promise.resolve();
  assert.equal(calls.filter(c=>c.method==='PUT').length,1);
- assert.match(element('[data-handover-message]').textContent,/Submitted steps are awaiting/);
+ assert.match(element('[data-handover-message]').textContent,/waiting for a person to check/);
 });
 
 test('beginner practice uses a second email only in local memory and cannot change live progress',async()=>{
@@ -142,7 +142,8 @@ test('easy setup has exactly three owner steps and keeps developer work separate
  assert.match(html,/data-handover-practice-email/);
  assert.match(html,/data-handover-simple/);
  assert.match(html,/<details class="handover-advanced">/);
- assert.match(js,/STEP '+\(index\+1\)+' OF 3/);
+ assert.match(js,/easy-number\">STEP /);
+ assert.match(js,/ OF 3/);
  assert.match(js,/if\(practice\)\{changes=false;/);
  assert.match(html,/nothing here changes the real website/);
 });
