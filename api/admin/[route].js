@@ -1,4 +1,5 @@
 import { runAutomaticSetupChecks } from '../../lib/setup-automation.js';
+import { uploadR2Photo } from '../../lib/r2-media.js';
 import { HANDOVER_STEPS, blankProgress, handoverIndicators, validateHandoverUpdate } from '../../lib/handover.js';
 import {
   ADMIN_COOKIE_NAME, adminAuthConfigured, constantTimeTextEqual, createSessionToken,
@@ -201,10 +202,15 @@ export default async function handler(req,res){
     }
     if(route==='upload'){
       if(req.method==='POST'){
-        const body=readBody(req);return send(res,200,await callAdminBackend('upload',{dataUrl:body.dataUrl,name:body.name}));
+        const body=readBody(req);
+        if(req.cloudflareMediaBucket)return send(res,200,await uploadR2Photo(req.cloudflareMediaBucket,body.dataUrl));
+        return send(res,200,await callAdminBackend('upload',{dataUrl:body.dataUrl,name:body.name}));
       }
       if(req.method==='DELETE'){
-        const body=readBody(req);return send(res,200,await callAdminBackend('remove-upload',{path:body.path}));
+        const body=readBody(req);
+        if(String(body.path||'').startsWith('r2:'))
+          return send(res,409,{error:'Remove the image from your draft; deleting stored R2 files requires a separate safety check.'});
+        return send(res,200,await callAdminBackend('remove-upload',{path:body.path}));
       }
       return send(res,405,{error:'Unsupported method.'});
     }
