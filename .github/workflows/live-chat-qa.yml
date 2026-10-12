@@ -1,0 +1,21 @@
+name: Live chatbot — consecutive production replies
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: live-chat-production
+  cancel-in-progress: true
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for deployed commit and test five real API conversations
+        run: node scripts/live-chat-qa.mjs
