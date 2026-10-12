@@ -26,9 +26,8 @@ Current stage: code prepared on a feature branch. The Vercel site remains the li
 
 ## Cloudflare account status checked on 2026-10-12
 - Connection to the developer account works.
-- No Pages projects were found.
-- R2 API reports it is **not enabled**. Enabling R2 may require a payment method
-  and owner's approval; do not use developer billing as the permanent client billing.
+- A Pages project named `lema-website-staging` was created on 2026-10-12; no deployment has been uploaded.
+- R2 has been enabled and an **empty staging-only** `lema-staging-media` bucket was created and bound to both preview and production environments of the staging Pages project. Do not copy client photos before content approval; do not use developer billing for client production.
 - No resource creation or deployment happened in this preparation stage.
 
 ## Limitations
@@ -40,3 +39,10 @@ Current stage: code prepared on a feature branch. The Vercel site remains the li
 - Full source code remains with the developer according to the software licence;
   owners get content/export/website operation rights.
 - Free services have traffic/usage limits. Supabase Free may pause inactive projects.
+
+## Staging provider readiness checked 2026-10-12
+- Cloudflare Pages project: `lema-website-staging` (currently has **no live deployment**, even if the pages.dev hostname exists).
+- Cloudflare R2: `lema-staging-media` empty bucket, bound as `MEDIA_BUCKET`.
+- Build source / Git integration: not connected; no Pages bundle uploaded.
+- Production Supabase credentials: deliberately **not copied** from developer account.
+- This staging environment must remain unindexed and must not become Lema's permanent project. The final owner controls their own accounts.
