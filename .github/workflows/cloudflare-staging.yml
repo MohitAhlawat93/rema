@@ -79,6 +79,12 @@ jobs:
           console.log('staging runtime binding status',status);
           if(!r.ok||!status.staging)process.exit(1);
           NODE
+      - name: Inspect Workers AI binding inside assistant handler
+        run: |
+          node --input-type=module <<'NODE'
+          const r=await fetch('https://lema-website-staging.pages.dev/api/assistant?stage_check=1');
+          console.log('assistant-specific binding status',r.status,await r.text());
+          NODE
       - name: Verify live AI fallback with one visitor-safe question
         run: |
           node --input-type=module <<'NODE'
