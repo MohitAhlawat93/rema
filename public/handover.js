@@ -8,7 +8,7 @@ const easySteps=[
  {id:'email-domain',title:'Use your own email',description:'Have an email address that only you control. You can choose a website address later with our help. You do not need to buy anything to practice.',action:'Create a Google email',url:'https://accounts.google.com/signup'},
  {id:'source-agreement',title:'Choose who manages it',description:'Would you like us to handle the technical work, or do you want accounts in your own name? We will explain the agreement first.',action:null}
 ];
-let plan=null,realPlan=null,practicePlan=null,practice=false,changes=false,practiceEmail='';
+let plan=null,realPlan=null,practicePlan=null,practice=false,changes=false,practiceEmail='' ,loadSequence=0;
 const report=(message,error=false)=>{const el=$('[data-handover-message]');if(el){el.textContent=message;el.className=error?'notice error':'notice success';}};
 async function request(path,options={}){
  const response=await fetch('/api/admin/'+path,{...options,cache:'no-store',headers:{'content-type':'application/json',...(options.headers||{})}});
@@ -69,12 +69,18 @@ async function refresh(){
  if(practice){draw();report('You are practising. Nothing is saved or sent to anyone.');return;}
  if(changes&&!confirm('Discard unsaved setup changes and reload?'))return;
  report('Loading your website setup…');
- try{plan=await request('handover');realPlan=plan;changes=false;draw();report('Ready. Complete the three simple steps above.');}
+ const requestId=++loadSequence;
+ try{
+  const loaded=await request('handover');
+  if(practice||requestId!==loadSequence)return;
+  plan=loaded;realPlan=plan;changes=false;draw();report('Ready. Complete the three simple steps above.');
+ }
  catch(error){report(error.message||'Could not load setup. Sign in again and retry.',true);}
 }
 function choosePractice(){
  if(practice)return;
  if(changes&&!confirm('Leave without saving your real setup changes?'))return;
+ loadSequence++;
  realPlan=plan;practice=true;changes=false;practiceEmail='';
  if($('[data-handover-practice-email]'))$('[data-handover-practice-email]').value='';
  const steps=plan?.steps||easySteps.map(s=>({id:s.id,title:s.title,description:s.description,tab:s.tab||'handover'}));
