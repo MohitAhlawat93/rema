@@ -125,7 +125,7 @@ const prompt = (question, language, matches, site) => [
 async function callGroq(question, language, matches, site, history) {
   const key = process.env.GROQ_API_KEY;
   if (!key) return '';
-  const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+  const model = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
   const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST', signal: AbortSignal.timeout(4500),
     headers: { authorization: 'Bearer ' + key, 'content-type': 'application/json' },
@@ -136,7 +136,7 @@ async function callGroq(question, language, matches, site, history) {
         ...history,
         { role: 'user', content: clean(question, 800) }
       ],
-      temperature: .4, max_completion_tokens: 280
+      temperature: .4, reasoning_effort: /gpt-oss/i.test(model)?'low':undefined, max_completion_tokens: 400
     })
   });
   if (!r.ok) throw new Error('Groq ' + r.status);

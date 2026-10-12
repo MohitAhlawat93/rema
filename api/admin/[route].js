@@ -50,7 +50,7 @@ export default async function handler(req,res){
     if(route==='ai-status'){
       if(req.method!=='GET')return send(res,405,{error:'Use GET.'});
       const groq=Boolean(process.env.GROQ_API_KEY),xai=Boolean(process.env.XAI_API_KEY);
-      return send(res,200,{configured:groq||xai,provider:groq?'Groq':'xAI Grok',model:groq?(process.env.GROQ_MODEL||'llama-3.3-70b-versatile'):(process.env.XAI_MODEL||process.env.AI_MODEL||'grok-4')});
+      return send(res,200,{configured:groq||xai,provider:groq?'Groq':'xAI Grok',model:groq?(process.env.GROQ_MODEL||'openai/gpt-oss-20b'):(process.env.XAI_MODEL||process.env.AI_MODEL||'grok-4')});
     }
     if(route==='ai-test'){
       if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
@@ -59,7 +59,7 @@ export default async function handler(req,res){
       if(!groq&&!xai)return send(res,200,{status:'missing',message:'No usable AI API key is available to this production function.'});
       const choice=String(process.env.ASSISTANT_AI_PROVIDER||'').toLowerCase();
       const provider=choice==='xai'&&xai?'xai':choice==='groq'&&groq?'groq':groq?'groq':'xai';
-      const model=provider==='groq'?(process.env.GROQ_MODEL||'llama-3.3-70b-versatile'):(process.env.XAI_MODEL||'grok-4');
+      const model=provider==='groq'?(process.env.GROQ_MODEL||'openai/gpt-oss-20b'):(process.env.XAI_MODEL||'grok-4');
       const started=Date.now();
       try{
         const r=await fetch(provider==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://api.x.ai/v1/responses',{
