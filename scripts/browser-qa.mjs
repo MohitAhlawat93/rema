@@ -236,6 +236,7 @@ try{
     else if(path.endsWith('/ai-status'))body={configured:false};
     else if(path.endsWith('/ai-test'))body={status:'missing'};
     else if(path.endsWith('/rag-index'))body={indexed:4,attempted:4,more:false};
+    else if(path.endsWith('/rag-documents'))body={saved:1,deleted:true};
     else if(path.endsWith('/review-inbox'))body={items:[]};
     else if(path.endsWith('/state')&&method==='PUT'){
       const request=req.postDataJSON();

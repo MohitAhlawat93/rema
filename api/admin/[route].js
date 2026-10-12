@@ -79,6 +79,23 @@ export default async function handler(req,res){
       }catch(error){return send(res,200,{status:error?.name==='TimeoutError'||error?.name==='AbortError'?'timeout':'failed',provider,model,
         elapsedMs:Date.now()-started});}
     }
+    if(route==='rag-documents'){
+      if(req.method==='PUT'){
+        const body=readBody(req);
+        if(!Array.isArray(body.documents)||body.documents.length<1||body.documents.length>20)
+          return send(res,400,{error:'Supply 1 to 20 approved documents.'});
+        if(JSON.stringify(body.documents).length>60000)return send(res,413,{error:'Documents are too large.'});
+        const result=await queryTenantRag('',{action:'upsert-documents',documents:body.documents});
+        return result?send(res,200,result):send(res,503,{error:'RAG is not configured.'});
+      }
+      if(req.method==='DELETE'){
+        const key=String(readBody(req).key||'');
+        if(!/^[a-z0-9_-]{3,100}$/.test(key))return send(res,400,{error:'Invalid document key.'});
+        const result=await queryTenantRag('',{action:'delete-document',key});
+        return result?send(res,200,result):send(res,503,{error:'RAG is not configured.'});
+      }
+      return send(res,405,{error:'Use PUT or DELETE.'});
+    }
     if(route==='rag-index'){
       if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
       const outcome=await queryTenantRag('',{action:'reindex',limit:12});

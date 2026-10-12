@@ -250,6 +250,28 @@ $('[data-rebuild-rag]')?.addEventListener('click',async event=>{
  }catch(error){status.textContent='Indexing stopped: '+String(error.message||'Service unavailable')+'. Already indexed: '+total+'.';}
  finally{button.disabled=false;}
 });
+$('[data-save-rag-doc]')?.addEventListener('click',async event=>{
+ const button=event.currentTarget,status=$('[data-rag-doc-status]');
+ const key=$('[data-rag-doc-key]').value.trim().toLowerCase();
+ const title=$('[data-rag-doc-title]').value.trim();
+ const content=$('[data-rag-doc-content]').value.trim();
+ const href=$('[data-rag-doc-href]').value.trim()||'/contact/';
+ if(!/^[a-z0-9_-]{3,100}$/.test(key)||!title||!content){status.textContent='Enter a valid key, title and approved text.';return;}
+ button.disabled=true;status.textContent='Publishing approved document…';
+ try{const result=await api('rag-documents',{method:'PUT',body:JSON.stringify({documents:[{key,title,content,keywords:[],href}]})});
+  status.textContent='Published '+result.saved+' document. Semantic indexing will run shortly.';}
+ catch(error){status.textContent=error.message||'Could not publish.';}
+ finally{button.disabled=false;}
+});
+$('[data-delete-rag-doc]')?.addEventListener('click',async event=>{
+ const key=$('[data-rag-doc-key]').value.trim().toLowerCase(),status=$('[data-rag-doc-status]');
+ if(!/^[a-z0-9_-]{3,100}$/.test(key)){status.textContent='Enter the document key to remove.';return;}
+ if(!confirm('Remove this knowledge document from the current website?'))return;
+ const button=event.currentTarget;button.disabled=true;
+ try{await api('rag-documents',{method:'DELETE',body:JSON.stringify({key})});status.textContent='Document removed.';}
+ catch(error){status.textContent=error.message||'Delete failed.';}
+ finally{button.disabled=false;}
+});
 async function loadWorkspace(){
   const session=await api('session');
   if(!session?.state?.draft)throw new Error('Your private workspace is unavailable.');
