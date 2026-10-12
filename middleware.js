@@ -20,9 +20,9 @@ export function injectGoogleVerification(html,token){
  const value=String(token||'').trim();
  if(!/^[A-Za-z0-9_-]{8,256}$/.test(value))return html;
  const meta='<meta name="google-site-verification" content="'+value+'">';
- return /<meta\\s+name=["']google-site-verification["'][^>]*>/i.test(html)?
-   html.replace(/<meta\\s+name=["']google-site-verification["'][^>]*>/i,meta):
-   html.replace(/<\\/head>/i,meta+'</head>');
+ return /<meta\s+name=["']google-site-verification["'][^>]*>/i.test(html)?
+   html.replace(/<meta\s+name=["']google-site-verification["'][^>]*>/i,meta):
+   html.replace(/<\/head>/i,meta+'</head>');
 }
 const cacheHeaders=type=>({'content-type':type,'cache-control':'no-store','x-content-type-options':'nosniff'});
 async function getJson(url,headers={}){
