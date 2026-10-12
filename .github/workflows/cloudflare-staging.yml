@@ -30,6 +30,8 @@ jobs:
           npm run build
           npm test
           npm run validate:seo
+          node --check functions/api/assistant.js
+          node --check functions/api/admin/[route].js
       # Re-run automatically whenever this workflow changes after token provisioning.
       - name: Require staging-only API token
         env:
