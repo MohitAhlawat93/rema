@@ -200,10 +200,13 @@ export default async function handler(request, response) {
   if(naturalReply) return json(response,200,{...naturalReply,answer:brandReply(naturalReply.answer,baseSite)});
   // Client-supplied assistant turns are not trusted: visitors can forge them.
   const history=safeConversationHistory(body.history);
-  // These three independent checks run together, rather than sequentially.
+  // Business knowledge lookups are unnecessary for unrelated general questions.
+  const grounded=isBusinessQuestion(question,history);
   const started=Date.now();
   const [rateResult,knowledgeResult,siteResult]=await Promise.allSettled([
-    consumeRateLimit(request,'assistant',40,600),fetchPublicKnowledge(),fetchPublishedProfile()
+    consumeRateLimit(request,'assistant',40,600),
+    grounded?fetchPublicKnowledge():Promise.resolve([]),
+    grounded?fetchPublishedProfile():Promise.resolve(baseSite)
   ]);
   if(rateResult.status==='fulfilled'&&!rateResult.value.allowed){
     response.setHeader('retry-after',String(rateResult.value.retryAfterSeconds));
@@ -215,10 +218,9 @@ export default async function handler(request, response) {
   const questionText=normalizeQuestion(question);
   const exact=knowledge.find(x=>normalizeQuestion(x.question)===questionText);
   if(exact)return json(response,200,{answer:clean(exact.answer,2200),href:safeHref(exact.href),source:'approved'});
-  if(isAvailabilityFollowup(question,history)){
+  if(grounded&&isAvailabilityFollowup(question,history)){
     return json(response,200,{answer:language==='hi'?'मेरे पास लाइव उपलब्धता नहीं है। समय की पुष्टि के लिए Lema से Contact पेज पर सीधे संपर्क करें।':'I cannot check live availability or promise a time. Please use the Contact page to confirm directly with Lema.',href:'/contact/',source:'availability'});
   }
-  const grounded=isBusinessQuestion(question,history);
   const ranked=grounded?rankKnowledge(question,knowledge,{history}):[];
   // Multi-tenant hybrid semantic search. A failure never blocks existing FAQ retrieval.
   let vectorRows=[],ragMode='unavailable';
