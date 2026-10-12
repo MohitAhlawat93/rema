@@ -122,25 +122,32 @@ const prompt = (question, language, matches, site) => [
   'APPROVED RELATED ANSWERS:\n' + matches.map((x,i)=> (i+1)+'. '+clean(x.question,300)+' — '+clean(x.answer,2200)).join('\n'),
   'VISITOR MESSAGE: ' + clean(question,800)
 ].join('\n\n');
-async function callGroq(question, language, matches, site, history) {
-  const key = process.env.GROQ_API_KEY;
-  if (!key) return '';
-  const model = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
-  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST', signal: AbortSignal.timeout(4500),
-    headers: { authorization: 'Bearer ' + key, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: prompt(question, language, matches, site) },
-        ...history,
-        { role: 'user', content: clean(question, 800) }
-      ],
-      temperature: .4, reasoning_effort: /gpt-oss/i.test(model)?'low':undefined, max_completion_tokens: 400
-    })
+async function callGroq(question,language,matches,site,history){
+ const key=process.env.GROQ_API_KEY;
+ if(!key)return '';
+ const primary=process.env.GROQ_MODEL||'openai/gpt-oss-120b';
+ const available=[primary,...(primary==='openai/gpt-oss-120b'?['openai/gpt-oss-20b']:['openai/gpt-oss-120b'])];
+ for(const model of available){
+  const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+   method:'POST',signal:AbortSignal.timeout(4500),
+   headers:{authorization:'Bearer '+key,'content-type':'application/json'},
+   body:JSON.stringify({model,messages:[
+     {role:'system',content:prompt(question,language,matches,site)},...history,
+     {role:'user',content:clean(question,800)}
+   ],temperature:.4,reasoning_effort:/gpt-oss/i.test(model)?'low':undefined,max_completion_tokens:400})
   });
-  if (!r.ok) throw new Error('Groq ' + r.status);
-  return clean((await r.json()).choices?.[0]?.message?.content,1800);
+  if(r.status===404&&model!==available.at(-1))continue;
+  if(!r.ok){
+   const info=await r.json().catch(()=>({}));
+   // Store provider error category only; never send raw messages or keys.
+   const error=new Error('Groq '+r.status);
+   error.providerCode=String(info.error?.code||info.error?.type||'').slice(0,64).replace(/[^a-z0-9_-]/gi,'');
+   throw error;
+  }
+  const result=await r.json();
+  return clean(result.choices?.[0]?.message?.content,1800);
+ }
+ return '';
 }
 async function callXai(question, language, matches, site, history) {
   const key = process.env.XAI_API_KEY;

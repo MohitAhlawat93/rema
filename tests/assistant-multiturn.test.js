@@ -28,7 +28,7 @@ test('multiple questions survive provider failure, use published FAQ, then AI su
   }
   if(url.includes('/rest/v1/witness_lema_published_site?')){requests.profile++;return reply([{payload:{}}]);}
   if(url.includes('api.groq.com')){
-   assert.equal(JSON.parse(options.body).model,'openai/gpt-oss-20b');
+   assert.equal(JSON.parse(options.body).model,'openai/gpt-oss-120b');
    requests.provider++;
    if(requests.provider===1)return {ok:false,status:429};
    return reply({choices:[{message:{content:'A short model answer from the test.'}}]});
