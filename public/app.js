@@ -55,7 +55,7 @@ function hydrateBusiness(){
   document.querySelectorAll('[data-business-statement]').forEach(el=>{el.textContent=b.wordmark||name;});
   document.querySelectorAll('[data-business-about-label]').forEach(el=>{el.textContent='Meet '+name;});
   const logo=String(b.logoUrl||'');
-  if(logo==='/assets/mark.svg'||/^\/images\/[a-z0-9/_-]+\.(?:jpe?g|png|webp)$/i.test(logo)||(
+  if(logo==='/assets/mark.svg'||/^\/images\/[a-z0-9/_-]+\.(?:jpe?g|png|webp)$/i.test(logo)||/^\/media\/uploads\/[0-9a-f-]{36}\.(?:jpg|png|webp)$/.test(logo)||(
     logo.includes('/storage/v1/object/public/witness-lema-gallery/')&&permittedUrl(logo)
   )){
     document.querySelectorAll('[data-business-logo]').forEach(el=>{el.src=logo;el.alt=name+' logo';});
