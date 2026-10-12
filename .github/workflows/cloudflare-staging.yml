@@ -38,11 +38,12 @@ jobs:
             echo "::error::Set CF_STAGING_API_TOKEN in GitHub Actions repository secrets before deploying."
             exit 1
           fi
+      # The GitHub checkout is the feature branch; branch=main selects only the staging Pages root URL.
       - name: Direct Upload to staging (client never receives source)
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CF_STAGING_API_TOKEN }}
           accountId: '13032a1345920c80c9572e3ba6dddeba'
-          command: pages deploy dist --project-name=lema-website-staging --branch=feat/cloudflare-client-handover
+          command: pages deploy dist --project-name=lema-website-staging --branch=main
       - name: Verify deployed Pages routes (read-only)
         run: node scripts/cloudflare-staging-smoke.mjs https://lema-website-staging.pages.dev
