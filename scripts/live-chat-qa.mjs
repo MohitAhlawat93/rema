@@ -52,4 +52,30 @@ for(const question of [
  previousAnswer=result.answer;
  history.push({role:'user',content:question},{role:'assistant',content:result.answer});
 }
-console.log('LIVE CHAT SMOKE PASSED: eight production replies, including AI generation and injected instruction refusal.');
+// Real production regression checks for the visitor-reported questions.
+const examples=[
+ {q:'what is your boss name',source:'structured',test:/Lema/i},
+ {q:'whose websits is it?',source:'structured',test:/Lema/i},
+ {q:'and what you do for her',source:'structured',test:/help visitors/i},
+ {q:'what are her charres?',source:'structured',test:/₹15,000/},
+ {q:'what are video call charges',source:'structured',test:/₹2,000/},
+ {q:'what are private charges',source:'clarification',test:/incall or an outcall/i},
+ {q:'does she do threesome',source:'needs-verification',test:/cannot confirm/i}
+];
+const exampleHistory=[];
+for(const item of examples){
+ const start=Date.now();
+ const response=await fetch(site+'/api/assistant',{
+  method:'POST',headers:{'content-type':'application/json','accept':'application/json'},
+  body:JSON.stringify({question:item.q,history:exampleHistory.slice(-4),language:'en'}),
+  signal:AbortSignal.timeout(11500)
+ });
+ const json=await response.json().catch(()=>({}));
+ console.log(JSON.stringify({regression:item.q,status:response.status,source:json.source,
+  intent:json.intent||'unknown',elapsedMs:Date.now()-start}));
+ if(!response.ok||json.source!==item.source||!item.test.test(String(json.answer||''))){
+  throw Error('Reported question regression: "'+item.q+'" source '+json.source+' (HTTP '+response.status+')');
+ }
+ exampleHistory.push({role:'user',content:item.q},{role:'assistant',content:json.answer});
+}
+console.log('LIVE CHAT SMOKE PASSED: eight general turns plus seven reported English questions and an injection refusal.');
