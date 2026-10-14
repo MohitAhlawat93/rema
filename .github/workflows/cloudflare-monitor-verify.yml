@@ -1,0 +1,36 @@
+name: Cloudflare search monitor - verify live
+on:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths:
+      - '.github/workflows/cloudflare-monitor-verify.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Check public staging monitor and readable dashboard
+        run: |
+          node --input-type=module <<'NODE'
+          const origin='https://lema-search-health.amohit920.workers.dev';
+          const response=await fetch(origin+'/status',{signal:AbortSignal.timeout(40000)});
+          const report=await response.json();
+          console.log('Cloudflare staging check summary', {
+            status:report.status, checked:report.checked, failures:report.failures,
+            checkedAt:report.checkedAt
+          });
+          if(response.status!==200||report.status!=='healthy'||report.failures!==0||report.checked!==10)
+            throw Error('The public staging health report indicates an issue');
+          if(Date.now()-Date.parse(report.checkedAt)>30*60000)
+            throw Error('The staging health report has not refreshed recently');
+          const page=await fetch(origin+'/dashboard',{signal:AbortSignal.timeout(15000)});
+          const body=await page.text();
+          if(page.status!==200||!page.headers.get('content-type')?.includes('text/html')||
+             !/noindex/i.test(page.headers.get('x-robots-tag')||'')||
+             !body.includes('Website health')||!body.includes('Checks by page'))
+            throw Error('Human-readable Cloudflare monitoring dashboard is unavailable');
+          console.log('PASS staging monitor + dashboard, independent of Vercel');
+          NODE
