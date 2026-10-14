@@ -12,6 +12,41 @@ function setDirty(value=true){dirty=value;notice(value?'Unpublished changes in t
 function showLogin(message=''){ $('[data-login]').hidden=false;$('[data-dashboard]').hidden=true;$('[data-login-message]').textContent=message; }
 function showDashboard(){ $('[data-login]').hidden=true;$('[data-dashboard]').hidden=false; }
 function switchTab(name){$$('[data-tab]').forEach(button=>button.classList.toggle('active',button.dataset.tab===name));$$('[data-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.panel===name));}
+
+const DESIGN_PRESETS=Object.freeze({
+  signature:'Signature Editorial',
+  noir:'Noir Luxe',
+  atelier:'Modern Atelier'
+});
+const safeDesign=value=>Object.hasOwn(DESIGN_PRESETS,value)?value:'signature';
+function renderDesign(){
+  if(!state?.draft)return;
+  const draft=safeDesign(state.draft.designPreset);
+  const live=safeDesign(state.published?.designPreset);
+  $('[data-design-preset]').forEach(button=>{
+    const active=button.dataset.designPreset===draft;
+    button.classList.toggle('selected',active);
+    button.setAttribute('aria-pressed',String(active));
+  });
+  const current=$('[data-design-current]'),published=$('[data-design-live]');
+  if(current)current.textContent=DESIGN_PRESETS[draft];
+  if(published)published.textContent=DESIGN_PRESETS[live];
+}
+async function previewDesign(){
+  // Opening on the click (before any awaits) avoids popup blockers.
+  const tab=window.open('about:blank','_blank');
+  if(tab){
+    tab.document.title='Preparing private design preview';
+    tab.document.body.textContent='Saving your private design preview…';
+  }
+  const saved=hasUnsavedDraft()?await saveDraft():true;
+  if(!saved){
+    if(tab){tab.document.body.textContent='Unable to save the design. Return to the dashboard and review the error.';}
+    return;
+  }
+  if(tab){tab.opener=null;tab.location.replace('/?admin_preview=1');}
+  else notice('Design draft saved. Use Preview draft at the top of your dashboard to open it.','success');
+}
 function initializeBusiness(){
  if(!state?.draft)return;
  if(!state.draft.business&&seoDefaults?.business)state.draft.business=clone(seoDefaults.business);
@@ -51,6 +86,7 @@ function validateBusinessDraft(){
   throw new Error('Business identity: enter a valid email address.');
  if(!((b.logoUrl==='/assets/mark.svg')||
    (/^\/images\/[a-z0-9/_-]+\.(?:png|jpe?g|webp)$/i.test(b.logoUrl)&&!b.logoUrl.includes('..'))||
+   /^\/media\/uploads\/[0-9a-f-]{36}\.(?:jpg|png|webp)$/.test(b.logoUrl)||
    /^https:\/\/[^\s<>"']+\/storage\/v1\/object\/public\/witness-lema-gallery\//.test(b.logoUrl)))
   throw new Error('Business identity: use an existing local image or approved uploaded logo URL.');
  if(typeof b.requestedDomain!=='string'||(b.requestedDomain&&!/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(b.requestedDomain)))
@@ -218,7 +254,7 @@ function validateEditorialControls(){
     if(item.published&&!item.consent)throw new Error('Before publishing a review, confirm the reviewer gave permission.');
   }
 }
-function renderAll(){renderBusiness();renderLinks();renderReviews();populateProfile();renderServices();renderPhotos();renderAnswers();renderHistory();renderSeoEditor();$('[data-version]').textContent=state.version;$('[data-published-version]').textContent=state.publishedVersion;$('[data-photo-count]').textContent=state.draft.images?.length||0;$('[data-answer-count]').textContent=knowledge.length;}
+function renderAll(){renderDesign();renderBusiness();renderLinks();renderReviews();populateProfile();renderServices();renderPhotos();renderAnswers();renderHistory();renderSeoEditor();$('[data-version]').textContent=state.version;$('[data-published-version]').textContent=state.publishedVersion;$('[data-photo-count]').textContent=state.draft.images?.length||0;$('[data-answer-count]').textContent=knowledge.length;}
 async function loadAiStatus(){try{const status=await api('ai-status');$('[data-ai-status]').textContent=status.configured?status.provider+' key configured (not tested)':'Knowledge-only mode';$('[data-ai-detail]').textContent=status.configured?`${status.model} · Press Test AI connection to verify that real replies work.`:'A usable Groq or xAI key is missing from this deployment.';}catch{$('[data-ai-status]').textContent='Status unavailable';}}
 $('[data-eval-run]')?.addEventListener('click',async event=>{
  const button=event.currentTarget,question=$('[data-eval-question]').value.trim();
@@ -243,9 +279,9 @@ $('[data-test-ai]')?.addEventListener('click',async event=>{
  $('[data-ai-status]').textContent='Testing real AI reply…';
  try{
    const result=await api('ai-test',{method:'POST',body:'{}'});
-   $('[data-ai-status]').textContent=result.status==='ready'?'AI connection working':result.status==='missing'?'API key unavailable':'AI connection failed';
+   $('[data-ai-status]').textContent=result.status==='ready'?'AI connection working':result.status==='missing'?'No AI provider connected':'AI connection failed';
    $('[data-ai-detail]').textContent=result.status==='ready'?`${result.provider} · ${result.model} · ${result.elapsedMs} ms`:
-     result.status==='missing'?'Set a valid server-side API key for Production in Vercel, then redeploy.':
+     result.status==='missing'?'Connect an AI provider securely in your hosting settings, then deploy again.':
        `${result.provider||'Provider'} · ${result.status==='timeout'?'Request timed out':'HTTP '+(result.httpStatus||'network error')}. Check provider quota, key and model.`;
  }catch(error){$('[data-ai-status]').textContent='AI test unavailable';$('[data-ai-detail]').textContent=error.message||'Try again.';}
  finally{button.disabled=false;}
@@ -323,7 +359,7 @@ async function loadWorkspace(){
     notice(dirty?'Workspace ready. Save draft to keep newly initialized settings.':'Private workspace connected. Live website version '+state.publishedVersion+'.',dirty?'':'success');
   }
 }
-function validateDraft(){validateBusinessDraft();validateSeoDraft();validateEditorialControls();if(!(state.draft.images||[]).some(image=>image.hero))throw new Error('Choose at least one Home hero photograph.');if((state.draft.aboutImages||[]).length!==3)throw new Error('Choose exactly three About photographs.');if(!(state.draft.services||[]).every(item=>item.title&&item.text))throw new Error('Every service needs a title and description.');if(!state.draft.assistant?.name?.trim())throw new Error('The assistant needs a public name.');if(!state.draft.assistant?.greeting?.trim())throw new Error('The assistant needs a welcome message.');}
+function validateDraft(){if(state.draft.designPreset!==undefined&&!Object.hasOwn(DESIGN_PRESETS,state.draft.designPreset))throw new Error('Choose a supported design preset.');validateBusinessDraft();validateSeoDraft();validateEditorialControls();if(!(state.draft.images||[]).some(image=>image.hero))throw new Error('Choose at least one Home hero photograph.');if((state.draft.aboutImages||[]).length!==3)throw new Error('Choose exactly three About photographs.');if(!(state.draft.services||[]).every(item=>item.title&&item.text))throw new Error('Every service needs a title and description.');if(!state.draft.assistant?.name?.trim())throw new Error('The assistant needs a public name.');if(!state.draft.assistant?.greeting?.trim())throw new Error('The assistant needs a welcome message.');}
 async function saveDraft(){
   if(savingDraft)return savingDraft;
   savingDraft=(async()=>{
@@ -388,7 +424,9 @@ async function uploadPhoto(){const input=$('[data-photo-file]'),status=$('[data-
 $('[data-business-form]').addEventListener('submit',event=>{event.preventDefault();void saveDraft();});
 $('[data-login-form]').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget;const data=new FormData(form);const message=$('[data-login-message]');message.textContent='Signing in…';try{await api('login',{method:'POST',body:JSON.stringify({loginId:data.get('loginId'),password:data.get('password')})});form.reset();await loadWorkspace();}catch(error){message.textContent=error.message;}});
 $('[data-password-toggle]').onclick=()=>{const input=$('[name="password"]'),show=input.type==='password';input.type=show?'text':'password';$('[data-password-toggle]').textContent=show?'Hide':'Show';$('[data-password-toggle]').setAttribute('aria-label',show?'Hide password':'Show password');input.focus();};
-$$('[data-tab]').forEach(button=>button.onclick=()=>switchTab(button.dataset.tab));
+$('[data-tab]').forEach(button=>button.onclick=()=>switchTab(button.dataset.tab));
+$('[data-design-preset]').forEach(button=>button.onclick=()=>{if(!state?.draft)return;const choice=safeDesign(button.dataset.designPreset);if(safeDesign(state.draft.designPreset)===choice)return;state.draft.designPreset=choice;renderDesign();setDirty();});
+$('[data-design-preview]').onclick=previewDesign;
 $$('[data-go-tab]').forEach(button=>button.onclick=()=>{switchTab(button.dataset.goTab);document.querySelector('.workspace')?.scrollTo?.({top:0,behavior:'smooth'});});
 $('[data-seo-page]').onchange=event=>{seoCurrent=event.target.value;renderSeoEditor();};
 $('[data-publish-seo]').onclick=publish;
@@ -408,6 +446,95 @@ $('[data-add-service]').onclick=()=>{state.draft.services.push({number:String(st
 $('[data-add-answer]').onclick=()=>{knowledge.unshift({question:'',answer:'',keywords:[],href:'/contact/',published:true});knowledgeDirty=true;renderAnswers();notice('Finish both fields, then choose Save answers.');};
 $('[data-save-answers]').onclick=saveAnswers;
 $('[data-upload]').onclick=uploadPhoto;
+const stagingTest=$('[data-staging-self-test]'),stagingSection=$('[data-staging-self-test-section]');
+const stagingSave=$('[data-staging-save-first]');
+const stagingSteps=[
+  ['database','Private database and published content'],
+  ['knowledge','Approved chatbot knowledge'],
+  ['ai','Real chatbot AI reply'],
+  ['r2','R2 photo upload, delivery and cleanup'],
+  ['reviews','Review submission and cleanup'],
+  ['publishing','Draft save, publish and restore']
+];
+if(stagingSection)stagingSection.hidden=globalThis.location?.hostname!=='lema-website-staging.pages.dev';
+if(stagingSave)stagingSave.onclick=async()=>{
+  const status=$('[data-staging-self-test-status]');
+  if(knowledgeDirty){status.textContent='Save your assistant answers in Assistant first, then return here.';return;}
+  status.textContent='Saving your current private draft before testing…';
+  stagingSave.disabled=true;
+  try{await saveDraft();
+    status.textContent=hasUnsavedDraft()?'The draft could not be saved. Check the message at the top of the page.':
+      'Draft saved. Click Run complete test to start all six checks.';
+    stagingSave.hidden=!hasUnsavedDraft();
+  }catch(error){status.textContent='Save failed: '+error.message;}
+  finally{stagingSave.disabled=false;}
+};
+if(stagingTest)stagingTest.onclick=async()=>{
+  const status=$('[data-staging-self-test-status]');
+  const results=$('[data-staging-self-test-results]');
+  const progress=$('[data-staging-test-progress]');
+  const count=$('[data-staging-test-count]');
+  if(hasUnsavedDraft()||knowledgeDirty){
+    status.textContent=knowledgeDirty?'Assistant answers have unsaved edits. Save answers in Assistant first.':
+      'Your draft has unsaved changes. Click Save draft before testing, then try again.';
+    if(stagingSave)stagingSave.hidden=knowledgeDirty;
+    status.scrollIntoView({block:'center',behavior:'smooth'});
+    return;
+  }
+  if(!confirm('Run six staging-only checks? A temporary test review and draft publication will be cleaned up automatically.'))return;
+  stagingTest.disabled=true;
+  if(stagingSave)stagingSave.hidden=true;
+  results.replaceChildren();
+  progress.value=0;progress.hidden=false;count.hidden=false;
+  const items=stagingSteps.map(([,label])=>{
+    const item=document.createElement('p');item.className='staging-test-item';
+    item.textContent='○ Waiting: '+label;results.appendChild(item);return item;
+  });
+  const started=Date.now();
+  let completed=0,passed=0;
+  const summary=()=>{count.textContent=completed+' of '+stagingSteps.length+' checks completed · '+passed+' passed.';};
+  summary();
+  stagingTest.textContent='Testing… 0/'+stagingSteps.length;
+  const clock=setInterval(()=>{
+    if(completed<stagingSteps.length)status.textContent='Testing '+(completed+1)+'/'+stagingSteps.length+
+      ': '+stagingSteps[completed][1]+' ('+Math.floor((Date.now()-started)/1000)+'s elapsed)';
+  },1000);
+  let interrupted=false;
+  try{
+    for(const [index,[id,label]] of stagingSteps.entries()){
+      items[index].textContent='◌ Running: '+label;
+      items[index].className='staging-test-item running';
+      status.textContent='Testing '+(index+1)+'/'+stagingSteps.length+': '+label;
+      stagingTest.textContent='Testing… '+(index+1)+'/'+stagingSteps.length;
+      try{
+        const report=await api('staging-self-test',{method:'POST',body:JSON.stringify({step:id})});
+        const check=report.checks?.find(item=>item.id===id);
+        if(!check)throw new Error('The server did not return a test result.');
+        if(check.passed)passed++;
+        items[index].textContent=(check.passed?'✓ Passed: ':'✗ Failed: ')+label+' — '+String(check.detail||'');
+        items[index].className='staging-test-item '+(check.passed?'passed':'failed');
+      }catch(error){
+        items[index].textContent='✗ Failed: '+label+' — '+String(error.message||'Request failed');
+        items[index].className='staging-test-item failed';
+        if(/session has expired|not authenticated/i.test(String(error.message))){interrupted=true;}
+      }
+      completed++;progress.value=completed;summary();
+      if(interrupted)break;
+    }
+    status.textContent=interrupted?'Testing stopped because your owner session expired. Sign in again to retry.':
+      passed===stagingSteps.length?'All 6 staging checks passed. Temporary test content was cleaned up.':
+        'Testing finished: '+passed+'/'+completed+' passed. Review the failed checks below.';
+    if(passed!==stagingSteps.length)notice('Staging checks need attention. See Easy setup for details.','error');
+    else notice('All six staging integration checks passed.','success');
+    // Reload only after the last check; don't erase the visible results.
+    try{await loadWorkspace();}catch{};
+  }finally{
+    clearInterval(clock);
+    stagingTest.disabled=false;
+    stagingTest.textContent='Run complete test again';
+    if(stagingSave)stagingSave.hidden=!hasUnsavedDraft();
+  }
+};
 $('[data-logout]').onclick=async()=>{await api('logout',{method:'POST',body:'{}'});state=null;showLogin('You have been signed out.');};
 window.addEventListener('beforeunload',event=>{if(hasUnsavedDraft()||knowledgeDirty){event.preventDefault();event.returnValue='';}});
 loadWorkspace().catch(()=>showLogin());

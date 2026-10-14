@@ -5,11 +5,47 @@
   <form data-login-form><label>Owner ID<input name="loginId" autocomplete="username" required></label><label>Password<span class="password-field"><input name="password" type="password" autocomplete="current-password" required><button type="button" data-password-toggle aria-label="Show password">Show</button></span></label><button class="primary">Sign in</button><p class="message" data-login-message role="status"></p></form><a href="/">← Return to website</a></section>
 </main>
 <main class="dashboard" data-dashboard hidden>
-  <aside><a class="brand" href="/"><img src="/assets/mark.svg" alt=""><span>witness_lema_<small>PRIVATE CONTROL</small></span></a><nav aria-label="Admin sections"><button data-tab="overview" class="active">Overview</button><button data-tab="business">Business identity</button><button data-tab="profile">Profile &amp; links</button><button data-tab="services">Services</button><button data-tab="photos">Photographs</button><button data-tab="assistant">Assistant</button><button data-tab="links">Afterhours &amp; contacts</button><button data-tab="reviews">Reviews</button><button data-tab="seo">Google SEO</button><button data-tab="handover">Easy setup</button></nav><div class="side-foot"><a href="/" target="_blank">View website ↗</a><button data-logout>Log out</button></div></aside>
+  <aside><a class="brand" href="/"><img src="/assets/mark.svg" alt=""><span>witness_lema_<small>PRIVATE CONTROL</small></span></a><nav aria-label="Admin sections"><button data-tab="overview" class="active">Overview</button><button data-tab="design">Design studio</button><button data-tab="business">Business identity</button><button data-tab="profile">Profile &amp; links</button><button data-tab="services">Services</button><button data-tab="photos">Photographs</button><button data-tab="assistant">Assistant</button><button data-tab="links">Afterhours &amp; contacts</button><button data-tab="reviews">Reviews</button><button data-tab="seo">Google SEO</button><button data-tab="handover">Easy setup</button></nav><div class="side-foot"><a href="/" target="_blank">View website ↗</a><button data-logout>Log out</button></div></aside>
   <section class="workspace">
     <header><div><p class="eyebrow">Owner workspace</p><h1>Good to see you, <em>witness_lema_.</em></h1></div><div class="header-actions"><button class="secondary" data-preview>Preview draft ↗</button><button class="primary" data-publish>Publish website</button></div></header>
     <div class="notice" data-notice role="status">Loading your private workspace…</div>
     <section class="panel active" data-panel="overview"><div class="section-head"><div><p class="eyebrow">At a glance</p><h2>Your website, in one place.</h2><p>Save changes privately, preview them, then publish when everything is ready.</p></div><button class="secondary" data-refresh>↻ Refresh</button></div><div class="stats"><article><span>Draft version</span><strong data-version>—</strong></article><article><span>Live version</span><strong data-published-version>—</strong></article><article><span>Photographs</span><strong data-photo-count>—</strong></article><article><span>Assistant answers</span><strong data-answer-count>—</strong></article></div><div class="workflow"><h3>Safe publishing</h3><ol><li>Make your changes in any section.</li><li>Choose <strong>Save draft</strong>. Visitors still see the old version.</li><li>Open <strong>Preview draft</strong> and review it.</li><li>Choose <strong>Publish website</strong> when ready.</li></ol></div><div><h3>Recovery versions</h3><div class="history" data-history></div></div></section>
+    <section class="panel" data-panel="design">
+      <div class="section-head">
+        <div><p class="eyebrow">Design studio</p><h2>Choose your website’s look.</h2>
+          <p>Try three professionally designed styles without changing your photographs, words, links, or Google settings. Your visitors keep seeing the current website until you publish.</p></div>
+        <button class="primary" type="button" data-save>Save design draft</button>
+      </div>
+      <div class="design-summary" role="status">
+        <span>Draft design: <strong data-design-current>Signature Editorial</strong></span>
+        <span>Live design: <strong data-design-live>Signature Editorial</strong></span>
+      </div>
+      <div class="design-presets" role="group" aria-label="Website design selection">
+        <button class="design-preset" type="button" data-design-preset="signature" aria-pressed="true">
+          <span class="design-sample sample-signature" aria-hidden="true"><span class="sample-nav"></span><span class="sample-copy"><i></i><b></b><b></b><i></i></span><span class="sample-photo"></span><span class="sample-bottom"></span></span>
+          <span class="design-title">Signature Editorial <span class="design-tick" aria-hidden="true">✓</span></span>
+          <span class="design-description">Warm ivory, classic typography and full-bleed cinematic photography.</span>
+          <span class="design-tone">Classic luxury · Original design</span>
+        </button>
+        <button class="design-preset" type="button" data-design-preset="noir" aria-pressed="false">
+          <span class="design-sample sample-noir" aria-hidden="true"><span class="sample-nav"></span><span class="sample-copy"><i></i><b></b><b></b><i></i></span><span class="sample-photo"></span><span class="sample-bottom"></span></span>
+          <span class="design-title">Noir Luxe <span class="design-tick" aria-hidden="true">✓</span></span>
+          <span class="design-description">Rich charcoal, soft champagne accents and dramatic imagery.</span>
+          <span class="design-tone">Moody · Refined</span>
+        </button>
+        <button class="design-preset" type="button" data-design-preset="atelier" aria-pressed="false">
+          <span class="design-sample sample-atelier" aria-hidden="true"><span class="sample-nav"></span><span class="sample-copy"><i></i><b></b><b></b><i></i></span><span class="sample-photo"></span><span class="sample-bottom"></span></span>
+          <span class="design-title">Modern Atelier <span class="design-tick" aria-hidden="true">✓</span></span>
+          <span class="design-description">Bright sage tones, contemporary type and clean gallery-inspired layouts.</span>
+          <span class="design-tone">Modern · Minimal</span>
+        </button>
+      </div>
+      <div class="design-actions">
+        <div><h3>Preview it safely</h3><p>Choose a style, then select <strong>Save &amp; preview</strong>. The preview is visible only while signed in. Publish website when you're happy with every page.</p></div>
+        <button class="primary" type="button" data-design-preview>Save &amp; preview selected design ↗</button>
+      </div>
+      <p class="fine">You can return to Signature Editorial at any time. Earlier published designs are also included in the Recovery versions section under Overview.</p>
+    </section>
     <section class="panel" data-panel="business">
  <div class="section-head"><div><p class="eyebrow">One source of truth</p><h2>Business identity &amp; branding.</h2>
  <p>Edit the public business name, wordmark, logo, location and contact email in one place. Preview your draft before publishing.</p></div>
@@ -156,6 +192,26 @@
         <button class="primary" type="button" data-handover-save>Save my progress</button>
         <button class="secondary" type="button" data-handover-refresh>Start again / Reload</button>
       </div>
+      <section class="workflow" data-staging-self-test-section hidden>
+        <div class="section-head compact"><div>
+          <h3>One-click staging test</h3>
+          <p>Checks private website data, chatbot knowledge, photo storage, reviews, and saving/publishing. Only available on the test website. Test content is automatically cleaned up.</p>
+        </div></div>
+        <div class="staging-test-controls">
+          <button type="button" class="secondary" data-staging-self-test>Run complete test</button>
+          <button type="button" class="secondary" data-staging-save-first hidden>Save draft before testing</button>
+        </div>
+        <p role="status" aria-live="polite" class="staging-test-status" data-staging-self-test-status>Ready to start. All six checks will show their actual progress here.</p>
+        <progress data-staging-test-progress max="6" value="0" aria-label="Completed staging tests" hidden></progress>
+        <p class="fine" data-staging-test-count hidden>0 of 6 checks completed.</p>
+        <div class="staging-test-results" data-staging-self-test-results aria-live="polite"></div>
+      </section>
+      <section class="workflow" aria-label="Account ownership requirements">
+        <h3>Who will own this website?</h3>
+        <p><strong>Not verified yet.</strong> Signing into this test dashboard does not identify the future legal owner. Before a real transfer, the client must confirm their name, a private email they control, and the agreed service arrangement. We then verify ownership through invitations and provider account permissions.</p>
+        <p><strong>Never enter or share a Gmail, Cloudflare, database provider, registrar or Google password here.</strong> The new owner signs into each provider personally; we send permission invitations. API tokens and signing secrets are created or rotated securely on the new hosting account. The public contact email in Business identity is not proof of account ownership.</p>
+        <p class="fine">Website content can be tested now. Account transfer, domain ownership and Google Search Console verification remain pending until the owner supplies and confirms their details.</p>
+      </section>
       <div class="workflow handover-auto-check">
         <div class="section-head compact"><div><h3>Automatic website checks</h3>
         <p>We check the live pages, Google sitemap, content connection and available settings for you. There is nothing technical to fill in.</p></div>

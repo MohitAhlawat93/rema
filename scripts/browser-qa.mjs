@@ -283,9 +283,9 @@ try{
   await page.locator('[data-dashboard]').waitFor({state:'visible'});
   await page.locator('[data-tab="assistant"]').click();
   await page.locator('[data-test-ai]').click();
-  await page.waitForFunction(()=>document.querySelector('[data-ai-status]')?.textContent==='API key unavailable');
-  assert.match(await page.locator('[data-ai-status]').textContent(),/API key unavailable/);
-  assert.match(await page.locator('[data-ai-detail]').textContent(),/valid server-side API key/);
+  await page.waitForFunction(()=>document.querySelector('[data-ai-status]')?.textContent==='No AI provider connected');
+  assert.match(await page.locator('[data-ai-status]').textContent(),/No AI provider connected/);
+  assert.match(await page.locator('[data-ai-detail]').textContent(),/Connect an AI provider securely/);
   await page.locator('[data-rebuild-rag]').click();
   await page.waitForFunction(()=>document.querySelector('[data-rag-status]')?.textContent.includes('up to date'));
   assert.match(await page.locator('[data-rag-status]').textContent(),/4 new embeddings/);

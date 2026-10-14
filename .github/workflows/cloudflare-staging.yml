@@ -1,0 +1,122 @@
+name: Cloudflare staging — deploy reviewed branch
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths:
+      - '.github/workflows/cloudflare-staging.yml'
+      - 'wrangler.jsonc'
+      - 'scripts/cloudflare-staging-smoke.mjs'
+      - 'docs/CLOUDFLARE_MIGRATION.md'
+      - 'public/app.js'
+      - 'public/styles.css'
+      - 'public/admin.js'
+      - 'public/admin.html'
+      - 'public/admin.css'
+      - 'public/handover.js'
+      - 'api/admin/**'
+      - 'middleware.js'
+      - 'seo/live.mjs'
+      - 'test/cloudflare-privacy-canonical.test.mjs'
+      - 'test/cloudflare-indexing-guard.test.mjs'
+      - 'test/search-health.test.mjs'
+      - 'tests/google-verification.test.mjs'
+      - 'lib/setup-automation.js'
+      - 'tests/setup-automation.test.js'
+      - 'lib/staging-self-test.js'
+      - 'lib/workers-ai-fallback.js'
+      - 'lib/rate-limit.js'
+      - 'functions/api/staging-binding-check.js'
+      - 'functions/api/**'
+      - 'api/assistant.js'
+      - 'tests/staging-self-test.test.mjs'
+      - 'scripts/cloudflare-slideshow-qa.mjs'
+permissions:
+  contents: read
+  deployments: write
+concurrency:
+  group: cloudflare-lema-staging
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout staging code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source and website
+        run: |
+          npm run build
+          npm test
+          npm run validate:seo
+          node --check functions/api/assistant.js
+          node --check functions/api/admin/[route].js
+      # Re-run automatically whenever this workflow changes after token provisioning.
+      - name: Require staging-only API token
+        env:
+          STAGING_TOKEN: ${{ secrets.CF_STAGING_API_TOKEN }}
+        run: |
+          if [ -z "$STAGING_TOKEN" ]; then
+            echo "::error::Set CF_STAGING_API_TOKEN in GitHub Actions repository secrets before deploying."
+            exit 1
+          fi
+      # The GitHub checkout is the feature branch; branch=main selects only the staging Pages root URL.
+      - name: Use protected Cloudflare account settings
+        run: |
+          # The staging Pages project owns its R2, SEO and Supabase bindings.
+          # Do not let a repository example override dashboard variables/secrets.
+          mv wrangler.jsonc wrangler.jsonc.example
+      - name: Direct Upload to staging (client never receives source)
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CF_STAGING_API_TOKEN }}
+          accountId: '13032a1345920c80c9572e3ba6dddeba'
+          command: pages deploy dist --project-name=lema-website-staging --branch=main
+      - name: Verify deployed Pages routes (read-only)
+        run: node scripts/cloudflare-staging-smoke.mjs https://lema-website-staging.pages.dev
+      - name: Inspect staging runtime AI and R2 binding availability
+        run: |
+          node --input-type=module <<'NODE'
+          const r=await fetch('https://lema-website-staging.pages.dev/api/staging-binding-check');
+          const status=await r.json().catch(()=>({}));
+          console.log('staging runtime binding status',status);
+          if(!r.ok||!status.staging)process.exit(1);
+          NODE
+      - name: Inspect Workers AI binding inside assistant handler
+        run: |
+          node --input-type=module <<'NODE'
+          const r=await fetch('https://lema-website-staging.pages.dev/api/assistant?stage_check=1');
+          console.log('assistant-specific binding status',r.status,await r.text());
+          NODE
+      - name: Verify live AI fallback with one visitor-safe question
+        run: |
+          node --input-type=module <<'NODE'
+          const url='https://lema-website-staging.pages.dev/api/assistant';
+          const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},
+            body:JSON.stringify({question:'How does this website describe its atmosphere and approach to visitors?',language:'en'}),
+            signal:AbortSignal.timeout(22000)});
+          const j=await r.json().catch(()=>({}));
+          console.log('AI smoke',{status:r.status,source:j.source||'',rag:j.rag||'',hasAnswer:Boolean(j.answer?.trim()),problem:j.diagnostics?.code||''});
+          if(r.status!==200||j.source!=='ai'||!j.answer?.trim())process.exit(1);
+          NODE
+      - name: Check if rotating image code changed
+        id: photo
+        run: |
+          if git diff --name-only HEAD^ HEAD | grep -Eq '^(public/app.js|public/styles.css|scripts/cloudflare-slideshow-qa.mjs)$'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install Chromium for real slideshow tests
+        if: github.event_name == 'workflow_dispatch' || steps.photo.outputs.changed == 'true'
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Verify changing published photographs on Cloudflare
+        if: github.event_name == 'workflow_dispatch' || steps.photo.outputs.changed == 'true'
+        run: node scripts/cloudflare-slideshow-qa.mjs https://lema-website-staging.pages.dev

@@ -1,0 +1,73 @@
+name: Deploy isolated customer trial (manual request)
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths:
+      - docs/client-trial-deploy-request.txt
+permissions:
+  contents: read
+  deployments: write
+concurrency:
+  group: isolated-customer-trial
+  cancel-in-progress: true
+jobs:
+  trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SEO_INDEXING_ENABLED: 'false'
+      SEO_SITE_ORIGIN: 'https://lema-transfer-trial.pages.dev'
+    steps:
+      - name: Guard isolated trial target
+        run: |
+          test "${{ github.ref }}" = 'refs/heads/feat/cloudflare-client-handover' || exit 1
+          echo "Deploying only the dummy customer's Cloudflare Pages project."
+      - name: Check customer-scoped deploy token is present
+        env:
+          CUSTOMER_TOKEN: ${{ secrets.CF_CUSTOMER_TRIAL_API_TOKEN }}
+        run: |
+          if [ -z "$CUSTOMER_TOKEN" ]; then
+            echo "::error::Missing a one-time customer-scoped Cloudflare Pages Edit token in CF_CUSTOMER_TRIAL_API_TOKEN."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build and validate customer trial (always noindex)
+        run: |
+          npm run build
+          npm test
+          npm run validate:seo
+      - name: Ignore developer-only Wrangler example settings
+        run: mv wrangler.jsonc wrangler.jsonc.example
+      - name: Deploy compiled files without transferring GitHub repository
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CF_CUSTOMER_TRIAL_API_TOKEN }}
+          accountId: 'c3ef939d011d7bceacb34814dcbde745'
+          command: pages deploy dist --project-name=lema-transfer-trial --branch=main
+      - name: Verify public HTML, correct canonical, and noindex headers
+        run: |
+          node --input-type=module <<'NODE'
+          const root='https://lema-transfer-trial.pages.dev';
+          const pages=['/','/about/','/gallery/','/services/','/reviews/','/contact/'];
+          for(const path of pages){
+            const r=await fetch(root+path,{signal:AbortSignal.timeout(15000)});
+            const html=await r.text();
+            if(r.status!==200)throw Error(path+' returned HTTP '+r.status);
+            if(!/name="robots" content="noindex/i.test(html) &&
+               !/noindex/i.test(r.headers.get('x-robots-tag')||''))throw Error(path+' is indexable!');
+            if(!html.includes('rel="canonical" href="'+root+path+'"'))
+              throw Error(path+' has the wrong canonical');
+            if(html.includes('https://yebbfjemvvtenpzrrhno.supabase.co'))
+              throw Error(path+' unexpectedly references the original Supabase project');
+            console.log('PASS isolated noindex page',path);
+          }
+          const xml=await (await fetch(root+'/sitemap.xml')).text();
+          if(/<loc>/.test(xml))throw Error('Test sitemap should not expose indexable URLs');
+          console.log('PASS empty indexable sitemap');
+          NODE

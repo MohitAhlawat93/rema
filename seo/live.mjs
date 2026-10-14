@@ -10,6 +10,7 @@ const xml=esc;
 export function validImage(image,supabaseUrl=''){
  if(typeof image!=='string'||image.length>2048)return false;
  if(/^\/images\/[a-z0-9_./-]+\.(?:jpe?g|png|webp)$/i.test(image)&&!image.includes('..'))return true;
+ if(/^\/media\/uploads\/[0-9a-f-]{36}\.(?:jpg|png|webp)$/.test(image))return true;
  return Boolean(supabaseUrl)&&image.startsWith(supabaseUrl.replace(/\/$/,'')+'/storage/v1/object/public/witness-lema-gallery/')&&/^https:\/\//.test(image)&&!/[<>"'\s]/.test(image);
 }
 export function cleanSEOPage(raw,route,template={},supabaseUrl=''){
@@ -125,6 +126,15 @@ export function renderLivePage(html,route,page,published,origin,production=true,
  if(!CONTENT_ROUTES.includes(route))return html;
  const site=published&&typeof published==='object'?published:{};
  const business=resolveBusiness(site.business,supabaseUrl);
+ // Privacy is deliberately excluded from indexable SEO pages, so the generic
+ // updateHead() path does not run. Still replace the old build-time host in its
+ // canonical, Open Graph and JSON-LD URLs with the configured Cloudflare origin.
+ // Do not modify unrelated external links.
+ if(route==='/privacy/'){
+   html=html.replaceAll('https://rema-ruby.vercel.app',origin);
+   html=replaceTag(html,/<meta name="robots"[^>]*>/i,
+     '<meta name="robots" content="noindex, nofollow">');
+ }
  if(SEO_ROUTES.includes(route)&&page){
    html=updateHead(html,page,route,origin,production,business);
    const editorial=seoEditorial(page);

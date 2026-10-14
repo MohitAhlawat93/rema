@@ -78,7 +78,7 @@ Deno.serve(async(req)=>{
       const s=payload.services;
       if(!Array.isArray(s)||s.length>40||!s.every(x=>x&&typeof x.title==='string'&&x.title.trim()&&x.title.length<=200&&typeof x.text==='string'&&x.text.trim()&&x.text.length<=3000))return json({error:'Invalid service data'},400);
       if(!Array.isArray(payload.images)||payload.images.length>250||!payload.images.some(x=>x.hero)||!Array.isArray(payload.aboutImages)||payload.aboutImages.length!==3)return json({error:'Invalid photo selection'},400);
-      if(!payload.images.every(x=>x&&typeof x.src==='string'&&x.src.length<=2048&&(x.src.startsWith('/images/')||x.src.startsWith(SUPABASE_URL+'/storage/v1/object/public/witness-lema-gallery/'))))return json({error:'Invalid image source'},400);
+      if(!payload.images.every(x=>x&&typeof x.src==='string'&&x.src.length<=2048&&(x.src.startsWith('/images/')||x.src.startsWith(SUPABASE_URL+'/storage/v1/object/public/witness-lema-gallery/')||/^\/media\/uploads\/[0-9a-f-]{36}\.(?:jpg|png|webp)$/.test(x.src))))return json({error:'Invalid image source'},400);
       if(!payload.aboutImages.every(src=>payload.images.some(x=>x.src===src)))return json({error:'About photos must exist in gallery'},400);
       // Client-owned public identity travels with the versioned published site.
       // Requested domains are descriptive only; they NEVER set canonical/DNS/hosting.
@@ -87,6 +87,7 @@ Deno.serve(async(req)=>{
         const str=(value:unknown,max:number,min=0)=>typeof value==='string'&&value.length<=max&&value.trim().length>=min;
         const validLogo=(value:unknown)=>typeof value==='string'&&(
           value==='/assets/mark.svg'||
+          /^\/media\/uploads\/[0-9a-f-]{36}\.(?:jpg|png|webp)$/.test(value)||
           (/^\/images\/[a-z0-9/_-]+\.(?:png|jpe?g|webp)$/i.test(value)&&!value.includes('..'))||
           (value.startsWith(SUPABASE_URL+'/storage/v1/object/public/witness-lema-gallery/')&&
            /^https:\/\//.test(value)&&!/[<>"'\s]/.test(value)&&value.length<=2048)
@@ -125,7 +126,8 @@ Deno.serve(async(req)=>{
           return json({error:'SEO must contain the original five pages, or all six including Reviews.'},400);
         const allowedImage=(image)=>typeof image==='string'&&image.length<=2048&&(
           (/^\/images\/[a-z0-9_./-]+\.(?:jpe?g|png|webp)$/i.test(image)&&!image.includes('..'))||
-          image.startsWith(SUPABASE_URL+'/storage/v1/object/public/witness-lema-gallery/')
+          image.startsWith(SUPABASE_URL+'/storage/v1/object/public/witness-lema-gallery/')||
+          /^\/media\/uploads\/[0-9a-f-]{36}\.(?:jpg|png|webp)$/.test(image)
         );
         for(const [route,page] of Object.entries(pages)){
           if(!routes.has(route)||!page||typeof page!=='object'||Array.isArray(page)||

@@ -30,7 +30,13 @@ const drawScan=(scan)=>{
  if(scan.error){summary.textContent='Could not finish the automatic check. Please try Check again.';body.innerHTML='';return;}
  const checks=scan.checks||[];
  const working=checks.filter(x=>x.status==='passed'||x.status==='configured').length;
- summary.textContent=working+'/'+checks.length+' technical checks working or configured. Items below explain anything still needed.';
+ const waiting=checks.filter(x=>x.status==='owner_action').length;
+ const intentionalStaging=String(scan.origin||'').includes('.pages.dev')&&
+   checks.some(x=>x.id==='robots'&&x.status==='attention');
+ summary.textContent=working+'/'+checks.length+' checks working/configured.'+
+   (intentionalStaging?' Search indexing is deliberately OFF on staging.':'')+
+   (waiting?' '+waiting+' checks require a real owner/domain decision.':'')+
+   ' Items below explain what is and is not verified.';
  body.innerHTML=checks.map(x=>'<article class="auto-check-item">'+
   '<div><strong>'+escapeHtml(x.title)+'</strong><p class="fine">'+escapeHtml(x.detail)+'</p>'+
   (x.action?'<p class="fine">'+escapeHtml(x.action)+'</p>':'')+'</div>'+

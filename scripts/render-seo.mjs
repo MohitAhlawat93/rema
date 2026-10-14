@@ -103,16 +103,20 @@ for (const [route,page] of routes) {
   if(editorial[route]) html=html.replace('</main>',editorialMarkup(route)+'</main>');
   await writeFile(filename,html);
 }
-const robots=config.indexingEnabled?[
+// Crawlers must be able to read the noindex tags on test pages. Disallowing
+// the entire site would prevent Googlebot from seeing those directives.
+const robots=[
  'User-agent: *',
  'Disallow: /admin',
  'Disallow: /api/',
  'Disallow: /_seo_templates/',
  'Disallow: /*?admin_preview=',
- 'Sitemap: '+origin+'/sitemap.xml',
- 'Sitemap: '+origin+'/image-sitemap.xml',
+ ...(config.indexingEnabled?[
+  'Sitemap: '+origin+'/sitemap.xml',
+  'Sitemap: '+origin+'/image-sitemap.xml'
+ ]:[]),
  ''
-].join('\n'):'User-agent: *\nDisallow: /\n';
+].join('\n');
 await writeFile(path.join(root,'robots.txt'),robots);
 const sitemap='<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+
  indexable.map(([route])=>'  <url><loc>'+escapeXML(absolute(route))+'</loc></url>').join('\n')+

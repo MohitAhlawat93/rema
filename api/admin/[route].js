@@ -1,4 +1,7 @@
 import { runAutomaticSetupChecks } from '../../lib/setup-automation.js';
+import { uploadR2Photo } from '../../lib/r2-media.js';
+import { workersAiAnswer } from '../../lib/workers-ai-fallback.js';
+import {allowedStagingSelfTest,runStagingSelfTest,validStagingTestStep} from '../../lib/staging-self-test.js';
 import { HANDOVER_STEPS, blankProgress, handoverIndicators, validateHandoverUpdate } from '../../lib/handover.js';
 import {
   ADMIN_COOKIE_NAME, adminAuthConfigured, constantTimeTextEqual, createSessionToken,
@@ -36,12 +39,12 @@ export default async function handler(req,res){
       const login=String(body.loginId||'').trim().slice(0,120),password=String(body.password||'').slice(0,256);
       const expected=String(process.env.SIGNATURE_ADMIN_LOGIN_ID||'').trim();
       if(!constantTimeTextEqual(login,expected)||!verifyPasswordHash(password,process.env.SIGNATURE_ADMIN_PASSWORD_HASH||''))return send(res,401,{error:'That owner ID or password is not correct.'});
-      res.setHeader('set-cookie',makeSessionCookie(createSessionToken(expected)));
+      res.setHeader('set-cookie',makeSessionCookie(createSessionToken(expected),req));
       return send(res,200,{ok:true});
     }
     if(route==='logout'){
       if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
-      res.setHeader('set-cookie',makeExpiredSessionCookie());return send(res,200,{ok:true});
+      res.setHeader('set-cookie',makeExpiredSessionCookie(req));return send(res,200,{ok:true});
     }
     if(route==='session'){
       if(req.method!=='GET')return send(res,405,{error:'Use GET.'});
@@ -51,6 +54,15 @@ export default async function handler(req,res){
       return send(res,200,{authenticated:true,owner:{name:'witness_lema_',role:'Owner'},state});
     }
     if(!protectedRoute(req,res))return;
+    if(route==='staging-self-test'){
+      if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
+      if(!allowedStagingSelfTest(req))return send(res,404,{error:'Not available on this website.'});
+      const input=readBody(req);
+      const step=input.step===undefined?null:input.step;
+      if(step!==null&&!validStagingTestStep(step))return send(res,400,{error:'Invalid staging test step.'});
+      const result=await runStagingSelfTest(req,{only:step});
+      return send(res,200,result);
+    }
     if(route==='assistant-evaluate'){
       if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
       const input=readBody(req);
@@ -62,7 +74,7 @@ export default async function handler(req,res){
       const capture={statusCode:200,setHeader(){},end(v){code=this.statusCode;try{output=JSON.parse(v);}catch{output=null;}}};
       await assistantHandler({
         method:'POST',body:{question,language:'en',history:Array.isArray(input.history)?input.history.slice(-4):[]},
-        headers:req.headers,socket:req.socket
+        headers:req.headers,socket:req.socket,cloudflareAI:req.cloudflareAI
       },capture);
       if(!output)return send(res,503,{error:'Assistant test did not complete.'});
       return send(res,code,{answer:output.answer||'',source:output.source||'unknown',
@@ -72,14 +84,28 @@ export default async function handler(req,res){
     }
     if(route==='ai-status'){
       if(req.method!=='GET')return send(res,405,{error:'Use GET.'});
-      const groq=Boolean(process.env.GROQ_API_KEY),xai=Boolean(process.env.XAI_API_KEY);
-      return send(res,200,{configured:groq||xai,provider:groq?'Groq':'xAI Grok',model:groq?(process.env.GROQ_MODEL||'openai/gpt-oss-120b'):(process.env.XAI_MODEL||process.env.AI_MODEL||'grok-4')});
+      const groq=Boolean(process.env.GROQ_API_KEY),xai=Boolean(process.env.XAI_API_KEY),cf=Boolean(req.cloudflareAI?.run);
+      return send(res,200,{configured:groq||xai||cf,provider:groq?'Groq':xai?'xAI Grok':cf?'Cloudflare Workers AI':'Not configured',
+        model:groq?(process.env.GROQ_MODEL||'openai/gpt-oss-120b'):xai?(process.env.XAI_MODEL||'grok-4'):cf?'@cf/zai-org/glm-4.7-flash':''});
     }
     if(route==='ai-test'){
       if(req.method!=='POST')return send(res,405,{error:'Use POST.'});
       // Owner-initiated tiny inference proves credentials and the configured model actually work.
       const groq=Boolean(process.env.GROQ_API_KEY),xai=Boolean(process.env.XAI_API_KEY);
-      if(!groq&&!xai)return send(res,200,{status:'missing',message:'No usable AI API key is available to this production function.'});
+      if(!groq&&!xai){
+        if(!req.cloudflareAI?.run)return send(res,200,{status:'missing',message:'No AI provider is configured for this website.'});
+        const started=Date.now(),model='@cf/zai-org/glm-4.7-flash';
+        try{
+          const answer=await workersAiAnswer(req.cloudflareAI,
+            'Answer the next general-knowledge question in one short English sentence.',
+            'Why is the sky blue?',{maxTokens:120});
+          return send(res,200,{status:answer?'ready':'failed',provider:'Cloudflare Workers AI',model,
+            elapsedMs:Date.now()-started});
+        }catch(error){
+          return send(res,200,{status:error?.name==='TimeoutError'||error?.name==='AbortError'?'timeout':'failed',
+            provider:'Cloudflare Workers AI',model,elapsedMs:Date.now()-started});
+        }
+      }
       const choice=String(process.env.ASSISTANT_AI_PROVIDER||'').toLowerCase();
       const provider=choice==='xai'&&xai?'xai':choice==='groq'&&groq?'groq':groq?'groq':'xai';
       const model=provider==='groq'?(process.env.GROQ_MODEL||'openai/gpt-oss-120b'):(process.env.XAI_MODEL||'grok-4');
@@ -127,7 +153,7 @@ export default async function handler(req,res){
     // Owner-only read-only checks; do not accept browser-supplied URLs or credentials.
     if(route==='setup-check'){
       if(req.method!=='GET')return send(res,405,{error:'Use GET.'});
-      const report=await runAutomaticSetupChecks();
+      const report=await runAutomaticSetupChecks({workersAiAvailable:Boolean(req.cloudflareAI?.run)});
       return send(res,200,report);
     }
     // Private owner handover progress. A submitted task is NOT provider-verified.
@@ -200,10 +226,15 @@ export default async function handler(req,res){
     }
     if(route==='upload'){
       if(req.method==='POST'){
-        const body=readBody(req);return send(res,200,await callAdminBackend('upload',{dataUrl:body.dataUrl,name:body.name}));
+        const body=readBody(req);
+        if(req.cloudflareMediaBucket)return send(res,200,await uploadR2Photo(req.cloudflareMediaBucket,body.dataUrl));
+        return send(res,200,await callAdminBackend('upload',{dataUrl:body.dataUrl,name:body.name}));
       }
       if(req.method==='DELETE'){
-        const body=readBody(req);return send(res,200,await callAdminBackend('remove-upload',{path:body.path}));
+        const body=readBody(req);
+        if(String(body.path||'').startsWith('r2:'))
+          return send(res,409,{error:'Remove the image from your draft; deleting stored R2 files requires a separate safety check.'});
+        return send(res,200,await callAdminBackend('remove-upload',{path:body.path}));
       }
       return send(res,405,{error:'Unsupported method.'});
     }

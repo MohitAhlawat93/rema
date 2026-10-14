@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "include": [
+    "/api/*",
+    "/",
+    "/about/",
+    "/gallery/",
+    "/services/",
+    "/contact/",
+    "/reviews/",
+    "/privacy/",
+    "/sitemap.xml",
+    "/image-sitemap.xml",
+    "/media/*"
+  ],
+  "exclude": [
+    "/assets/*",
+    "/images/*",
+    "/_seo_templates/*",
+    "/data/*",
+    "/lib/*"
+  ]
+}

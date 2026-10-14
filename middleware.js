@@ -1,4 +1,4 @@
-// Vercel Routing Middleware: render published SEO values in the HTTP HTML,
+// Shared edge SEO renderer: publish approved SEO values in the HTTP HTML,
 // not as browser-only JavaScript. Only public, already-published Supabase rows
 // are used. Preview remains noindex. Private drafts are NEVER fetched here.
 import { SEO_ROUTES, CONTENT_ROUTES, cleanSEOPage, renderLivePage, xmlSitemap, imageSitemap } from './seo/live.mjs';
@@ -6,11 +6,40 @@ export const config={
  matcher:['/','/about/','/gallery/','/services/','/contact/','/reviews/','/privacy/','/sitemap.xml','/image-sitemap.xml']
 };
 const origin='https://rema-ruby.vercel.app';
-const siteOrigin=()=>{
- const v=String(process.env.SEO_SITE_ORIGIN||origin).replace(/\/$/,'');
+const siteOrigin=(env=process.env)=>{
+ const v=String(env.SEO_SITE_ORIGIN||origin).replace(/\/$/,'');
  return /^https:\/\/[a-z0-9.-]+(?::[0-9]{2,5})?$/i.test(v)?v:origin;
 };
-const active=()=>process.env.VERCEL_ENV==='production'&&process.env.SEO_INDEXING_ENABLED!=='false';
+// Cloudflare Pages temporary domains and mirrors MUST stay noindex even when
+// SEO_INDEXING_ENABLED is accidentally switched on. Only the exact approved
+// HTTPS custom-domain origin can be indexable. This also keeps /sitemap.xml
+// empty on *.pages.dev once the real domain goes live.
+export function indexingAllowed(env=process.env,hosting='vercel',requestUrl=''){
+ if(hosting!=='cloudflare')
+   return env.VERCEL_ENV==='production'&&env.SEO_INDEXING_ENABLED!=='false';
+ if(env.SEO_INDEXING_ENABLED!=='true')return false;
+ try{
+   const target=new URL(String(env.SEO_SITE_ORIGIN||''));
+   const incoming=new URL(requestUrl);
+   const host=target.hostname.toLowerCase();
+   if(target.protocol!=='https:'||target.port||target.username||target.password||
+      target.pathname!=='/'||target.search||target.hash)return false;
+   if(!/^[a-z0-9.-]+$/.test(host)||!host.includes('.')||
+      /(^|\.)(pages\.dev|workers\.dev|vercel\.app|localhost)$/.test(host))return false;
+   return incoming.protocol==='https:'&&incoming.hostname.toLowerCase()===host;
+ }catch{return false;}
+}
+// Google URL-prefix verification can be updated on the destination Cloudflare account
+// without rebuilding or exposing a token to an admin visitor. A verification token is
+// public by design, but strictly validated before it becomes HTML.
+export function injectGoogleVerification(html,token){
+ const value=String(token||'').trim();
+ if(!/^[A-Za-z0-9_-]{8,256}$/.test(value))return html;
+ const meta='<meta name="google-site-verification" content="'+value+'">';
+ return /<meta\s+name=["']google-site-verification["'][^>]*>/i.test(html)?
+   html.replace(/<meta\s+name=["']google-site-verification["'][^>]*>/i,meta):
+   html.replace(/<\/head>/i,meta+'</head>');
+}
 const cacheHeaders=type=>({'content-type':type,'cache-control':'no-store','x-content-type-options':'nosniff'});
 async function getJson(url,headers={}){
  const r=await fetch(url,{headers,signal:AbortSignal.timeout(2600),cache:'no-store'});
@@ -18,47 +47,53 @@ async function getJson(url,headers={}){
  return r.json();
 }
 const staticTemplate=(path,url)=>new URL('/_seo_templates/'+path,url).toString();
-export default async function middleware(req){
+export default async function middleware(req,{env=process.env,assetFetch=fetch,hosting='vercel'}={}){
  const pathname=new URL(req.url).pathname;
  const sitemap=pathname==='/sitemap.xml'||pathname==='/image-sitemap.xml';
  if(!CONTENT_ROUTES.includes(pathname)&&!sitemap)return new Response('Not found',{status:404});
  const fallback=sitemap?(pathname==='/sitemap.xml'?'sitemap.xml':'image-sitemap.xml'):
      (pathname==='/'?'home':pathname.slice(1,-1))+'/index.html';
  const baseURL=staticTemplate(fallback,req.url);
- // Always fetch an actual compiled HTML template. Supabase failures fail open
- // to static build content; the template remains indexable where appropriate.
- const templatePromise=fetch(baseURL,{signal:AbortSignal.timeout(3000)});
- const supa=String(process.env.SUPABASE_URL||'').replace(/\/$/,'');
- const key=String(process.env.SUPABASE_PUBLISHABLE_KEY||'');
+ // Always fetch a compiled HTML template. If Supabase is unavailable, render
+ // the checked-in SEO defaults so URLs, canonicals and robots remain correct.
+ const templatePromise=assetFetch(baseURL,{signal:AbortSignal.timeout(3000)});
+ const supa=String(env.SUPABASE_URL||'').replace(/\/$/,'');
+ const key=String(env.SUPABASE_PUBLISHABLE_KEY||'');
  const dataPromise=supa&&key?getJson(supa+'/rest/v1/witness_lema_published_site?id=eq.main&select=payload,version&limit=1',
      {apikey:key,authorization:'Bearer '+key}).then(rows=>rows?.[0]?.payload||null).catch(()=>null):Promise.resolve(null);
- const defaultsPromise=getJson(new URL('/seo-defaults.json',req.url).toString()).catch(()=>null);
+ const defaultsPromise=assetFetch(new URL('/seo-defaults.json',req.url).toString(),
+  {signal:AbortSignal.timeout(2600)}).then(r=>{if(!r.ok)throw Error('Missing SEO defaults');return r.json();}).catch(()=>null);
  const publicReviewsPromise=pathname==='/reviews/'&&supa&&key?
    getJson(supa+'/rest/v1/witness_lema_public_reviews?select=author,review_text,language&order=created_at.desc,id.desc&limit=100',
      {apikey:key,authorization:'Bearer '+key}).catch(()=>null):Promise.resolve(null);
  const [template,payload,defaults,publicReviews]=await Promise.all([templatePromise,dataPromise,defaultsPromise,publicReviewsPromise]);
  if(!template.ok)return new Response('Website temporarily unavailable',{status:503,headers:{'content-type':'text/plain','cache-control':'no-store'}});
  const raw=await template.text();
- if(!payload||!defaults?.pages){
+ if(!defaults?.pages){
+   // Never serve potentially indexable, stale HTML when even our safe SEO
+   // defaults are missing. Retry on the next request without caching.
    const h=new Headers(template.headers);h.set('cache-control','no-store');
-   if(!active())h.set('x-robots-tag','noindex, nofollow');
-   return new Response(req.method==='HEAD'?null:raw,{status:200,headers:h});
+   h.set('x-robots-tag','noindex, nofollow');
+   const verifiedHtml=pathname==='/'?injectGoogleVerification(raw,env.GOOGLE_SITE_VERIFICATION):raw;
+   return new Response(req.method==='HEAD'?null:verifiedHtml,{status:200,headers:h});
  }
+ const published=payload&&typeof payload==='object'&&!Array.isArray(payload)?payload:{};
  const pages={};
  for(const route of SEO_ROUTES){
-   pages[route]=cleanSEOPage(payload.seo?.pages?.[route],route,defaults.pages[route],supa);
+   pages[route]=cleanSEOPage(published.seo?.pages?.[route],route,defaults.pages[route],supa);
  }
- const canonical=siteOrigin(),production=active();
+ const canonical=siteOrigin(env),production=indexingAllowed(env,hosting,req.url);
  if(sitemap){
-   const xml=pathname==='/sitemap.xml'?xmlSitemap(pages,canonical,production):imageSitemap(pages,payload,canonical,supa,production);
+   const xml=pathname==='/sitemap.xml'?xmlSitemap(pages,canonical,production):imageSitemap(pages,published,canonical,supa,production);
    return new Response(req.method==='HEAD'?null:xml,{status:200,headers:cacheHeaders('application/xml; charset=utf-8')});
  }
  const publishedForPage=pathname==='/reviews/'&&Array.isArray(publicReviews)?
-    {...payload,reviews:publicReviews.map(r=>({
+    {...published,reviews:publicReviews.map(r=>({
       author:r.author,textEn:r.language==='en'?r.review_text:'',
       textHi:r.language==='hi'?r.review_text:'',published:true,consent:true
-    }))}:payload;
- const html=renderLivePage(raw,pathname,pages[pathname]||null,publishedForPage,canonical,production,supa);
+    }))}:published;
+ const pageHtml=renderLivePage(raw,pathname,pages[pathname]||null,publishedForPage,canonical,production,supa);
+ const html=pathname==='/'?injectGoogleVerification(pageHtml,env.GOOGLE_SITE_VERIFICATION):pageHtml;
  const h=cacheHeaders('text/html; charset=utf-8');
  if(new URL(req.url).searchParams.get('admin_preview')==='1')h['x-robots-tag']='noindex, nofollow';
  if(!production||!pages[pathname]?.index)h['x-robots-tag']='noindex, nofollow';

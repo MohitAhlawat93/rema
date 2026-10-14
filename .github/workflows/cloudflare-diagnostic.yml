@@ -1,0 +1,45 @@
+name: Cloudflare diagnostic — minimal Function
+on:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths: ['.github/workflows/cloudflare-diagnostic.yml']
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run build
+      - name: Test full website backend without optional bindings
+        run: |
+          cat > wrangler.jsonc <<'EOF'
+          {"name":"lema-runtime-diagnostic","pages_build_output_dir":"./dist","compatibility_date":"2026-10-12","compatibility_flags":["nodejs_compat"]}
+          EOF
+      - name: Deploy full backend with explicit Pages API routes and no optional bindings
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CF_STAGING_API_TOKEN }}
+          accountId: '13032a1345920c80c9572e3ba6dddeba'
+          command: pages deploy dist --project-name=lema-runtime-diagnostic --branch=main
+      - name: Verify API routes are deployed and secrets fail closed
+        run: |
+          node --input-type=module -e '
+            const base="https://lema-runtime-diagnostic.pages.dev";
+            const [home,admin,content]=await Promise.all([
+              fetch(base+"/"),fetch(base+"/api/admin/session"),fetch(base+"/api/site-content")
+            ]);
+            const a=await admin.json().catch(()=>({}));
+            const c=await content.json().catch(()=>({}));
+            console.log("home:",home.status,"admin:",admin.status,
+              "content:",content.status,"adminReply:",JSON.stringify(a).slice(0,140),
+              "contentReply:",JSON.stringify(c).slice(0,140));
+            if(!home.ok||admin.status!==503||a.authenticated===true)process.exit(1);
+            if(content.status!==503||!c.error)process.exit(1);
+          '
