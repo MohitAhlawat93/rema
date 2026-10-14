@@ -424,3 +424,59 @@ fieldset legend,.editor-form legend,.assistant-settings legend,.seo-editor-field
   html{scroll-behavior:auto}
   button,input,textarea,select{transition:none!important}
 }
+
+
+
+/* Owner Design Studio — sample illustrations are CSS only (no remote assets). */
+.dashboard nav button[data-tab="design"]:before{content:"◈"}
+.design-summary{display:flex;align-items:center;gap:14px 32px;flex-wrap:wrap;background:#edf3eb;border:1px solid #dce7d7;border-radius:12px;padding:16px 20px;margin:0 0 24px;color:#52665a;font-size:12px}
+.design-summary strong{color:#213e31;margin-left:5px;font-size:13px}
+.design-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:stretch}
+.design-preset{text-align:left;border:2px solid #dfe6dd;background:#fff;border-radius:17px;padding:11px 11px 21px;display:flex;flex-direction:column;gap:9px;min-width:0;box-shadow:var(--shadow);color:var(--ink);position:relative}
+.design-preset:hover{border-color:#c4ab7b;transform:translateY(-2px);box-shadow:0 13px 28px rgba(22,42,31,.10)}
+.design-preset.selected{border-color:var(--bronze);box-shadow:0 0 0 3px rgba(173,146,102,.13),0 10px 26px rgba(22,42,31,.08)}
+.design-preset:focus-visible{outline:3px solid #b99a62;outline-offset:4px}
+.design-sample{position:relative;display:block;overflow:hidden;border-radius:10px;height:clamp(150px,19vw,225px);width:100%;background:#f4f0e8}
+.design-sample .sample-nav{position:absolute;top:0;left:0;right:0;height:23px;background:rgba(239,230,211,.85);border-bottom:1px solid rgba(107,90,68,.15);z-index:2}
+.design-sample .sample-nav:before{content:"";position:absolute;left:11px;top:8px;width:30px;height:7px;border-radius:6px;background:#ab926a}
+.design-sample .sample-nav:after{content:"";position:absolute;right:11px;top:10px;width:51px;height:3px;border-radius:4px;background:#b8ac94}
+.design-sample .sample-photo{position:absolute;inset:23px 0 27px 40%;background:linear-gradient(135deg,#b6af94 5%,#707d70 55%,#303e39 100%)}
+.design-sample .sample-copy{position:absolute;inset:23px 35% 27px 0;display:flex;flex-direction:column;justify-content:center;padding:15px;gap:8px;z-index:1}
+.design-sample .sample-copy i{height:4px;width:40%;background:#aa8c58;border-radius:6px}
+.design-sample .sample-copy b{height:10px;width:84%;background:#4b5548;border-radius:2px}
+.design-sample .sample-copy b:nth-child(3){width:61%}
+.design-sample .sample-bottom{position:absolute;bottom:0;left:0;right:0;height:27px;background:#dfd4be}
+.sample-signature .sample-photo{inset:23px 0 27px 0;background:linear-gradient(90deg,#27382b 0%,#555c44 42%,#b39e82 100%)}
+.sample-signature .sample-copy{right:15%}
+.sample-signature .sample-copy b{background:#f9f5e9}
+.sample-signature .sample-copy i{background:#dbc79f}
+.sample-signature .sample-nav{background:#28392e}
+.sample-signature .sample-nav:after{background:#d6c7a8}
+.sample-noir{background:#161d1c}
+.sample-noir .sample-nav{background:#111917;border-color:#47483f}
+.sample-noir .sample-photo{background:linear-gradient(130deg,#6c6556,#3c4e47 52%,#131e1c);inset:23px 0 27px 44%}
+.sample-noir .sample-copy{right:45%;background:linear-gradient(90deg,#1a211e,#252b25)}
+.sample-noir .sample-copy b{background:#f2ebdd}
+.sample-noir .sample-bottom{background:#34372f}
+.sample-atelier{background:#f0f5f0}
+.sample-atelier .sample-nav{background:#f4f7f3}
+.sample-atelier .sample-photo{inset:23px 0 27px 49%;background:linear-gradient(155deg,#d9ddd0,#a6b7a3 40%,#657e70)}
+.sample-atelier .sample-copy{right:50%}
+.sample-atelier .sample-copy b{background:#2e493f;height:8px;border-radius:5px}
+.sample-atelier .sample-copy i{background:#748e7a}
+.sample-atelier .sample-bottom{background:#e3ece3}
+.design-title{display:flex;justify-content:space-between;align-items:center;padding:7px 9px 0;gap:9px;font:normal 23px/1.15 var(--serif);letter-spacing:-.03em}
+.design-tick{display:grid;place-items:center;width:26px;height:26px;min-width:26px;border-radius:50%;background:#eef1eb;color:#849189;font:700 12px var(--sans)}
+.design-preset.selected .design-tick{background:var(--forest);color:#fff}
+.design-description{padding:0 9px;color:#526257;font-size:12px;line-height:1.75;flex:1}
+.design-tone{padding:6px 9px 0;color:#94794f;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.design-actions{display:flex;align-items:center;justify-content:space-between;gap:25px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:16px;padding:23px 26px;margin:23px 0;box-shadow:var(--shadow)}
+.design-actions>div{flex:1 1 300px}
+.design-actions h3{font:normal 25px var(--serif);margin:0 0 7px}
+.design-actions p{margin:0;color:#667367;font-size:12px;max-width:690px;line-height:1.7}
+.design-actions .primary{flex:0 1 auto}
+@media(max-width:1050px){.design-presets{grid-template-columns:1fr 1fr}}
+@media(max-width:650px){.design-presets{grid-template-columns:1fr}.design-sample{height:190px}.design-actions{padding:20px}.design-actions .primary{width:100%}}
+/* Keep View website and Log out in the sidebar, even on shorter displays. */
+@media(min-width:901px){.dashboard>aside nav{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}.dashboard>aside .side-foot{display:grid;flex:none;margin-top:12px}}
+@media(max-width:900px){.dashboard>aside nav{flex:initial;min-height:0;overflow-x:auto;overflow-y:hidden}}
