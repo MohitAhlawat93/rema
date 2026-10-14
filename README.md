@@ -1,6 +1,6 @@
 # Witness Lema — website, owner dashboard, and SEO
 
-Live repository: `MohitAhlawat93/rema`. The website is built as prerendered HTML/CSS/JS and deployed to Vercel; owner updates and public Q&A live in a separate, restricted Witness Lema namespace in Supabase.
+Live repository: `MohitAhlawat93/rema`. The website is built as prerendered HTML/CSS/JS and deployed to a Cloudflare Pages staging environment; owner updates and public Q&A live in a separate, restricted Witness Lema namespace in Supabase.
 
 ## Implemented
 
@@ -15,11 +15,12 @@ Live repository: `MohitAhlawat93/rema`. The website is built as prerendered HTML
 | Change | Location |
 | --- | --- |
 | Public profile, service options, image order and alt text, contact links, assistant answers | [Owner admin](/admin) |
-| Search-result titles, descriptions, previews and page indexing controls | [seo/site.config.mjs](seo/site.config.mjs) |
+| Published search titles, descriptions, previews and page indexing controls | Owner dashboard `/admin` (Google SEO); `seo/site.config.mjs` supplies safe build defaults |
 | Visible supporting page copy and contextual internal links | [seo/editorial.config.mjs](seo/editorial.config.mjs) |
 | Base fallback website content in GitHub | [data/site.js](data/site.js) |
 | Gallery source-image metadata | [data/gallery.json](data/gallery.json) |
 | Layout and styles | [scripts/build.mjs](scripts/build.mjs), [public/styles.css](public/styles.css) |
+| Cloudflare staging monitoring | [workers/lema-search-health.mjs](workers/lema-search-health.mjs), [docs/CLOUDFLARE_SEARCH_GROWTH.md](docs/CLOUDFLARE_SEARCH_GROWTH.md) |
 | Search verification, owner steps, domain setup | [docs/SEO_GUIDE.md](docs/SEO_GUIDE.md) |
 | Actual search result competition and growth monitoring | [docs/SEARCH_GROWTH_PLAYBOOK.md](docs/SEARCH_GROWTH_PLAYBOOK.md) |
 
@@ -37,12 +38,12 @@ SEO_INDEXING_ENABLED=true npm run build
 SEO_INDEXING_ENABLED=true npm run validate:seo
 ```
 
-GitHub Actions checks both preview-style and production-style indexing. Do **not** run multiple pushes while editing: bundle related changes into one commit to minimize Vercel builds.
+GitHub Actions checks preview-style and production-style indexing. The Cloudflare deployment workflow is `.github/workflows/cloudflare-staging.yml`; it runs tests, then uploads to **Cloudflare Pages**, using the restricted staging credential. Bundle tested changes into one deployment to minimize build usage. The client-owned domain is pending and staging stays **noindex**.
 
 ## Important limitations
 
-- Vercel public-domain accessibility and Google Search Console ownership need independent verification. Google indexing and rankings are not guaranteed.
-- Owner edits made in `/admin` appear in JavaScript-loaded live content; build-generated HTML metadata and static fallback remain those from the last GitHub build. Any material changes to search-facing metadata should also be made in the SEO configuration.
+- Cloudflare staging is at `https://lema-website-staging.pages.dev/`. The client's approved custom domain and Google Search Console ownership are pending verification. Google indexing and rankings are not guaranteed.
+- The Cloudflare Pages middleware reads published Supabase data and renders SEO metadata and owner-approved content in the initial HTML; static build defaults remain fallback. Changes must be verified in the actual HTTP response, including canonicals and indexing rules.
 - The Contact form prepares/copies an enquiry but does not deliver it.
 - This adult-oriented site may be filtered by Google SafeSearch. Only publish accurate, owner-approved content and licensed images. Never invent ratings, reviews, extra service areas, or client testimonials.
 - Credentials and private Supabase admin state must not be committed to GitHub.
