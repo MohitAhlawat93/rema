@@ -23,7 +23,7 @@ function renderDesign(){
   if(!state?.draft)return;
   const draft=safeDesign(state.draft.designPreset);
   const live=safeDesign(state.published?.designPreset);
-  $('[data-design-preset]').forEach(button=>{
+  $$('[data-design-preset]').forEach(button=>{
     const active=button.dataset.designPreset===draft;
     button.classList.toggle('selected',active);
     button.setAttribute('aria-pressed',String(active));
@@ -424,8 +424,8 @@ async function uploadPhoto(){const input=$('[data-photo-file]'),status=$('[data-
 $('[data-business-form]').addEventListener('submit',event=>{event.preventDefault();void saveDraft();});
 $('[data-login-form]').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget;const data=new FormData(form);const message=$('[data-login-message]');message.textContent='Signing in…';try{await api('login',{method:'POST',body:JSON.stringify({loginId:data.get('loginId'),password:data.get('password')})});form.reset();await loadWorkspace();}catch(error){message.textContent=error.message;}});
 $('[data-password-toggle]').onclick=()=>{const input=$('[name="password"]'),show=input.type==='password';input.type=show?'text':'password';$('[data-password-toggle]').textContent=show?'Hide':'Show';$('[data-password-toggle]').setAttribute('aria-label',show?'Hide password':'Show password');input.focus();};
-$('[data-tab]').forEach(button=>button.onclick=()=>switchTab(button.dataset.tab));
-$('[data-design-preset]').forEach(button=>button.onclick=()=>{if(!state?.draft)return;const choice=safeDesign(button.dataset.designPreset);if(safeDesign(state.draft.designPreset)===choice)return;state.draft.designPreset=choice;renderDesign();setDirty();});
+$$('[data-tab]').forEach(button=>button.onclick=()=>switchTab(button.dataset.tab));
+$$('[data-design-preset]').forEach(button=>button.onclick=()=>{if(!state?.draft)return;const choice=safeDesign(button.dataset.designPreset);if(safeDesign(state.draft.designPreset)===choice)return;state.draft.designPreset=choice;renderDesign();setDirty();});
 $('[data-design-preview]').onclick=previewDesign;
 $$('[data-go-tab]').forEach(button=>button.onclick=()=>{switchTab(button.dataset.goTab);document.querySelector('.workspace')?.scrollTo?.({top:0,behavior:'smooth'});});
 $('[data-seo-page]').onchange=event=>{seoCurrent=event.target.value;renderSeoEditor();};
