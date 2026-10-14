@@ -12,6 +12,7 @@
     "test": "node --test",
     "start": "node scripts/serve.mjs",
     "validate:seo": "node scripts/validate-seo.mjs",
-    "audit:handover": "node scripts/handover-audit.mjs"
+    "audit:handover": "node scripts/handover-audit.mjs",
+    "audit:search": "node scripts/audit-live-search.mjs"
   }
 }
