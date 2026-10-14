@@ -28,7 +28,7 @@ test('public design uses published payload and rejects arbitrary CSS inputs',()=
   assert.match(app,/designChoices=new Set\(\['signature','noir','atelier'\]\)/);
   assert.match(app,/document.documentElement.dataset.design=designChoices.has\(selected\)\?selected:'signature'/);
   assert.match(app,/function hydratePublishedContent\(\)\{\s*applyDesignPreset\(\)/);
-  assert.match(content,/preview=1/);
+  assert.match(content,/req\.query\?\.preview/);
   assert.match(content,/getAdminSession\(req\)/);
   assert.match(content,/payload:state.draft/);
   assert.match(admin,/action:'restore'/);
