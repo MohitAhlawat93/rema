@@ -62,3 +62,20 @@ test('scheduled invocation persists latest report',async()=>{
     assert.equal((await kv.get('latest')).status,'healthy');
   });
 });
+
+
+test('human dashboard is readable, noindex, and does not claim Google rankings',async()=>{
+  const kv=fakeKV();
+  await mockFetch(path=>Promise.resolve(responseFor(path)),async()=>{
+    const response=await monitor.fetch(new Request('https://monitor.example/dashboard'),{HEALTH_KV:kv});
+    assert.equal(response.status,200);
+    assert.match(response.headers.get('content-type'),/text\/html/);
+    assert.match(response.headers.get('x-robots-tag'),/noindex/);
+    const page=await response.text();
+    assert.match(page,/<h1>Website health<\/h1>/);
+    assert.match(page,/Checks by page/);
+    assert.match(page,/not Google ranking data/);
+    assert.match(page,/Search Console: Not yet verified/);
+    assert.match(page,/<td><code>\/privacy\/<\/code><\/td>/);
+  });
+});
