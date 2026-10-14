@@ -337,3 +337,114 @@
    max-height: calc(var(--chat-visual-height, 100dvh) - 30px);
  }
 }
+
+
+
+/* ==========================================================================
+   PUBLIC SITE DESIGN STUDIO
+   Curated, site-wide variants are selected only by the authenticated owner's
+   published designPreset. Signature is the unchanged original website.
+   The CSS is bundled at build time — no third-party design dependency.
+   ========================================================================== */
+/* Noir Luxe: rich dark surfaces, luminous editorial typography and imagery. */
+html[data-design="noir"]{
+  color-scheme:dark;
+  --paper:#1a211e;
+  --ink:#f1eee6;
+  --soft:#c0cac1;
+  --bronze:#d0b78d;
+  --line:#404d43;
+}
+html[data-design="noir"] body{background:var(--paper);color:var(--ink)}
+html[data-design="noir"] .inner-page .site-header{background:rgba(21,29,24,.96);color:#f1eee6;border-color:#405148}
+html[data-design="noir"] .home-page .site-header{color:#f7f1e7}
+html[data-design="noir"] .menu-toggle{color:inherit}
+html[data-design="noir"] .cinematic-hero{background:#161c18}
+html[data-design="noir"] .hero-shade{background:linear-gradient(90deg,rgba(7,12,10,.95),rgba(7,12,10,.58) 57%,rgba(7,12,10,.22) 90%),linear-gradient(0deg,rgba(10,15,13,.75),transparent 45%)}
+html[data-design="noir"] .cinematic-hero .eyebrow{color:#e1c89d}
+html[data-design="noir"] .cinematic-hero .intro{color:#f0eee7}
+html[data-design="noir"] .cinematic-hero .button{background:#e5d4b5;border-color:#e5d4b5;color:#1c241e}
+html[data-design="noir"] .service-card,html[data-design="noir"] .work-preview{background:#27312b}
+html[data-design="noir"] .service-card{border:1px solid #4a5146}
+html[data-design="noir"] .service-card .tag{border-color:#596455}
+html[data-design="noir"] .reviews-section{background:#242e27}
+html[data-design="noir"] .review-quote{background:#1c241f;border-color:#52604f;color:#f1eee6}
+html[data-design="noir"] .review-quote blockquote{color:#f3eee2}
+html[data-design="noir"] .seo-editorial{background:#242c26;border-color:#404d43}
+html[data-design="noir"] .statement-band{background:#101d18}
+html[data-design="noir"] .closing{background:#243027}
+html[data-design="noir"] footer{background:#151d19;border-top-color:#4d584c}
+html[data-design="noir"] .gallery-tile figcaption,html[data-design="noir"] .service-card-copy p{color:#cbd3c9}
+html[data-design="noir"] .gallery-tile img{filter:saturate(.8) contrast(1.05)}
+html[data-design="noir"] input,html[data-design="noir"] select,html[data-design="noir"] textarea{color:#f7f5ef;background:#26332b;border-color:#506052}
+html[data-design="noir"] .contact-notice{background:#28352d;border-color:#bca27a}
+/* Header menu retains sufficient contrast on mobile. */
+@media(max-width:600px){
+  html[data-design="noir"] .site-header nav{background:#1c2a22;color:#f1eee6}
+}
+/* Modern Atelier: daylight palette, asymmetrical split hero, graphic gallery. */
+html[data-design="atelier"]{
+  color-scheme:light;
+  --paper:#f4f7f2;
+  --ink:#243c33;
+  --soft:#546e62;
+  --bronze:#597866;
+  --line:#d9e5d9;
+  --pad:clamp(20px,5.5vw,92px);
+  --serif:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+html[data-design="atelier"] body{background:var(--paper)}
+html[data-design="atelier"] h1,html[data-design="atelier"] h2,html[data-design="atelier"] h3{font-weight:500;letter-spacing:-.055em}
+html[data-design="atelier"] .home-page .site-header{color:#243c33;background:rgba(244,247,242,.97);backdrop-filter:blur(16px);border-bottom:1px solid #dce6db}
+html[data-design="atelier"] .home-page .site-header .brand-symbol{filter:none}
+html[data-design="atelier"] .inner-page .site-header{background:rgba(244,247,242,.97);border-color:#dce6db}
+html[data-design="atelier"] .cinematic-hero{color:#203a30;background:#eef3ec;min-height:680px;height:min(92svh,890px);max-height:none;display:flex;align-items:center;padding-top:110px;padding-bottom:90px}
+html[data-design="atelier"] .cinematic-hero .hero-copy{max-width:650px;padding:0}
+html[data-design="atelier"] .hero-background{left:47%;background:#ccdacb}
+html[data-design="atelier"] .hero-background img{object-position:center}
+html[data-design="atelier"] .hero-shade{background:linear-gradient(90deg,#eef3ec 0%,#eef3ec 32%,rgba(238,243,236,.92) 44%,rgba(238,243,236,.2) 66%,transparent 90%)}
+html[data-design="atelier"] .cinematic-hero h1{font-size:clamp(53px,6.3vw,91px);line-height:1.02;color:#203c30;max-width:680px}
+html[data-design="atelier"] .cinematic-hero .eyebrow{color:#526f5d;font-weight:650}
+html[data-design="atelier"] .cinematic-hero .intro{color:#385548;font-size:15px;max-width:340px}
+html[data-design="atelier"] .cinematic-hero .button{color:#f7faf5;background:#2c493b;border-color:#2c493b}
+html[data-design="atelier"] .cinematic-hero .button:hover{color:#fff;background:#416953}
+html[data-design="atelier"] .cinematic-hero .text-link{color:#294b3a;border-color:#718a72}
+html[data-design="atelier"] .cinematic-hero .hero-bottom{color:#314b3b}
+html[data-design="atelier"] .button{border-radius:999px;padding:15px 24px}
+html[data-design="atelier"] .header-cta{border-radius:999px;padding:9px 18px;background:#dce9da;border:1px solid #c6d8c7}
+html[data-design="atelier"] .service-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}
+html[data-design="atelier"] .service-card{display:flex;flex-direction:column;min-height:0;background:#fff;border:1px solid #dce6db;border-radius:18px;overflow:hidden}
+html[data-design="atelier"] .service-card>img{width:100%;height:280px;min-height:0;object-position:center}
+html[data-design="atelier"] .service-card-copy{padding:25px 26px 28px;flex:1}
+html[data-design="atelier"] .service-card-copy .index{font-weight:700;color:#6e8b75}
+html[data-design="atelier"] .service-card-copy h2{font-size:clamp(23px,2.4vw,35px);margin:23px 0 14px}
+html[data-design="atelier"] .service-card-copy .tag{margin-top:auto;padding-top:17px}
+html[data-design="atelier"] .gallery-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+html[data-design="atelier"] .gallery-grid .gallery-tile:nth-child(even){padding-top:0}
+html[data-design="atelier"] .gallery-tile img{aspect-ratio:4/5;border-radius:14px}
+html[data-design="atelier"] .gallery-tile figcaption{padding-top:10px}
+html[data-design="atelier"] .portrait-main img{border-radius:18px}
+html[data-design="atelier"] .portrait-inset img{border-radius:12px}
+html[data-design="atelier"] .review-quote{border-radius:16px;background:#fff}
+html[data-design="atelier"] .reviews-section{background:#eaf0e8}
+html[data-design="atelier"] .seo-editorial{background:#e8efe7;border-color:#d4e0d2}
+html[data-design="atelier"] .work-preview{background:#e7eee6}
+html[data-design="atelier"] .statement-band{background:#304d3e}
+html[data-design="atelier"] footer{background:#e9f0e8}
+html[data-design="atelier"] .filters button{border-radius:999px;padding:8px 17px;background:#e9f0e6}
+html[data-design="atelier"] .filters button.active{background:#31503f;color:white}
+@media(max-width:1050px){
+  html[data-design="atelier"] .service-grid,html[data-design="atelier"] .gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:700px){
+  html[data-design="atelier"] .cinematic-hero{height:100svh;min-height:650px;padding-top:130px;padding-bottom:90px}
+  html[data-design="atelier"] .cinematic-hero h1{font-size:clamp(44px,10vw,65px)}
+  html[data-design="atelier"] .hero-background{left:0;opacity:.4}
+  html[data-design="atelier"] .hero-shade{background:linear-gradient(90deg,rgba(241,247,239,.98),rgba(241,247,239,.79) 75%,rgba(241,247,239,.6))}
+  html[data-design="atelier"] .site-header nav{background:#294936;color:#fff}
+  html[data-design="atelier"] .service-grid,html[data-design="atelier"] .gallery-grid{grid-template-columns:1fr}
+  html[data-design="atelier"] .service-card>img{height:310px}
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-design="atelier"] .gallery-tile img,html[data-design="noir"] .gallery-tile img{transition:none}
+}
