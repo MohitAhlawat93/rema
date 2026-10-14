@@ -18,6 +18,7 @@ on:
       - 'middleware.js'
       - 'seo/live.mjs'
       - 'test/cloudflare-privacy-canonical.test.mjs'
+      - 'test/cloudflare-indexing-guard.test.mjs'
       - 'test/search-health.test.mjs'
       - 'tests/google-verification.test.mjs'
       - 'lib/setup-automation.js'
