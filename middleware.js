@@ -1,4 +1,4 @@
-// Vercel Routing Middleware: render published SEO values in the HTTP HTML,
+// Shared edge SEO renderer: publish approved SEO values in the HTTP HTML,
 // not as browser-only JavaScript. Only public, already-published Supabase rows
 // are used. Preview remains noindex. Private drafts are NEVER fetched here.
 import { SEO_ROUTES, CONTENT_ROUTES, cleanSEOPage, renderLivePage, xmlSitemap, imageSitemap } from './seo/live.mjs';
@@ -10,9 +10,25 @@ const siteOrigin=(env=process.env)=>{
  const v=String(env.SEO_SITE_ORIGIN||origin).replace(/\/$/,'');
  return /^https:\/\/[a-z0-9.-]+(?::[0-9]{2,5})?$/i.test(v)?v:origin;
 };
-const active=(env=process.env,hosting='vercel')=>hosting==='cloudflare'
- ?env.SEO_INDEXING_ENABLED==='true'&&Boolean(env.SEO_SITE_ORIGIN)
- :env.VERCEL_ENV==='production'&&env.SEO_INDEXING_ENABLED!=='false';
+// Cloudflare Pages temporary domains and mirrors MUST stay noindex even when
+// SEO_INDEXING_ENABLED is accidentally switched on. Only the exact approved
+// HTTPS custom-domain origin can be indexable. This also keeps /sitemap.xml
+// empty on *.pages.dev once the real domain goes live.
+export function indexingAllowed(env=process.env,hosting='vercel',requestUrl=''){
+ if(hosting!=='cloudflare')
+   return env.VERCEL_ENV==='production'&&env.SEO_INDEXING_ENABLED!=='false';
+ if(env.SEO_INDEXING_ENABLED!=='true')return false;
+ try{
+   const target=new URL(String(env.SEO_SITE_ORIGIN||''));
+   const incoming=new URL(requestUrl);
+   const host=target.hostname.toLowerCase();
+   if(target.protocol!=='https:'||target.port||target.username||target.password||
+      target.pathname!=='/'||target.search||target.hash)return false;
+   if(!/^[a-z0-9.-]+$/.test(host)||!host.includes('.')||
+      /(^|\.)(pages\.dev|workers\.dev|vercel\.app|localhost)$/.test(host))return false;
+   return incoming.protocol==='https:'&&incoming.hostname.toLowerCase()===host;
+ }catch{return false;}
+}
 // Google URL-prefix verification can be updated on the destination Cloudflare account
 // without rebuilding or exposing a token to an admin visitor. A verification token is
 // public by design, but strictly validated before it becomes HTML.
@@ -66,7 +82,7 @@ export default async function middleware(req,{env=process.env,assetFetch=fetch,h
  for(const route of SEO_ROUTES){
    pages[route]=cleanSEOPage(published.seo?.pages?.[route],route,defaults.pages[route],supa);
  }
- const canonical=siteOrigin(env),production=active(env,hosting);
+ const canonical=siteOrigin(env),production=indexingAllowed(env,hosting,req.url);
  if(sitemap){
    const xml=pathname==='/sitemap.xml'?xmlSitemap(pages,canonical,production):imageSitemap(pages,published,canonical,supa,production);
    return new Response(req.method==='HEAD'?null:xml,{status:200,headers:cacheHeaders('application/xml; charset=utf-8')});
