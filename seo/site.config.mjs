@@ -30,7 +30,7 @@ const pages = {
   },
   '/reviews/': {
     title: 'Guest Reviews | Witness Lema Gurgaon',
-    description: 'Read genuine visitor-submitted reviews of Witness Lema and share your own experience in English or Hindi. Reviews are published by their authors.',
+    description: 'Read genuine visitor-submitted reviews of Witness Lema and share your own experience in English. Reviews are published by their authors.',
     index: true, image: '/images/gallery/portrait-01.jpg'
   },
   '/privacy/': {

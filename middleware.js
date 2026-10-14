@@ -38,8 +38,8 @@ export default async function middleware(req,{env=process.env,assetFetch=fetch,h
  const fallback=sitemap?(pathname==='/sitemap.xml'?'sitemap.xml':'image-sitemap.xml'):
      (pathname==='/'?'home':pathname.slice(1,-1))+'/index.html';
  const baseURL=staticTemplate(fallback,req.url);
- // Always fetch an actual compiled HTML template. Supabase failures fail open
- // to static build content; the template remains indexable where appropriate.
+ // Always fetch a compiled HTML template. If Supabase is unavailable, render
+ // the checked-in SEO defaults so URLs, canonicals and robots remain correct.
  const templatePromise=assetFetch(baseURL,{signal:AbortSignal.timeout(3000)});
  const supa=String(env.SUPABASE_URL||'').replace(/\/$/,'');
  const key=String(env.SUPABASE_PUBLISHABLE_KEY||'');
@@ -53,26 +53,29 @@ export default async function middleware(req,{env=process.env,assetFetch=fetch,h
  const [template,payload,defaults,publicReviews]=await Promise.all([templatePromise,dataPromise,defaultsPromise,publicReviewsPromise]);
  if(!template.ok)return new Response('Website temporarily unavailable',{status:503,headers:{'content-type':'text/plain','cache-control':'no-store'}});
  const raw=await template.text();
- if(!payload||!defaults?.pages){
+ if(!defaults?.pages){
+   // Never serve potentially indexable, stale HTML when even our safe SEO
+   // defaults are missing. Retry on the next request without caching.
    const h=new Headers(template.headers);h.set('cache-control','no-store');
-   if(!active(env,hosting))h.set('x-robots-tag','noindex, nofollow');
+   h.set('x-robots-tag','noindex, nofollow');
    const verifiedHtml=pathname==='/'?injectGoogleVerification(raw,env.GOOGLE_SITE_VERIFICATION):raw;
    return new Response(req.method==='HEAD'?null:verifiedHtml,{status:200,headers:h});
  }
+ const published=payload&&typeof payload==='object'&&!Array.isArray(payload)?payload:{};
  const pages={};
  for(const route of SEO_ROUTES){
-   pages[route]=cleanSEOPage(payload.seo?.pages?.[route],route,defaults.pages[route],supa);
+   pages[route]=cleanSEOPage(published.seo?.pages?.[route],route,defaults.pages[route],supa);
  }
  const canonical=siteOrigin(env),production=active(env,hosting);
  if(sitemap){
-   const xml=pathname==='/sitemap.xml'?xmlSitemap(pages,canonical,production):imageSitemap(pages,payload,canonical,supa,production);
+   const xml=pathname==='/sitemap.xml'?xmlSitemap(pages,canonical,production):imageSitemap(pages,published,canonical,supa,production);
    return new Response(req.method==='HEAD'?null:xml,{status:200,headers:cacheHeaders('application/xml; charset=utf-8')});
  }
  const publishedForPage=pathname==='/reviews/'&&Array.isArray(publicReviews)?
-    {...payload,reviews:publicReviews.map(r=>({
+    {...published,reviews:publicReviews.map(r=>({
       author:r.author,textEn:r.language==='en'?r.review_text:'',
       textHi:r.language==='hi'?r.review_text:'',published:true,consent:true
-    }))}:payload;
+    }))}:published;
  const pageHtml=renderLivePage(raw,pathname,pages[pathname]||null,publishedForPage,canonical,production,supa);
  const html=pathname==='/'?injectGoogleVerification(pageHtml,env.GOOGLE_SITE_VERIFICATION):pageHtml;
  const h=cacheHeaders('text/html; charset=utf-8');

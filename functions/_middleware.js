@@ -18,6 +18,13 @@ export async function onRequest(context) {
     });
   } catch (error) {
     console.error('cloudflare_seo_error',error?.name || 'unknown');
-    return context.next(); // Published static HTML stays available.
+    // Static fallback may have been built against another domain or with
+    // indexable defaults. Fail closed for indexing on unexpected SEO errors.
+    const fallback = await context.next();
+    const headers = new Headers(fallback.headers);
+    headers.set('x-robots-tag', 'noindex, nofollow');
+    return new Response(fallback.body, {
+      status: fallback.status, statusText: fallback.statusText, headers
+    });
   }
 }

@@ -62,7 +62,9 @@ if(config.indexingEnabled){
   assert.match(images,/<image:image>/);
   assert.doesNotMatch(robots,/Disallow: \/$/m);
 }else {
-  assert.match(robots,/Disallow: \/$/m);
+  // A noindex page must remain crawlable so search engines can see that tag.
+  assert.doesNotMatch(robots,/^Disallow: \/$/m);
+  assert.match(robots,/^Disallow: \/admin$/m);
   assert.doesNotMatch(sitemap,/<loc>/);
 }
 const vercel=JSON.parse(await readFile('vercel.json','utf8'));

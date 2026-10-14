@@ -30,7 +30,7 @@ export default {
     heading: 'Official portrait collection',
     paragraphs: [
       'This gallery contains the published portraits and lifestyle photographs of Witness Lema. Use the filters to browse and open any image for a closer look.',
-      'All photographs belong to her. Descriptions focus on the image itself rather than advertising language.'
+      'Image descriptions focus on what is shown in each photograph, and the owner can update them through her private dashboard.'
     ],
     links: [
       {href: '/about/', label: 'Read the profile'},
@@ -52,7 +52,7 @@ export default {
   '/reviews/': {
     heading: 'Visitor reviews and feedback',
     paragraphs: [
-      'This page displays reviews submitted by visitors about their own experiences. Reviewers choose the name or alias they want shown and consent to publication before submitting feedback in English or Hindi.',
+      'This page displays reviews submitted by visitors about their own experiences. Reviewers choose the name or alias they want shown and consent to publication before submitting feedback in English.',
       'Reviews appear without prior owner approval. The website owner can remove spam or inappropriate entries. If you wish to share feedback, use the form on this page. No ratings or endorsements are invented for search engines.'
     ],
     links: [
