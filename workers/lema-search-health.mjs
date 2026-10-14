@@ -74,15 +74,52 @@ async function refresh(env){
   console.log(JSON.stringify({kind:'staging_seo_health',checked:report.checked,failures:report.failures,status:report.status}));
   return report;
 }
+
+const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,c=>({
+  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[c]));
+function humanReport(report){
+  const stale=!Number.isFinite(Date.parse(report.checkedAt))||
+    Date.now()-Date.parse(report.checkedAt)>36*3600*1000;
+  const status=stale?'Results are outdated':report.status==='healthy'?'All checks passed':'Attention needed';
+  const rows=Array.isArray(report.checks)?report.checks.map(r=>'<tr><td><code>'+
+    escapeHTML(r.path)+'</code></td><td>'+escapeHTML(r.status??'Unavailable')+
+    '</td><td class="'+(r.ok?'ok':'bad')+'">'+(r.ok?'PASS':'ISSUE')+
+    '</td><td>'+escapeHTML((r.issues||[]).join(', ')||'—')+'</td></tr>').join(''):'';
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8">'+
+    '<meta name="viewport" content="width=device-width,initial-scale=1">'+
+    '<meta name="robots" content="noindex,nofollow">'+
+    '<title>Witness Lema — Cloudflare staging health</title>'+
+    '<style>body{font:16px system-ui,sans-serif;color:#e9eaf0;background:#121820;max-width:940px;margin:0 auto;padding:32px 18px}'+
+    'h1{font-size:clamp(24px,4vw,40px);margin-bottom:8px}p{color:#bac7d4;line-height:1.6}'+
+    '.panel{background:#1d2632;padding:20px;border:1px solid #364354;border-radius:16px;margin-top:22px}'+
+    '.ok{color:#9ee9ae;font-weight:700}.bad{color:#ffb5a4;font-weight:700}'+
+    'table{width:100%;border-collapse:collapse;text-align:left;font-size:14px}th,td{border-bottom:1px solid #364354;padding:12px 9px;vertical-align:top}'+
+    'a{color:#b7d4ff}code{font-size:13px}small{color:#aebdcc}.scroll{overflow-x:auto}'+
+    '</style></head><body><h1>Website health</h1>'+
+    '<p>Cloudflare staging · Technical checks only, not Google ranking data</p>'+
+    '<section class="panel"><h2 class="'+(report.status==='healthy'&&!stale?'ok':'bad')+'">'+
+    escapeHTML(status)+'</h2><p>Last checked: '+escapeHTML(report.checkedAt)+
+    ' · '+escapeHTML(report.checked)+' pages and resources checked · '+
+    escapeHTML(report.failures)+' issues</p>'+
+    '<p>Google indexing: Not enabled on staging. Search Console: Not yet verified for the final domain.</p></section>'+
+    '<section class="panel"><h2>Checks by page</h2><div class="scroll"><table><thead><tr>'+
+    '<th>Route</th><th>HTTP</th><th>Result</th><th>Findings</th></tr></thead><tbody>'+
+    rows+'</tbody></table></div></section>'+
+    '<p><small>Updates daily at 11:30 AM India time. Issues are not automatically corrected.'+
+    ' <a href="/status">View machine-readable status</a></small></p></body></html>';
+}
+
 export default {
   async fetch(request,env){
     const url=new URL(request.url);
     if(request.method!=='GET')return new Response('Method Not Allowed',{status:405,headers:RESPONSE_HEADERS});
-    if(url.pathname!=='/'&&url.pathname!=='/status')return new Response('Not Found',{status:404,headers:RESPONSE_HEADERS});
+    if(!['/','/status','/dashboard'].includes(url.pathname))return new Response('Not Found',{status:404,headers:RESPONSE_HEADERS});
     if(!env.HEALTH_KV)return Response.json({status:'unavailable',reason:'storage_not_configured'},{status:503,headers:RESPONSE_HEADERS});
     try{
       const stored=await env.HEALTH_KV.get('latest','json');
       const report=stored||await refresh(env);
+      if(url.pathname==='/dashboard')return new Response(humanReport(report),{headers:{...RESPONSE_HEADERS,'content-type':'text/html; charset=utf-8','content-security-policy':"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"}});
       return Response.json(report,{headers:RESPONSE_HEADERS});
     }catch(e){
       console.error('health_report_unavailable',e?.name||'Error');
