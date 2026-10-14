@@ -12,6 +12,41 @@ function setDirty(value=true){dirty=value;notice(value?'Unpublished changes in t
 function showLogin(message=''){ $('[data-login]').hidden=false;$('[data-dashboard]').hidden=true;$('[data-login-message]').textContent=message; }
 function showDashboard(){ $('[data-login]').hidden=true;$('[data-dashboard]').hidden=false; }
 function switchTab(name){$$('[data-tab]').forEach(button=>button.classList.toggle('active',button.dataset.tab===name));$$('[data-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.panel===name));}
+
+const DESIGN_PRESETS=Object.freeze({
+  signature:'Signature Editorial',
+  noir:'Noir Luxe',
+  atelier:'Modern Atelier'
+});
+const safeDesign=value=>Object.hasOwn(DESIGN_PRESETS,value)?value:'signature';
+function renderDesign(){
+  if(!state?.draft)return;
+  const draft=safeDesign(state.draft.designPreset);
+  const live=safeDesign(state.published?.designPreset);
+  $('[data-design-preset]').forEach(button=>{
+    const active=button.dataset.designPreset===draft;
+    button.classList.toggle('selected',active);
+    button.setAttribute('aria-pressed',String(active));
+  });
+  const current=$('[data-design-current]'),published=$('[data-design-live]');
+  if(current)current.textContent=DESIGN_PRESETS[draft];
+  if(published)published.textContent=DESIGN_PRESETS[live];
+}
+async function previewDesign(){
+  // Opening on the click (before any awaits) avoids popup blockers.
+  const tab=window.open('about:blank','_blank');
+  if(tab){
+    tab.document.title='Preparing private design preview';
+    tab.document.body.textContent='Saving your private design preview…';
+  }
+  const saved=hasUnsavedDraft()?await saveDraft():true;
+  if(!saved){
+    if(tab){tab.document.body.textContent='Unable to save the design. Return to the dashboard and review the error.';}
+    return;
+  }
+  if(tab){tab.opener=null;tab.location.replace('/?admin_preview=1');}
+  else notice('Design draft saved. Use Preview draft at the top of your dashboard to open it.','success');
+}
 function initializeBusiness(){
  if(!state?.draft)return;
  if(!state.draft.business&&seoDefaults?.business)state.draft.business=clone(seoDefaults.business);
@@ -219,7 +254,7 @@ function validateEditorialControls(){
     if(item.published&&!item.consent)throw new Error('Before publishing a review, confirm the reviewer gave permission.');
   }
 }
-function renderAll(){renderBusiness();renderLinks();renderReviews();populateProfile();renderServices();renderPhotos();renderAnswers();renderHistory();renderSeoEditor();$('[data-version]').textContent=state.version;$('[data-published-version]').textContent=state.publishedVersion;$('[data-photo-count]').textContent=state.draft.images?.length||0;$('[data-answer-count]').textContent=knowledge.length;}
+function renderAll(){renderDesign();renderBusiness();renderLinks();renderReviews();populateProfile();renderServices();renderPhotos();renderAnswers();renderHistory();renderSeoEditor();$('[data-version]').textContent=state.version;$('[data-published-version]').textContent=state.publishedVersion;$('[data-photo-count]').textContent=state.draft.images?.length||0;$('[data-answer-count]').textContent=knowledge.length;}
 async function loadAiStatus(){try{const status=await api('ai-status');$('[data-ai-status]').textContent=status.configured?status.provider+' key configured (not tested)':'Knowledge-only mode';$('[data-ai-detail]').textContent=status.configured?`${status.model} · Press Test AI connection to verify that real replies work.`:'A usable Groq or xAI key is missing from this deployment.';}catch{$('[data-ai-status]').textContent='Status unavailable';}}
 $('[data-eval-run]')?.addEventListener('click',async event=>{
  const button=event.currentTarget,question=$('[data-eval-question]').value.trim();
@@ -324,7 +359,7 @@ async function loadWorkspace(){
     notice(dirty?'Workspace ready. Save draft to keep newly initialized settings.':'Private workspace connected. Live website version '+state.publishedVersion+'.',dirty?'':'success');
   }
 }
-function validateDraft(){validateBusinessDraft();validateSeoDraft();validateEditorialControls();if(!(state.draft.images||[]).some(image=>image.hero))throw new Error('Choose at least one Home hero photograph.');if((state.draft.aboutImages||[]).length!==3)throw new Error('Choose exactly three About photographs.');if(!(state.draft.services||[]).every(item=>item.title&&item.text))throw new Error('Every service needs a title and description.');if(!state.draft.assistant?.name?.trim())throw new Error('The assistant needs a public name.');if(!state.draft.assistant?.greeting?.trim())throw new Error('The assistant needs a welcome message.');}
+function validateDraft(){if(state.draft.designPreset!==undefined&&!Object.hasOwn(DESIGN_PRESETS,state.draft.designPreset))throw new Error('Choose a supported design preset.');validateBusinessDraft();validateSeoDraft();validateEditorialControls();if(!(state.draft.images||[]).some(image=>image.hero))throw new Error('Choose at least one Home hero photograph.');if((state.draft.aboutImages||[]).length!==3)throw new Error('Choose exactly three About photographs.');if(!(state.draft.services||[]).every(item=>item.title&&item.text))throw new Error('Every service needs a title and description.');if(!state.draft.assistant?.name?.trim())throw new Error('The assistant needs a public name.');if(!state.draft.assistant?.greeting?.trim())throw new Error('The assistant needs a welcome message.');}
 async function saveDraft(){
   if(savingDraft)return savingDraft;
   savingDraft=(async()=>{
@@ -389,7 +424,9 @@ async function uploadPhoto(){const input=$('[data-photo-file]'),status=$('[data-
 $('[data-business-form]').addEventListener('submit',event=>{event.preventDefault();void saveDraft();});
 $('[data-login-form]').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget;const data=new FormData(form);const message=$('[data-login-message]');message.textContent='Signing in…';try{await api('login',{method:'POST',body:JSON.stringify({loginId:data.get('loginId'),password:data.get('password')})});form.reset();await loadWorkspace();}catch(error){message.textContent=error.message;}});
 $('[data-password-toggle]').onclick=()=>{const input=$('[name="password"]'),show=input.type==='password';input.type=show?'text':'password';$('[data-password-toggle]').textContent=show?'Hide':'Show';$('[data-password-toggle]').setAttribute('aria-label',show?'Hide password':'Show password');input.focus();};
-$$('[data-tab]').forEach(button=>button.onclick=()=>switchTab(button.dataset.tab));
+$('[data-tab]').forEach(button=>button.onclick=()=>switchTab(button.dataset.tab));
+$('[data-design-preset]').forEach(button=>button.onclick=()=>{if(!state?.draft)return;const choice=safeDesign(button.dataset.designPreset);if(safeDesign(state.draft.designPreset)===choice)return;state.draft.designPreset=choice;renderDesign();setDirty();});
+$('[data-design-preview]').onclick=previewDesign;
 $$('[data-go-tab]').forEach(button=>button.onclick=()=>{switchTab(button.dataset.goTab);document.querySelector('.workspace')?.scrollTo?.({top:0,behavior:'smooth'});});
 $('[data-seo-page]').onchange=event=>{seoCurrent=event.target.value;renderSeoEditor();};
 $('[data-publish-seo]').onclick=publish;
