@@ -7,6 +7,7 @@ No Vercel deployment or configuration changes are part of this rollout.
 
 Website: https://lema-website-staging.pages.dev/
 Monitor: https://lema-search-health.amohit920.workers.dev/status
+Readable dashboard: https://lema-search-health.amohit920.workers.dev/dashboard
 Source: workers/lema-search-health.mjs on branch feat/cloudflare-client-handover
 KV: lema_staging_search_health, binding HEALTH_KV
 Cron: 0 6 * * * (06:00 UTC / 11:30 AM India daily)
