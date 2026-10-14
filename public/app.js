@@ -18,6 +18,13 @@ if(previewMode){
     .then(async response=>response.ok?(await response.json()).payload||null:null)
     .catch(()=>null);
 }
+
+const designChoices=new Set(['signature','noir','atelier']);
+function applyDesignPreset(){
+  // Only hard-coded approved styles can become class selectors; never user CSS.
+  const selected=site.designPreset;
+  document.documentElement.dataset.design=designChoices.has(selected)?selected:'signature';
+}
 function serviceMarkup(item,index){return `<article class="service-card">${item.image?`<img src="${html(item.image)}" alt="" width="900" height="1100" loading="lazy" decoding="async">`:''}<div class="service-card-copy"><span class="index">${html(item.number||String(index+1).padStart(2,'0'))}</span><h2>${html(item.title)}</h2><p>${html(item.text)}</p><span class="tag">${html(item.tag||'')}</span></div></article>`;}
 function tileMarkup(image,index){return `<figure class="gallery-tile"><button class="photo" data-photo="${index}" aria-label="View ${html(image.title)}"><img src="${html(image.src)}" alt="${html(image.alt)}" width="900" height="1100" loading="lazy" decoding="async"></button><figcaption><span>${html(image.title)}</span><span class="caption-kind">${html(image.category)}</span></figcaption></figure>`;}
 function permittedUrl(value){try{const u=new URL(String(value));return u.protocol==='https:'?u.href:'';}catch{return '';}}
@@ -71,6 +78,7 @@ function hydrateBusiness(){
   }
 }
 function hydratePublishedContent(){
+  applyDesignPreset();
   hydrateBusiness();
   document.querySelectorAll('.social-links').forEach(el=>el.innerHTML=socialMarkup());
   hydrateAfterhours();
