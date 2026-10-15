@@ -1,0 +1,48 @@
+name: Cloudflare Growth Lab custom-domain end-to-end smoke
+on:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths:
+      - '.github/workflows/cloudflare-growth-domain-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verify test-domain custom certificate, routing, trial backend and isolation
+        run: |
+          node --input-type=module <<'NODE'
+          const test='https://test.witnesslema.com';
+          const main='https://witnesslema.com';
+          const get=async url=>fetch(url,{signal:AbortSignal.timeout(25000)});
+          const [root,lab,status,content,reviews,mainRoot,monitor]=await Promise.all([
+            get(test+'/'),get(test+'/growth-lab/'),get(test+'/api/growth-lab/readiness'),
+            get(test+'/api/site-content'),get(test+'/api/reviews'),get(main+'/'),
+            get('https://lema-growth-trial-health.amohit920.workers.dev/status')
+          ]);
+          const home=await root.text();
+          const mainHtml=await mainRoot.text();
+          const labText=await lab.text();
+          const state=await status.json().catch(()=>({}));
+          const health=await monitor.json().catch(()=>({}));
+          if(root.status!==200||!home.includes('rel="canonical" href="'+test+'/"'))
+            throw Error('Test custom-domain routing or canonical is incorrect');
+          if(!/noindex/i.test((home.match(/<meta name="robots"[^>]*>/i)||[])[0]||''))
+            throw Error('Test domain is unexpectedly indexable');
+          if(lab.status!==200||!labText.includes('SEARCH GROWTH LAB'))
+            throw Error('Growth Lab does not load on custom test domain');
+          if(status.status!==200||state.mode!=='test'||!state.checks?.every(x=>x.ok))
+            throw Error('Independent trial database or SEO readiness failed');
+          if(content.status!==200||reviews.status!==200)
+            throw Error('Trial Supabase published content and reviews unavailable');
+          if(mainRoot.status!==200||
+              !mainHtml.includes('rel="canonical" href="https://lema-website-staging.pages.dev/"'))
+            throw Error('Main address unexpectedly changed from its original staging deployment');
+          if(monitor.status!==200||health.checked!==11||health.failures!==0)
+            throw Error('Daily Cloudflare trial monitor is not healthy');
+          console.log('PASS custom test domain, separate database, growth lab and main-domain isolation');
+          console.log('PASS scheduled trial monitor', {checked:health.checked,failures:health.failures});
+          NODE
