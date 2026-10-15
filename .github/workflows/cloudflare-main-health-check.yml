@@ -1,0 +1,30 @@
+name: Witness Lema live daily health monitor verification
+on:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths: ['.github/workflows/cloudflare-main-health-check.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Test production health monitor logic
+        run: node --test test/main-health.test.mjs
+      - name: Verify first real public site health report
+        run: |
+          node --input-type=module <<'NODE'
+          const origin='https://lema-main-health.amohit920.workers.dev';
+          const reportResponse=await fetch(origin+'/status',{signal:AbortSignal.timeout(35000)});
+          const report=await reportResponse.json();
+          console.log('Live health:',{status:report.status,checked:report.checked,failures:report.failures,googleIndexed:report.googleIndexed});
+          if(reportResponse.status!==200||report.status!=='healthy'||report.checked!==10||report.failures!==0||report.googleIndexed!=='unknown')throw Error('Live production health monitor failed checks');
+          const human=await fetch(origin+'/dashboard',{signal:AbortSignal.timeout(10000)});
+          const body=await human.text();
+          if(!human.ok||!body.includes('Witness Lema')||!body.includes('Google crawling is enabled')||!/noindex/i.test(human.headers.get('x-robots-tag')||''))throw Error('Public health summary is unavailable or missing warnings');
+          console.log('PASS website main-domain monitor');
+          NODE
