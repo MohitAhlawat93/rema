@@ -1,0 +1,74 @@
+name: Cloudflare isolated production candidate (noindex)
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths:
+      - '.github/workflows/cloudflare-production-candidate.yml'
+permissions:
+  contents: read
+  deployments: write
+concurrency:
+  group: cloudflare-lema-production-candidate
+  cancel-in-progress: true
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SEO_INDEXING_ENABLED: 'false'
+      SEO_SITE_ORIGIN: 'https://witnesslema.com'
+    steps:
+      - name: Checkout audited Cloudflare source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build and test launch-safe candidate
+        run: |
+          npm run build
+          npm test
+          npm run validate:seo
+          node --check functions/_middleware.js
+          node --check middleware.js
+          node --check functions/api/admin/[route].js
+      - name: Require existing developer-scoped staging deploy credential
+        env:
+          CF_TOKEN: ${{ secrets.CF_STAGING_API_TOKEN }}
+        run: |
+          if [ -z "$CF_TOKEN" ]; then
+            echo "::error::No existing deployment credential. Production candidate remains undeployed."
+            exit 1
+          fi
+      - name: Preserve Pages dashboard bindings (do not inherit staging database)
+        run: mv wrangler.jsonc wrangler.jsonc.example
+      - name: Deploy to SEPARATE Cloudflare production candidate only
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CF_STAGING_API_TOKEN }}
+          accountId: '13032a1345920c80c9572e3ba6dddeba'
+          command: pages deploy dist --project-name=lema-website-production --branch=main
+      - name: Ensure candidate is NOINDEX and not linked to the test database
+        run: |
+          node --input-type=module <<'NODE'
+          const base='https://lema-website-production.pages.dev';
+          const paths=['/','/about/','/gallery/','/services/','/contact/','/reviews/','/privacy/'];
+          for(const path of paths){
+            const r=await fetch(base+path,{signal:AbortSignal.timeout(14000)});
+            const html=await r.text();
+            const robots=(html.match(/<meta name="robots"[^>]*>/i)||[])[0]||'';
+            if(r.status!==200||!/noindex/i.test(robots+' '+r.headers.get('x-robots-tag')))
+              throw Error('Production candidate unsafe: '+path+' (HTTP '+r.status+')');
+            if(!html.includes('rel="canonical" href="https://witnesslema.com'+path+'"'))
+              throw Error('Candidate canonical differs from intended future production domain: '+path);
+            console.log('PASS candidate noindex + canonical',path);
+          }
+          const sitemap=await fetch(base+'/sitemap.xml',{signal:AbortSignal.timeout(14000)});
+          const xml=await sitemap.text();
+          if(!sitemap.ok||/<loc>/i.test(xml))throw Error('Candidate sitemap exposes indexable URLs');
+          const content=await fetch(base+'/api/site-content',{signal:AbortSignal.timeout(14000)});
+          if(content.status===200)throw Error('Candidate unexpectedly has a populated backend; verify Supabase binding isolation');
+          console.log('PASS production candidate is safely isolated (no database connected)');
+          NODE
