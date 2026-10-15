@@ -11,7 +11,8 @@
     "/privacy/",
     "/sitemap.xml",
     "/image-sitemap.xml",
-    "/media/*"
+    "/media/*",
+    "/robots.txt"
   ],
   "exclude": [
     "/assets/*",

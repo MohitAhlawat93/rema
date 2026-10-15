@@ -5,6 +5,7 @@ if(!/^https:\/\/[-a-z0-9.]+\.pages\.dev$/i.test(origin)) {
  console.error('Expected the temporary Cloudflare Pages https://*.pages.dev URL.');
  process.exit(2);
 }
+const expectedCanonical=process.env.EXPECTED_CANONICAL_ORIGIN||origin;
 const paths=['/','/about/','/gallery/','/services/','/contact/','/reviews/','/privacy/',
  '/admin/','/api/site-content','/api/reviews','/api/admin/session','/sitemap.xml','/robots.txt',
  '/media/uploads/00000000-0000-4000-8000-000000000000.jpg'];
@@ -19,7 +20,7 @@ for(const path of paths){
    if(['/','/about/','/gallery/','/services/','/contact/','/reviews/','/privacy/'].includes(path)){
       const robots=(body.match(/<meta\s+name="robots"[^>]*>/i)||[])[0]||'';
       const canon=(body.match(/<link\s+rel="canonical"\s+href="([^"]+)"[^>]*>/i)||[])[1]||'';
-      const expected=origin+path;
+      const expected=expectedCanonical+path;
       good=r.ok&&html.includes('text/html')&&/noindex/i.test(noindex+' '+robots)
         &&canon===expected&&!/vercel\.app/i.test(canon);
       if(!good)console.error('SEO diagnostic',path,{

@@ -40,6 +40,14 @@ export function injectGoogleVerification(html,token){
    html.replace(/<meta\s+name=["']google-site-verification["'][^>]*>/i,meta):
    html.replace(/<\/head>/i,meta+'</head>');
 }
+export function robotsForRequest(env=process.env,hosting='cloudflare',requestUrl=''){
+ // This is host-specific: test and temporary aliases must never inherit
+ // production crawling rules, even when sharing a Pages project.
+ const allowed=indexingAllowed(env,hosting,requestUrl);
+ if(!allowed)return 'User-agent: *\nDisallow: /\n';
+ const origin=siteOrigin(env);
+ return 'User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\nDisallow: /growth-lab/\nSitemap: '+origin+'/sitemap.xml\n';
+}
 const cacheHeaders=type=>({'content-type':type,'cache-control':'no-store','x-content-type-options':'nosniff'});
 async function getJson(url,headers={}){
  const r=await fetch(url,{headers,signal:AbortSignal.timeout(2600),cache:'no-store'});
@@ -49,6 +57,10 @@ async function getJson(url,headers={}){
 const staticTemplate=(path,url)=>new URL('/_seo_templates/'+path,url).toString();
 export default async function middleware(req,{env=process.env,assetFetch=fetch,hosting='vercel'}={}){
  const pathname=new URL(req.url).pathname;
+ if(pathname==='/robots.txt')return new Response(robotsForRequest(env,hosting,req.url),{
+  status:200,headers:{'content-type':'text/plain; charset=utf-8','cache-control':'no-store',
+    'x-content-type-options':'nosniff'}
+ });
  const sitemap=pathname==='/sitemap.xml'||pathname==='/image-sitemap.xml';
  if(!CONTENT_ROUTES.includes(pathname)&&!sitemap)return new Response('Not found',{status:404});
  const fallback=sitemap?(pathname==='/sitemap.xml'?'sitemap.xml':'image-sitemap.xml'):

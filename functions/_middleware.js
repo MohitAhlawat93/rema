@@ -7,7 +7,7 @@ export async function onRequest(context) {
   const {pathname} = new URL(context.request.url);
   if (pathname.startsWith('/api/')) return context.next();
   if (!CONTENT_ROUTES.includes(pathname) &&
-      pathname !== '/sitemap.xml' && pathname !== '/image-sitemap.xml')
+      pathname !== '/sitemap.xml' && pathname !== '/image-sitemap.xml' && pathname !== '/robots.txt')
     return context.next();
   try {
     // Use the asset binding for templates to avoid recursive fetches to this Worker.
