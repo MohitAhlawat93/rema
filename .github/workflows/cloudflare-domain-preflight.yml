@@ -1,0 +1,26 @@
+name: Cloudflare domain safety preflight
+on:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths:
+      - 'scripts/cloudflare-domains-preflight.mjs'
+      - 'test/cloudflare-domains-preflight.test.mjs'
+      - '.github/workflows/cloudflare-domain-preflight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit tests
+        run: node --test test/cloudflare-domains-preflight.test.mjs
+      - name: Verify real domain response and prelaunch noindex
+        run: node scripts/cloudflare-domains-preflight.mjs
