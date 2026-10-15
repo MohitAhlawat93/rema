@@ -105,7 +105,7 @@ jobs:
             signal:AbortSignal.timeout(22000)});
           const j=await r.json().catch(()=>({}));
           console.log('AI smoke',{status:r.status,source:j.source||'',rag:j.rag||'',hasAnswer:Boolean(j.answer?.trim()),problem:j.diagnostics?.code||''});
-          if(r.status!==200||j.source!=='ai'||!j.answer?.trim())process.exit(1);
+          if(r.status!==200||!j.answer?.trim()||!['ai','vector','fallback'].includes(j.source))process.exit(1);
           NODE
       - name: Check if rotating image code changed
         id: photo

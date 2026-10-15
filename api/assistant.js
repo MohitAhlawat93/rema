@@ -3,7 +3,7 @@ import { consumeRateLimit } from '../lib/rate-limit.js';
 import { normalizeEnglish, interpretQuestion, ownerName, verifiedFactAnswer, resolvedRetrievalQuery, filterVerifiedEvidence } from '../lib/assistant-facts.js';
 import { queryTenantRag } from '../lib/tenant-rag.js';
 import { isInstructionAttack, safeConversationHistory, safeRagContext, securityInstructions } from '../lib/rag-security.js';
-import { workersAiAnswer } from '../lib/workers-ai-fallback.js';
+import { workersAiAnswer, withTimeBudget } from '../lib/workers-ai-fallback.js';
 
 const json = (res, status, data) => {
   res.statusCode = status;
@@ -188,8 +188,8 @@ export default async function handler(request, response) {
   // Only works with an explicitly configured AI binding in a client-owned Cloudflare deployment.
   if(!answer&&request.cloudflareAI?.run){
     try{
-      answer=await workersAiAnswer(request.cloudflareAI,
-        prompt(question,language,matches,site),singleTurnPrompt(question,history));
+      answer=await withTimeBudget(workersAiAnswer(request.cloudflareAI,
+        prompt(question,language,matches,site),singleTurnPrompt(question,history)),3200);
       if(answer){provider='cloudflare';failed=false;failureCode='';}
     }catch(error){
       console.warn('assistant_backup_provider_failure',JSON.stringify({provider:'cloudflare',kind:error?.name||'provider_error'}));
