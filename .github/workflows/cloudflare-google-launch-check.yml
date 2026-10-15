@@ -1,0 +1,54 @@
+name: Witness Lema main-domain Google launch verification
+on:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths: ['.github/workflows/cloudflare-google-launch-check.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Verify live main-domain indexability, sitemap and isolated test
+        run: |
+          node --input-type=module <<'NODE'
+          const get=async url=>fetch(url,{signal:AbortSignal.timeout(16000)});
+          const root='https://witnesslema.com';
+          const paths=['/','/about/','/gallery/','/services/','/contact/','/reviews/'];
+          const problems=[];
+          for(const path of paths){
+            const r=await get(root+path);
+            const body=await r.text();
+            const canonical=(body.match(/<link rel="canonical" href="([^"]+)"/i)||[])[1]||'';
+            const robots=(body.match(/<meta name="robots"[^>]*>/i)||[])[0]||'';
+            const noindex=/noindex/i.test(robots+' '+(r.headers.get('x-robots-tag')||''));
+            console.log('main page',path,r.status,canonical,{noindex});
+            if(r.status!==200||canonical!==root+path||noindex)problems.push('main '+path);
+          }
+          const r=await get(root+'/robots.txt'),robots=await r.text();
+          console.log('main robots',r.status,robots);
+          if(!r.ok||!robots.includes('Allow: /')||robots.includes('Disallow: /\n')||
+             !robots.includes('Sitemap: '+root+'/sitemap.xml'))problems.push('robots');
+          const xmlResponse=await get(root+'/sitemap.xml'),xml=await xmlResponse.text();
+          const urls=[...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(x=>x[1]);
+          console.log('main sitemap',xmlResponse.status,urls);
+          if(!xmlResponse.ok||urls.length!==6||urls.some(u=>!u.startsWith(root+'/')))problems.push('sitemap');
+          for(const alias of ['https://www.witnesslema.com','https://lema-website-staging.pages.dev','https://test.witnesslema.com']){
+            const page=await get(alias+'/');const html=await page.text();
+            const meta=(html.match(/<meta name="robots"[^>]*>/i)||[])[0]||'';
+            const tag=page.headers.get('x-robots-tag')||'';
+            if(page.status!==200||!/noindex/i.test(meta+' '+tag))problems.push(alias+' accidentally indexed');
+            console.log('alias',alias,page.status,{noindex:/noindex/i.test(meta+' '+tag)});
+          }
+          for(const ep of ['/api/site-content','/api/reviews']){
+            const [m,t]=await Promise.all([get(root+ep),get('https://test.witnesslema.com'+ep)]);
+            if(m.status!==200||t.status!==200)problems.push(ep+' backend');
+            console.log('API',ep,m.status,t.status);
+          }
+          const session=await get(root+'/api/admin/session');
+          if(session.status!==401)problems.push('owner auth exposed');
+          console.log('admin access',session.status);
+          if(problems.length){console.error('LAUNCH VERIFICATION FAILED',problems);process.exit(1);}
+          console.log('PASS main domain crawl configuration; owner Google verification still needed');
+          NODE
