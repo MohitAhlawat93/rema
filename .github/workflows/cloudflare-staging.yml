@@ -76,6 +76,9 @@ jobs:
           # The staging Pages project owns its R2, SEO and Supabase bindings.
           # Do not let a repository example override dashboard variables/secrets.
           mv wrangler.jsonc wrangler.jsonc.example
+      # Re-upload is required after updating Cloudflare runtime environment
+      # variables. The live witnesslema.com host is the only indexable host;
+      # Pages mirrors stay noindex through host-aware middleware.
       - name: Direct Upload to staging (client never receives source)
         uses: cloudflare/wrangler-action@v4
         with:
