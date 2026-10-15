@@ -108,11 +108,9 @@ const galleryMarkup=(item,index,supabaseUrl)=>{
 const reviewMarkup=item=>{
  if(!item||item.published!==true||item.consent!==true||typeof item.author!=='string'||item.author.length>90)return '';
  const en=typeof item.textEn==='string'&&item.textEn.length<=1400?item.textEn:'';
- const hi=typeof item.textHi==='string'&&item.textHi.length<=1400?item.textHi:'';
- if(!en&&!hi)return '';
- return '<article class="review-quote"><span class="review-language">Guest feedback · अतिथि के शब्द</span>'+
+ if(!en)return '';
+ return '<article class="review-quote"><span class="review-language">Guest feedback</span>'+
  (en?'<blockquote lang="en">'+esc(en)+'</blockquote>':'')+
- (hi?'<blockquote lang="hi">'+esc(hi)+'</blockquote>':'')+
  '<p>— '+esc(item.author)+'</p></article>';
 };
 const serviceMarkup=(service,i,supabaseUrl)=>{

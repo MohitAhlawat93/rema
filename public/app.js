@@ -44,12 +44,12 @@ function hydrateAfterhours(){
 }
 function hydrateReviews(){
   const holders=[...document.querySelectorAll('[data-public-reviews]')];if(!holders.length)return;
-  const reviews=(Array.isArray(site.reviews)?site.reviews:[]).filter(item=>item&&item.published===true&&item.consent===true&&(item.textEn||item.textHi)).slice(0,40);
+  const reviews=(Array.isArray(site.reviews)?site.reviews:[]).filter(item=>item&&item.published===true&&item.consent===true&&item.textEn).slice(0,40);
   if(!reviews.length){
     holders.forEach(holder=>{const section=holder.closest('.reviews-section');if(section&&!section.classList.contains('reviews-page'))section.hidden=true;else holder.innerHTML='<p class="review-empty">No reviews published yet.</p>';});
     return;
   }
-  holders.forEach(holder=>{const section=holder.closest('.reviews-section');if(section)section.hidden=false;holder.innerHTML=reviews.map(item=>`<article class="review-quote"><span class="review-language">Guest feedback · अतिथि के शब्द</span>${item.textEn?`<blockquote lang="en">${html(item.textEn)}</blockquote>`:''}${item.textHi?`<blockquote lang="hi">${html(item.textHi)}</blockquote>`:''}<p>— ${html(item.author||'Guest')}</p></article>`).join('');});
+  holders.forEach(holder=>{const section=holder.closest('.reviews-section');if(section)section.hidden=false;holder.innerHTML=reviews.map(item=>`<article class="review-quote"><span class="review-language">Guest feedback</span>${item.textEn?`<blockquote lang="en">${html(item.textEn)}</blockquote>`:''}<p>— ${html(item.author||'Guest')}</p></article>`).join('');});
 }
 function hydrateBusiness(){
   const b=site.business||{},name=String(b.name||'').trim();

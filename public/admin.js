@@ -200,7 +200,7 @@ function renderReviews(){
   if(!holder)return;
   holder.innerHTML=liveReviews.length?liveReviews.map(item=>
     '<article class="repeat-card"><div class="repeat-fields"><p class="fine">'+
-      esc(item.language==='hi'?'Hindi · हिंदी':'English')+
+      esc(item.language==='hi'?'Legacy language':'English')+
       ' · '+esc(item.source==='owner'?'Added by owner':'Visitor review')+'</p>'+
       '<p class="review-pending-body">'+esc(item.text)+'</p><p>— '+esc(item.author)+'</p></div>'+
       '<div class="card-actions"><button type="button" class="danger" data-review-delete="'+
@@ -250,7 +250,7 @@ function validateEditorialControls(){
   }
   if(state.draft.reviews.length>40)throw new Error('Keep at most 40 reviews.');
   for(const item of state.draft.reviews){
-    if(!item.author?.trim()||(!item.textEn?.trim()&&!item.textHi?.trim()))throw new Error('Each review needs a reviewer-approved name and text in English or Hindi.');
+    if(!item.author?.trim()||(!item.textEn?.trim()&&!item.textHi?.trim()))throw new Error('Each review needs a reviewer-approved name and text .');
     if(item.published&&!item.consent)throw new Error('Before publishing a review, confirm the reviewer gave permission.');
   }
 }
