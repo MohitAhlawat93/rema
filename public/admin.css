@@ -480,3 +480,28 @@ fieldset legend,.editor-form legend,.assistant-settings legend,.seo-editor-field
 /* Keep View website and Log out in the sidebar, even on shorter displays. */
 @media(min-width:901px){.dashboard>aside nav{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}.dashboard>aside .side-foot{display:grid;flex:none;margin-top:12px}}
 @media(max-width:900px){.dashboard>aside nav{flex:initial;min-height:0;overflow-x:auto;overflow-y:hidden}}
+
+
+/* Owner-first admin refinements: premium, predictable controls and no growth-lab distractions. */
+.dashboard>aside{background:#24352e;border-right:1px solid #17291e}
+.dashboard>aside nav{gap:4px}
+.dashboard nav .nav-section{display:block;margin:16px 12px 7px;color:#b8c4b8;font:700 9px/1.4 var(--sans);letter-spacing:.18em}
+.dashboard nav button{border-radius:9px;padding:11px 14px;font-size:13px;line-height:1.35}
+.dashboard nav button.active{background:#dce6d8;color:#1d3729;font-weight:750}
+.dashboard nav button:hover:not(.active){background:#ffffff18;color:#fff}
+.admin-advanced{margin:10px 0 0;border-top:1px solid #ffffff25;padding-top:13px}
+.admin-advanced summary{cursor:pointer;color:#d1dcd0;font-size:12px;line-height:1.5;padding:7px 13px;list-style:revert}
+.admin-advanced button{display:block;width:100%;margin-top:5px}
+.owner-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-bottom:22px}
+.owner-shortcuts button{text-align:left;background:#fffdf8;border:1px solid #dadfd1;border-radius:15px;padding:20px 18px;display:flex;flex-direction:column;gap:5px;min-height:142px;box-shadow:0 8px 30px #263b2d08;color:#263d30;transition:transform .15s,border-color .15s,box-shadow .15s}
+.owner-shortcuts button:hover{transform:translateY(-2px);border-color:#a6bba1;box-shadow:0 12px 30px #24352e19}
+.owner-shortcuts button:focus-visible{outline:3px solid #8baf8e;outline-offset:2px}
+.owner-shortcuts button strong{font-size:15px;font-weight:700}
+.owner-shortcuts button small{color:#68746c;font-size:12px;line-height:1.4}
+.shortcut-icon{display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;color:#567561;height:31px;width:31px;margin-bottom:6px}
+.owner-publish-help{background:#e8efe5;border:1px solid #c6d5c0;border-radius:13px;margin:0 0 24px;padding:17px 19px;color:#334a3a;font-size:13px;line-height:1.7}
+.owner-publish-help strong{font-weight:750;margin-right:5px}
+.owner-publish-help span{color:#729476;padding:0 5px}
+@media(max-width:1200px){.owner-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.owner-shortcuts{grid-template-columns:1fr 1fr;gap:9px}.owner-shortcuts button{min-height:134px;padding:15px}.owner-publish-help{font-size:12px;padding:13px}.dashboard nav .nav-section{margin:10px 8px 3px}}
+@media(max-width:410px){.owner-shortcuts{grid-template-columns:1fr}.owner-shortcuts button{min-height:100px}}
