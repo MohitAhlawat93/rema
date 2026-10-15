@@ -1,0 +1,28 @@
+name: Main domain launch readiness diagnostics
+on:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths: ['.github/workflows/cloudflare-main-launch-diagnostics.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect canonical, robots and sitemap on all public aliases
+        run: |
+          node --input-type=module <<'NODE'
+          const hosts=['https://witnesslema.com','https://www.witnesslema.com','https://lema-website-staging.pages.dev','https://test.witnesslema.com'];
+          for(const origin of hosts){
+            for(const path of ['/','/about/','/robots.txt','/sitemap.xml']){
+              try{
+                const r=await fetch(origin+path,{signal:AbortSignal.timeout(18000)});
+                const content=await r.text();
+                const canon=(content.match(/<link\s+rel="canonical"\s+href="([^"]+)"/i)||[])[1]||'';
+                const robots=(content.match(/<meta\s+name="robots"[^>]*>/i)||[])[0]||'';
+                console.log(JSON.stringify({origin,path,status:r.status,canonical:canon,robots:robots.slice(0,110),xRobots:r.headers.get('x-robots-tag')||'',text: path==='/robots.txt'?content.slice(0,220):'',sitemapLocs:path==='/sitemap.xml'?(content.match(/<loc>/g)||[]).length:undefined}));
+              }catch(e){console.log(JSON.stringify({origin,path,error:e.name||'error'}))}
+            }
+          }
+          NODE
