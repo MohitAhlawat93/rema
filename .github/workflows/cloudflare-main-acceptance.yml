@@ -1,0 +1,34 @@
+name: Witness Lema live launch acceptance (non-destructive)
+on:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths:
+      - '.github/workflows/cloudflare-main-acceptance.yml'
+      - 'scripts/cloudflare-main-owner-browser-qa.mjs'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Verify public site, reviews, contact, admin boundary and chatbot
+        env:
+          LEMA_LIVE_URL: 'https://witnesslema.com'
+        run: node scripts/live-smoke.mjs
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Install pinned browser test runtime
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Verify launch on mobile and desktop
+        run: node scripts/cloudflare-main-owner-browser-qa.mjs
