@@ -1,0 +1,80 @@
+name: Cloudflare independent test website and Growth Lab
+on:
+  push:
+    branches: [feat/cloudflare-client-handover]
+    paths:
+      - '.github/workflows/cloudflare-growth-test.yml'
+      - 'public/growth-lab/**'
+      - 'functions/api/growth-lab/**'
+      - 'test/cloudflare-growth-lab.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+  deployments: write
+concurrency:
+  group: cloudflare-lema-growth-test
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SEO_INDEXING_ENABLED: 'false'
+      SEO_SITE_ORIGIN: 'https://test.witnesslema.com'
+    steps:
+      - name: Checkout independent test release
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify website and Growth Lab
+        run: |
+          npm run build
+          npm test
+          npm run validate:seo
+          node --check public/growth-lab/lab.js
+          node --check functions/api/growth-lab/readiness.js
+          test -s dist/growth-lab/index.html
+      - name: Require existing scoped Cloudflare credential
+        env:
+          CF_TOKEN: ${{ secrets.CF_STAGING_API_TOKEN }}
+        run: |
+          if [ -z "$CF_TOKEN" ]; then
+            echo "::error::Cloudflare deployment credential unavailable"
+            exit 1
+          fi
+      - name: Use secured test-project bindings and not example Wrangler settings
+        run: mv wrangler.jsonc wrangler.jsonc.example
+      - name: Deploy separate test project only — never main or production
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CF_STAGING_API_TOKEN }}
+          accountId: '13032a1345920c80c9572e3ba6dddeba'
+          command: pages deploy dist --project-name=lema-growth-test --branch=main
+      - name: Verify isolated trial database, test page and noindex
+        run: |
+          node --input-type=module <<'NODE'
+          const origin='https://lema-growth-test.pages.dev';
+          const get=path=>fetch(origin+path,{signal:AbortSignal.timeout(16000)});
+          const [home,lab,status,content,reviews]=await Promise.all([
+            get('/'),get('/growth-lab/'),get('/api/growth-lab/readiness'),get('/api/site-content'),get('/api/reviews')
+          ]);
+          const html=await home.text(), labHtml=await lab.text();
+          const data=await status.json().catch(()=>({}));
+          if(home.status!==200||lab.status!==200||!labHtml.includes('SEARCH GROWTH LAB'))
+            throw Error('Separate test website or Growth Lab is unavailable');
+          if(!/noindex/i.test((html.match(/<meta name="robots"[^>]*>/i)||[])[0]||''))
+            throw Error('Test site must be noindex');
+          if(!html.includes('rel="canonical" href="https://test.witnesslema.com/"'))
+            throw Error('Incorrect test canonical');
+          if(status.status!==200||data.mode!=='test'||data.checks?.length!==3||data.checks.some(c=>!c.ok))
+            throw Error('Trial database or SEO readiness failed');
+          if(content.status!==200||reviews.status!==200)
+            throw Error('Trial website endpoints unavailable');
+          const admin=await get('/api/admin/session');
+          if(![401,503].includes(admin.status))
+            throw Error('Owner login should fail closed unless authenticated');
+          console.log('PASS independent Cloudflare test website and Growth Lab',data.checks.map(c=>c.id));
+          NODE
