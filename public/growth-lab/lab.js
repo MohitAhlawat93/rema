@@ -1,3 +1,4 @@
+import {analyzeGscCSV} from './gsc-csv.js';
 const $=id=>document.getElementById(id);
 const DATA={
  impressions:{title:'Impressions but low click-through rate',evidence:'Example: 1,100 impressions, 14 clicks, average position 9.8 over 28 days.',reason:'We would compare matching queries, device types, snippets and rankings before proposing a more useful page title.',action:'Draft clearer title and description based on approved page content.'},
@@ -62,3 +63,34 @@ const gates=[...document.querySelectorAll('[data-gate]')];
 function updateGates(){const count=gates.filter(x=>x.checked).length;$('launch-status').textContent=count+' of 5 rehearsal approvals'+(count===5?' · SIMULATION ONLY':'');}
 gates.forEach(x=>x.addEventListener('change',updateGates));
 $('reset-gates').addEventListener('click',()=>{gates.forEach(x=>x.checked=false);updateGates();});updateGates();
+
+
+const sample='Query,Clicks,Impressions,CTR,Position\n"fictional local query",3,300,1%,10\n"fictional brand query",40,100,40%,1\n"fictional informational query",5,230,2.17%,12\n';
+function showGsc(text,source){
+ try{
+  const result=analyzeGscCSV(text);
+  $('gsc-data-label').textContent=source==='sample'?'FICTIONAL EXAMPLE — NOT REAL GSC':'USER CSV — SOURCE NOT VERIFIED';
+  $('gsc-total').textContent=result.totals.clicks+' clicks / '+result.totals.impressions+' impressions';
+  $('gsc-message').textContent=result.rows+' '+result.dimension+' rows · '+(result.ctr*100).toFixed(2)+'% weighted CTR. Opportunity rules are examples, not proof of causation.';
+  const container=$('gsc-opportunities');container.textContent='';
+  if(!result.opportunities.length){container.textContent='No rows met the minimum sample opportunity criteria.';return;}
+  const ul=document.createElement('ul');
+  for(const item of result.opportunities){
+   const li=document.createElement('li');
+   li.textContent=item.label+' — '+item.impressions+' impressions, '+(item.ctr*100).toFixed(1)+'% CTR';
+   ul.append(li);
+  }
+  container.append(ul);
+ }catch(e){
+  $('gsc-data-label').textContent='INVALID OR UNSUPPORTED CSV';
+  $('gsc-total').textContent='No data loaded';
+  $('gsc-message').textContent=e.message;
+  $('gsc-opportunities').textContent='';
+ }
+}
+$('gsc-example').addEventListener('click',()=>showGsc(sample,'sample'));
+$('gsc-upload').addEventListener('change',async event=>{
+ const file=event.target.files?.[0];if(!file)return;
+ if(file.size>700000){showGsc('','file');return;}
+ showGsc(await file.text(),'file');
+});
